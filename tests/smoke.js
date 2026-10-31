@@ -27,8 +27,9 @@ js += `
 ;(async()=>{
   const tick=()=>new Promise(r=>setImmediate(r));
   async function waitB(){let g=0;while(B&&g++<40000)await tick();if(B)throw new Error('戰鬥卡住了');}
-  ACT.newGame();ACT.confirmHero();S.cands.slice(0,3).forEach(c=>ACT.togglePick(c.id));ACT.beginGame();
+  ACT.newGame();ACT.confirmHero();
   S.auto=true;S.fast=true;S.stone+=5000;
+  S.tavern.slice().forEach(m=>ACT.recruit(m.id));
   ACT.buyLibEss('goblin');ACT.absorbDo('bag:0:'+S.members[0].id);
   for(const t of ['guild','library','exchange','temple','smith','store','home']){ACT.tab(t);render();}
   let battles=0;
@@ -51,7 +52,7 @@ js += `
       if(B){battles++;await waitB();}
     }
     if(S.run)ACT.waitClose();
-    while(living().length<4&&S.guild.length){S.stone+=1000;ACT.recruit(S.guild[0].id);}
+    while(living().length<4&&S.tavern.length){S.stone+=1000;ACT.recruit(S.tavern[0].id);}
   }
   console.log('OK:戰鬥',battles,'場,最深第',S.maxFloor,'層,日期',S.month+'/'+S.day);
 })().catch(e=>{console.error('失敗:',e.stack);process.exit(1);});`;

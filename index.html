@@ -622,15 +622,15 @@ const DAYS_IN_MONTH=30,LIVING=2,TAX=20,POTION=30,TORCH=60,MAXPOT=5;
 
 /* ================= STATE ================= */
 let S=null,B=null,SAVED=null;
-function newState(){return{v:5,uid:1,month:1,day:1,stone:300,potions:2,torches:1,debt:0,dorm:1,members:[],bag:[],items:[],guild:[],shop:[],reqs:[],active:[],contrib:0,fame:0,examPassed:false,
-  known:[],kc:{},riftsCleared:0,removals:0,revives:0,riftCD:{},floorBoss:{},maxFloor:1,log:[],auto:false,fast:false,sel:[],startFloor:1,tab:'home',run:null,screen:'intro',picks:[],cands:[],fallen:[],draft:null};}
+function newState(){return{v:5,uid:1,month:1,day:1,stone:450,potions:2,torches:1,debt:0,dorm:1,members:[],bag:[],items:[],tavern:[],shop:[],reqs:[],active:[],contrib:0,fame:0,examPassed:false,
+  known:[],kc:{},riftsCleared:0,removals:0,revives:0,riftCD:{},floorBoss:{},maxFloor:1,log:[],auto:false,fast:false,sel:[],startFloor:1,tab:'home',run:null,screen:'intro',fallen:[],draft:null};}
 const getM=id=>S.members.find(m=>m.id===+id);
 const hero=()=>S.members.find(m=>m.hero);
 const hasT=(m,t)=>m.traits.includes(t);
 const capacity=()=>3+S.dorm*2;
 const living=()=>S.members.filter(m=>!m.dead);
 const monName=k=>MON[k].n;
-function save(){if(B||!S||['intro','pick','create'].includes(S.screen))return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
+function save(){if(B||!S||['intro','create'].includes(S.screen))return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
 function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(s&&s.v===5&&s.members)return s;}catch(e){}return null;}
 function log(msg){S.log.unshift({d:`${S.month}/${S.day}`,m:msg});S.log.length=Math.min(S.log.length,60);}
 function learn(k){if(k&&MON[k]&&!S.known.includes(k))S.known.push(k);}
@@ -661,7 +661,7 @@ function absorbCheck(m,it){
 const essPrice=it=>Math.round(GRADE[ESS[it.k].g].price*(it.gd?2:1)*.5);
 /* ---------- members ---------- */
 function genName(race){
-  const used=new Set(S.members.map(m=>m.name).concat(S.guild.map(m=>m.name),(S.cands||[]).map(m=>m.name)));
+  const used=new Set(S.members.map(m=>m.name).concat((S.tavern||[]).map(m=>m.name)));
   const src=race==='barb'?BARB_NAMES:NAMES;const opts=src.filter(n=>!used.has(n));
   return opts.length?pick(opts):pick(src)+ri(2,9);
 }
@@ -797,7 +797,7 @@ function essChips(m){let h=m.ess.map(essChip).join('');for(let i=m.ess.length;i<
 
 /* ================= TOP BAR + RENDER ================= */
 function topHTML(){
-  if(!S||['intro','pick','create'].includes(S.screen))return `<span class="brand">蠻族迷宮生存</span>`;
+  if(!S||['intro','create'].includes(S.screen))return `<span class="brand">蠻族迷宮生存</span>`;
   const daily=living().reduce((a,m)=>a+livingCost(m),0),open=S.day===1&&!S.run;
   return `<span class="brand">蠻族迷宮生存</span><span class="day ${open?'open':''}">第 <span class="num">${S.month}</span> 月 <span class="num">${S.day}</span> 日${open?' · 迷宮開啟':''}</span>
   <div class="res"><span class="${S.stone<daily*5?'low':''}" title="每天生活費 ${daily}">石幣<b>${S.stone}</b></span><span>藥水<b>${S.potions}</b></span><span>火把<b>${S.torches}</b></span><span>名聲<b>${S.fame}</b></span><span>貢獻<b>${S.contrib}</b></span><span>最深<b>B${S.maxFloor}</b></span>${S.debt?`<span class="low">欠稅<b>${S.debt}</b></span>`:''}</div>
@@ -805,7 +805,7 @@ function topHTML(){
 }
 function render(){
   $('#top').innerHTML=topHTML();
-  const f={intro:introHTML,create:createHTML,pick:pickHTML,base:baseHTML,dungeon:dungeonHTML,over:overHTML}[S.screen];
+  const f={intro:introHTML,create:createHTML,base:baseHTML,dungeon:dungeonHTML,over:overHTML}[S.screen];
   if(f)$('#screen').innerHTML=f();
 }
 
@@ -847,7 +847,7 @@ function createHTML(){
         <div class="field"><span>種族</span><div class="opts">${Object.entries(RACE).map(([k,r])=>optBtn('race',k,r.n,r.d,d.race===k)).join('')}</div></div>
         <div class="field"><span>初始武器</span><div class="opts">${Object.entries(WEAPON).map(([k,x])=>optBtn('weapon',k,x.n,`${DT[x.dt]}擊。${x.pass}`,d.weapon===k)).join('')}</div></div>
         <div class="field"><span>出身</span><div class="opts">${Object.entries(TRAIT).filter(([,t])=>t.bg).map(([k,t])=>optBtn('bg',k,t.n,t.d,d.bg===k)).join('')}</div></div>
-        <div class="row"><button class="btn primary" data-act="confirmHero">登記並招募同伴</button><span class="mute" style="font-size:12.5px">剛登記的探險者都是 9 級,沒有任何精髓。</span></div>
+        <div class="row"><button class="btn primary" data-act="confirmHero">登記,獨自出發</button><span class="mute" style="font-size:12.5px">剛登記的探險者都是 9 級,沒有任何精髓。之後能到酒館招募同伴。</span></div>
       </div>
     </div>
   </section>`;
@@ -856,36 +856,19 @@ ACT.draftName=(a,el)=>{S.draft.name=el.value.replace(/[<>&"'`]/g,'').slice(0,8);
 ACT.draft=arg=>{const[f,v]=arg.split(':');S.draft[f]=f==='look'?+v:v;render();};
 ACT.confirmHero=()=>{
   const d=S.draft;const h=makeMember({name:d.name.trim()||genName(d.race),race:d.race,weapon:d.weapon,traits:[d.bg],look:d.look});
-  h.hero=true;S.members.push(h);
+  h.hero=true;h.job='work';S.members.push(h);
   if(d.bg==='bg_noble'){S.stone+=300;S.fame+=10;}
   if(d.bg==='bg_scholar')['goblin','ghoul','gnome','bladewolf'].forEach(learn);
-  const ws=shuffle(Object.keys(WEAPON).filter(w=>w!==d.weapon)).slice(0,5);ws.push(pick(Object.keys(WEAPON)));
-  S.cands=ws.map(w=>makeMember({weapon:w}));S.picks=[];S.screen='pick';render();
-};
-function pickHTML(){
-  const h=S.members[0];
-  return `<section class="intro" style="max-width:1000px;margin-top:2vh">
-    <div><h1 style="font-size:clamp(28px,6vw,40px)">選三名同伴</h1><p class="mute">一個人撐不過第一層。${h.name},公會門口有六個新人願意跟你組隊。</p></div>
-    <div class="pickgrid">${S.cands.map(m=>{const st=stats(m),on=S.picks.includes(m.id);return `<button class="mcard pick ${on?'is-sel':''}" data-act="togglePick" data-arg="${m.id}" aria-pressed="${on}">
-      <div class="mhead"><img class="spr" src="${heroImg(m)}" alt=""><div class="mname"><b>${m.name}</b><span>${RACE[m.race].n} · ${WEAPON[m.weapon].n}</span></div>${on?'<span class="chip good">已選</span>':''}</div>
-      <div class="statline"><span>生命<b>${st.maxhp}</b></span><span>攻擊<b>${st.atk}</b></span><span>防禦<b>${st.def}</b></span><span>速度<b>${st.spd}</b></span><span>${DT[WEAPON[m.weapon].dt]}擊</span></div>
-      <div class="chips">${m.traits.map(t=>`<span class="chip ${TRAIT[t].good?'good':'bad'}" title="${TRAIT[t].d}">${TRAIT[t].n}</span>`).join('')}</div></button>`;}).join('')}</div>
-    <div class="row"><button class="btn primary" data-act="beginGame" ${S.picks.length===3?'':'disabled'}>帶著 ${S.picks.length}/3 人出發</button><span class="mute">不同攻擊類型能對付不同弱點的怪物。</span></div>
-  </section>`;
-}
-ACT.togglePick=id=>{id=+id;if(S.picks.includes(id))S.picks=S.picks.filter(x=>x!==id);else if(S.picks.length<3)S.picks.push(id);else toast('只能選三個人');render();};
-ACT.beginGame=()=>{
-  for(const id of S.picks)S.members.push(S.cands.find(c=>c.id===id));
-  S.cands=[];S.picks=[];S.draft=null;S.sel=S.members.map(m=>m.id);S.members.forEach(m=>m.job='work');
-  refreshGuild();refreshShop();genRequests();
-  log(`${S.members[0].name} 和三名同伴在拉維吉恩區租了一間舊倉庫當住處。`);
+  S.draft=null;S.sel=[h.id];
+  refreshTavern();refreshShop();genRequests();
+  log(`${h.name} 在拉維吉恩區租了一間舊倉庫當住處,一個人開始冒險。`);
   log('今天是迷宮開啟日。第 1 層水晶洞窟分成東西南北四區,中心的大賢者紀念碑附近是安全區。');
-  log('提示:沒下迷宮的日子派大家去打工,受傷的人改成休息。');
+  log('提示:酒館(住處旁)能招募同伴,等級越高的人越貴、也越需要名聲和貢獻點才招得到。');
   S.screen='base';save();render();
 };
 
 /* ================= CITY ================= */
-const TABS=[['home','住處'],['guild','探險者公會'],['library','中央圖書館'],['exchange','中央交易所'],['temple','大神殿'],['smith','鐵匠鋪'],['store','雜貨店']];
+const TABS=[['home','住處'],['tavern','酒館'],['guild','探險者公會'],['library','中央圖書館'],['exchange','中央交易所'],['temple','大神殿'],['smith','鐵匠鋪'],['store','雜貨店']];
 function baseHTML(){
   const party=S.sel.map(getM).filter(m=>m&&!m.dead);
   const floors=[];for(let f=1;f<=S.maxFloor;f++)floors.push(f);
@@ -912,7 +895,7 @@ function baseHTML(){
   </div>`;
 }
 ACT.tab=k=>{S.tab=k;save();render();};
-function tabHTML(){return({home:homeTab,guild:guildTab,library:libraryTab,exchange:exchangeTab,temple:templeTab,smith:smithTab,store:storeTab}[S.tab]||homeTab)();}
+function tabHTML(){return({home:homeTab,tavern:tavernTab,guild:guildTab,library:libraryTab,exchange:exchangeTab,temple:templeTab,smith:smithTab,store:storeTab}[S.tab]||homeTab)();}
 function memberCard(m){
   const st=stats(m),sel=S.sel.includes(m.id);
   const next=m.lv<MAXLV?LV_XP[m.lv+1]:LV_XP[MAXLV],prev=LV_XP[m.lv];
@@ -933,6 +916,36 @@ function homeTab(){
     <div class="row"><button class="btn sm" data-act="dorm" ${!max&&S.stone>=c?'':'disabled'}>${max?'住處已擴建到最大':`擴建住處(${c} 石幣)`}</button><span class="mute" style="font-size:12px">多住 2 人,休息時壓力多降 6</span></div>
     <div class="sub">日誌</div><div class="log">${S.log.map(l=>`<div><span class="d">${l.d}</span>${l.m}</div>`).join('')}</div>`;
 }
+/* --- tavern(招募,等級越高的人越需要名聲/貢獻點/樓層進度) --- */
+const TAVERN_TIERS=[
+  {lv:1,cond:()=>true,w:5,label:''},
+  {lv:2,cond:()=>true,w:4,label:''},
+  {lv:3,cond:s=>s.fame>=15,w:3,label:'名聲達到 15'},
+  {lv:4,cond:s=>s.fame>=35&&s.contrib>=20,w:2,label:'名聲 35、貢獻點 20'},
+  {lv:5,cond:s=>s.fame>=60&&s.contrib>=30,w:1.4,label:'名聲 60、貢獻點 30(公會 6 級認證)'},
+  {lv:6,cond:s=>s.fame>=90&&s.maxFloor>=3,w:1,label:'名聲 90、抵達過第 3 層'},
+  {lv:7,cond:s=>s.fame>=130&&s.maxFloor>=5&&s.contrib>=80,w:.7,label:'名聲 130、抵達過第 5 層、貢獻點 80'}
+];
+function tavernUnlocked(){return TAVERN_TIERS.filter(t=>t.cond(S));}
+function recruitCost(m){return 150+m.lv*80+m.ess.length*120;}
+function refreshTavern(){
+  const unlocked=tavernUnlocked();
+  S.tavern=Array.from({length:4},()=>{
+    const totalW=unlocked.reduce((a,t)=>a+t.w,0);let r=Math.random()*totalW,tier=unlocked[unlocked.length-1];
+    for(const t of unlocked){if(r<t.w){tier=t;break;}r-=t.w;}
+    const ess=Math.random()<.2+tier.lv*.05?[makeEss(pick(['goblin','ghoul','gnome','bladewolf','kobold','goblin_archer']))]:[];
+    return makeMember({lv:tier.lv,ess});
+  });
+}
+function tavernTab(){
+  const full=living().length>=capacity(),unlocked=tavernUnlocked(),maxLv=unlocked[unlocked.length-1].lv,next=TAVERN_TIERS.find(t=>!t.cond(S));
+  return `<p class="mute">拉維吉恩區的酒館,角落貼著找隊伍的公告。願意跟陌生人出征的好手不多,等級越高的人開價越高,也越挑隊伍的名聲。</p>
+    <div class="kv"><span>目前能招到</span><b>最高 Lv${maxLv}</b><span>名聲</span><b>${S.fame}</b><span>貢獻點</span><b>${S.contrib}</b></div>
+    ${next?`<p class="notice" style="font-size:12px">更厲害的人(Lv${next.lv})要等到:${next.label}</p>`:''}
+    <div class="sub">今天在酒館(每月 1 日、15 日換人)</div>
+    <div class="list">${S.tavern.map(m=>{const c=recruitCost(m);return `<div class="recruit"><img class="spr" src="${heroImg(m)}" alt=""><div class="mname"><b>${m.name} <em class="lv">Lv${m.lv}</em></b><span>${RACE[m.race].n} · ${WEAPON[m.weapon].n}</span><div class="chips" style="margin-top:3px">${m.traits.map(t=>`<span class="chip ${TRAIT[t].good?'good':'bad'}" title="${TRAIT[t].d}">${TRAIT[t].n}</span>`).join('')}${m.ess.map(essChip).join('')}</div></div><button class="btn sm" data-act="recruit" data-arg="${m.id}" ${!full&&S.stone>=c?'':'disabled'} title="${full?'住處住不下了':''}">${c}</button></div>`;}).join('')||'<p class="mute">今天沒有人在找隊伍。</p>'}</div>`;
+}
+ACT.recruit=id=>{const m=S.tavern.find(x=>x.id===+id);if(!m)return;const c=recruitCost(m);if(S.stone<c||living().length>=capacity())return;S.stone-=c;S.members.push(m);S.tavern=S.tavern.filter(x=>x!==m);log(`${m.name}(${RACE[m.race].n}・${WEAPON[m.weapon].n})在酒館加入了隊伍。`);save();render();};
 /* --- guild --- */
 const REQ_DESC=r=>r.type==='kill'?`討伐 ${monName(r.k)} ×${r.n}`:r.type==='reach'?`抵達第 ${r.f} 層`:r.type==='deliver'?`繳交一顆${monName(r.k)}精髓`:r.type==='rift'?'清除任意一個裂縫':'';
 function reqProgress(r){if(r.type==='kill')return Math.min(r.n,(S.kc[r.k]||0)-r.base);if(r.type==='reach')return S.maxFloor>=r.f?1:0;if(r.type==='rift')return S.riftsCleared>r.base?1:0;if(r.type==='deliver')return S.bag.some(it=>it.k===r.k)?1:0;return 0;}
@@ -947,13 +960,10 @@ function genRequests(){
   for(let i=0;i<3;i++){const r=mk();r.id=S.uid++;out.push(r);}S.reqs=out;
 }
 function fieldFloor(k){return({ccN:1,ccS:1,ccE:1,ccW:1,beast:2,dead:2,desert:2,gforest:2,steelhill:3,orc:3,marsh:3,estuary:3,witch:3,tower:4,hellfire:5,frost:5,specter:5})[k];}
-function refreshGuild(){const lvBonus=S.fame>=50?2:S.fame>=20?1:0;
-  S.guild=[0,1,2].map(()=>{const lv=Math.min(4,(Math.random()<.3?2:1)+lvBonus);const ess=Math.random()<.35?[makeEss(pick(['goblin','ghoul','gnome','bladewolf','kobold','goblin_archer']))]:[];const m=makeMember({lv,ess});return m;});}
 function refreshShop(){const cap=rankCap(),gmax=cap<=4?6:cap<=6?7:8;const pool=Object.keys(ESS).filter(k=>!ESS[k].guard&&ESS[k].g<=8&&ESS[k].g>=gmax&&!k.startsWith('abyss'));
   S.shop=shuffle(pool).slice(0,3).map(k=>makeEss(k));}
-function recruitCost(m){return 150+m.lv*80+m.ess.length*120;}
 function guildTab(){
-  const cap=rankCap(),full=living().length>=capacity();
+  const cap=rankCap();
   const canExam=S.contrib>=80&&!S.examPassed;
   return `<div class="kv"><span>公會認證</span><b>${cap===7?'最高可認定為 7 級':cap===6?'中堅(可認定到 6 級)':'考試合格(可認定到 4 級)'}</b><span>貢獻點</span><b>${S.contrib}${S.contrib<30?'(滿 30 通過 6 級審查)':S.examPassed?'':'(滿 80 可報考 5 級)'}</b><span>名聲</span><b>${S.fame}</b></div>
     ${canExam?`<button class="btn primary" data-act="exam">報考 5 級晉級考試(與考官交手)</button>`:''}
@@ -961,9 +971,7 @@ function guildTab(){
     <div class="list">${S.reqs.map(r=>`<div class="item"><span>${REQ_DESC(r)}</span><button class="btn sm" data-act="acceptReq" data-arg="${r.id}" ${S.active.length<3?'':'disabled'}>接受</button><small>報酬 ${r.stone} 石幣、貢獻 ${r.contrib}、名聲 ${r.fame}</small></div>`).join('')||'<p class="mute">這個月的委託都被接走了。</p>'}</div>
     ${S.active.length?`<div class="sub">進行中</div><div class="list">${S.active.map(r=>{const done=reqDone(r);return `<div class="item"><span>${REQ_DESC(r)} <span class="mute">${r.type==='kill'?`${Math.max(0,reqProgress(r))}/${r.n}`:done?'可以回報':''}</span></span><button class="btn sm ${done?'primary':''}" data-act="claimReq" data-arg="${r.id}" ${done?'':'disabled'}>回報</button></div>`;}).join('')}</div>`:''}
     <div class="sub">精髓交易(8 級以上,公會認證越高能買越高級)</div>
-    <div class="list">${S.shop.map((it,i)=>`<div class="item">${essChip(it)}<button class="btn sm" data-act="buyGuildEss" data-arg="${i}" ${S.stone>=GRADE[ESS[it.k].g].price?'':'disabled'}>${GRADE[ESS[it.k].g].price}</button><small>${essDesc(it)}</small></div>`).join('')||'<p class="mute">這個月的精髓賣完了。</p>'}</div>
-    <div class="sub">招募(每月 1 日、15 日換人)</div>
-    ${S.guild.map(m=>{const c=recruitCost(m);return `<div class="recruit"><img class="spr" src="${heroImg(m)}" alt=""><div class="mname"><b>${m.name} <em class="lv">Lv${m.lv}</em></b><span>${RACE[m.race].n} · ${WEAPON[m.weapon].n}</span><div class="chips" style="margin-top:3px">${m.traits.map(t=>`<span class="chip ${TRAIT[t].good?'good':'bad'}" title="${TRAIT[t].d}">${TRAIT[t].n}</span>`).join('')}${m.ess.map(essChip).join('')}</div></div><button class="btn sm" data-act="recruit" data-arg="${m.id}" ${!full&&S.stone>=c?'':'disabled'} title="${full?'住處住不下了':''}">${c}</button></div>`;}).join('')||'<p class="mute">今天沒有人在找隊伍。</p>'}`;
+    <div class="list">${S.shop.map((it,i)=>`<div class="item">${essChip(it)}<button class="btn sm" data-act="buyGuildEss" data-arg="${i}" ${S.stone>=GRADE[ESS[it.k].g].price?'':'disabled'}>${GRADE[ESS[it.k].g].price}</button><small>${essDesc(it)}</small></div>`).join('')||'<p class="mute">這個月的精髓賣完了。</p>'}</div>`;
 }
 ACT.acceptReq=id=>{const r=S.reqs.find(x=>x.id===+id);if(!r||S.active.length>=3)return;if(r.type==='kill')r.base=S.kc[r.k]||0;if(r.type==='rift')r.base=S.riftsCleared;S.active.push(r);S.reqs=S.reqs.filter(x=>x!==r);save();render();};
 ACT.claimReq=id=>{const r=S.active.find(x=>x.id===+id);if(!r||!reqDone(r))return;
@@ -972,7 +980,6 @@ ACT.claimReq=id=>{const r=S.active.find(x=>x.id===+id);if(!r||!reqDone(r))return
   if(S.contrib>=30&&S.contrib-r.contrib<30)log('貢獻點滿 30,公會審查通過,認證上限提高到 6 級。');
   save();render();};
 ACT.buyGuildEss=i=>{const it=S.shop[+i];if(!it)return;const p=GRADE[ESS[it.k].g].price;if(S.stone<p)return;S.stone-=p;S.bag.push(it);S.shop.splice(+i,1);log(`在公會買下${essInfo(it).n}。`);save();render();};
-ACT.recruit=id=>{const m=S.guild.find(x=>x.id===+id);if(!m)return;const c=recruitCost(m);if(S.stone<c||living().length>=capacity())return;S.stone-=c;S.members.push(m);S.guild=S.guild.filter(x=>x!==m);log(`${m.name}(${RACE[m.race].n}・${WEAPON[m.weapon].n})加入了隊伍。`);save();render();};
 ACT.exam=()=>{const party=S.sel.map(getM).filter(m=>m&&!m.dead);if(!party.length){toast('先勾選要參加考試的隊員');return;}startBattle(['examiner'],{exam:1});};
 /* --- library --- */
 const LIB_ESS=['goblin','ghoul','gnome','bladewolf','kobold','kobold_shield','goblin_archer','goblin_sword','skel_archer','skel_warrior','banshee','wall_mole'];
@@ -1082,7 +1089,7 @@ function processDays(n,away=new Set()){
       else{S.debt=tax-S.stone;S.stone=0;log(`稅金不夠繳,還欠 ${S.debt} 石幣。欠稅的人進不了次元廣場。`);}
       genRequests();refreshShop();
     }
-    if(S.day===1||S.day===15)refreshGuild();
+    if(S.day===1||S.day===15)refreshTavern();
   }
 }
 function payDebt(){if(S.debt&&S.stone>=S.debt){S.stone-=S.debt;log(`補繳了 ${S.debt} 石幣的稅。`);S.debt=0;}}

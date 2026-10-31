@@ -18,7 +18,7 @@
 - `DATA`:`WEAPON`、`RACE`、`TRAIT`、`GRADE`、`SK`(主動技能)、`PS`(被動)、`ESS`(精髓)、`MON`(怪物與像素圖設定)、`FIELDS`(區域)、`FLOORS`、`RIFTS`、`NUM`(編號物品)。
 - `STATE`:`newState()`、`stats(m)`、精髓相關(`makeEss`、`essInfo`、`absorbCheck`)。
 - `SPRITES`:`humanoid()` 與 `GRIDS` 產生像素圖,`gridCanvas()` 自動加外框。
-- `CITY`:城市分頁(住處、公會、圖書館、交易所、大神殿、鐵匠鋪、雜貨店)、`processDays()`。
+- `CITY`:城市分頁(住處、酒館、公會、圖書館、交易所、大神殿、鐵匠鋪、雜貨店)、`processDays()`。角色登記後是單人出發,同伴要去酒館招募:`TAVERN_TIERS`(等級門檻,越高級要求的名聲/貢獻點/樓層進度越高)、`refreshTavern()`(每月 1、15 日換人)、`tavernTab()`、`ACT.recruit`。
 - `LABYRINTH`:`genFloor()`(第 1 層十字四區、第 2 層四區之一、第 3 層朝聖者之路、第 5 層三峽谷)、天空之塔(`towerHTML`、`ACT.stair`)、次元崩壞、時間與關閉(`advanceTime`、`eject`)、`FLOORMASTER`+`floorMasterBlock()`+`ACT.fmaster`(各層安全區可挑戰的層主,資料驅動,加新層主只要加表格項目)。
 - `TURN-BASED BATTLE`:`startBattle`、`battleLoop`(非同步,玩家回合用 Promise 等待指令)、`hit`、`fall`、`endBattle`、跳字 `pop()`。
 - 互動統一用 `data-act` / `data-change` / `data-input` 事件委派到 `ACT` 物件。
