@@ -375,7 +375,14 @@ const SK={
   mirror:{n:'鏡像',cost:26,kind:'self',buff:{dodge:.5,t:3},label:'鏡像',d:'50% 機率閃避攻擊,持續 3 回合'},
   copystrike:{n:'模仿打擊',cost:24,kind:'single',mult:2.2,brk:25,d:'造成 220% 傷害'},
   soulshield:{n:'靈魂護盾',cost:30,kind:'team',buff:{def:.5,mres:30,t:3},label:'靈魂護盾',d:'全隊防禦 +50%、魔抗 +30,持續 3 回合'},
-  despairwave:{n:'絕望波動',cost:32,kind:'aoe',mult:1.0,dt:'dark',brk:15,debuff:{atk:-.3,t:2},label:'絕望',d:'對全體敵人造成 100% 暗屬性傷害,攻擊 -30%,持續 2 回合'}
+  despairwave:{n:'絕望波動',cost:32,kind:'aoe',mult:1.0,dt:'dark',brk:15,debuff:{atk:-.3,t:2},label:'絕望',d:'對全體敵人造成 100% 暗屬性傷害,攻擊 -30%,持續 2 回合'},
+  abyssdevour:{n:'深淵吞噬',cost:34,kind:'single',mult:2.2,dt:'dark',brk:25,drain:.6,d:'造成 220% 暗屬性傷害,回復造成傷害的 60%'},
+  acidburst:{n:'鹽蝕爆裂',cost:30,kind:'aoe',mult:1.0,dt:'magic',brk:15,debuff:{def:-.35,t:3},label:'鹽蝕',d:'對全體敵人造成 100% 魔法傷害,防禦 -35%,持續 3 回合'},
+  despairrain:{n:'絕望之雨',cost:32,kind:'aoe',mult:.85,dt:'magic',brk:15,debuff:{def:-.25,t:3},label:'侵蝕',d:'對全體敵人造成 85% 魔法傷害,地形侵蝕使防禦 -25%,持續 3 回合'},
+  maliceriff:{n:'惡意裂隙',cost:30,kind:'multi',hits:4,mult:.6,dt:'magic',brk:10,d:'裂隙中湧出分身亂擊,隨機 4 次各 60% 魔法傷害'},
+  falseheaven:{n:'偽天結界',cost:26,kind:'self',buff:{def:.7,t:3},label:'偽天結界',d:'自身防禦 +70%,持續 3 回合'},
+  collapsestrike:{n:'崩塔一擊',cost:30,kind:'single',mult:2.4,dt:'holy',brk:30,d:'造成 240% 神聖傷害'},
+  betrayalgrasp:{n:'背叛之握',cost:28,kind:'single',mult:2.0,dt:'dark',brk:25,delay:.3,d:'伸出過長的手臂造成 200% 暗屬性傷害,並延後目標行動'}
 };
 /* ---------- 被動 ---------- */
 const PS={
@@ -465,11 +472,16 @@ const ESS={
   yeti:{g:7,st:{hp:60,mres:6},acts:['blizzard','maul'],guard:1},
   slime_king:{g:6,st:{hp:60,regen:.04},acts:['slimeshield','acid'],guard:1},
   iron_man:{g:6,st:{def:8,hp:60},acts:['ironwall','restraint'],guard:1},
-  dread_lord:{g:5,st:{atk:8,def:4,hp:40},acts:['despairwave'],pas:'ambush',guard:1},
+  dread_lord:{g:5,st:{atk:6,def:2,hp:30,spd:4},acts:['despairwave'],pas:'ambush',guard:1},
+  abyss_lord:{g:5,st:{atk:9,def:4,hp:45,mres:6},acts:['abyssdevour'],guard:1},
   gunner_captain:{g:7,st:{atk:6,spd:4},acts:['volley','pierce'],guard:1},
+  regret_lord:{g:5,st:{atk:8,def:6,hp:45},acts:['acidburst'],guard:1},
   doomsday_knight:{g:5,st:{atk:10,def:6},acts:['spiritdemon'],pas:'chivalry',guard:1},
+  chaos_lord:{g:4,st:{atk:10,def:5,hp:50,mres:6},acts:['despairrain','maliceriff'],guard:1},
   doppelganger:{g:5,st:{spd:8,atk:5},acts:['mirror','copystrike'],guard:1},
-  soul_keeper:{g:4,st:{soul:40,atk:8},acts:['soulreap','soulshield'],guard:1}
+  sky_lord:{g:4,st:{def:12,hp:60,atk:8},acts:['collapsestrike','falseheaven'],guard:1},
+  soul_keeper:{g:4,st:{soul:40,atk:8},acts:['soulreap','soulshield'],guard:1},
+  silence_lord:{g:4,st:{soul:35,atk:10,mres:8},acts:['betrayalgrasp'],guard:1}
 };
 /* ---------- 怪物 ---------- */
 const Hs=(o,p,sc)=>({t:'h',o,p,sc}),Gs=(g,p,sc)=>({t:'g',g,p,sc});
@@ -552,11 +564,18 @@ const MON={
   yeti:{n:'雪人',g:7,hp:900,atk:24,def:12,spd:92,weak:['fire'],resist:['ice'],tough:130,atkdt:'ice',tags:{heavy:1,aoe:1,bind:1},boss:1,spr:Gs('bear',{b:'#e8f0f8',k:'#40a0ff',n:'#6a7a8a'},5)},
   slime_king:{n:'史萊姆之王',g:6,hp:1000,atk:20,def:8,spd:88,weak:['slash','fire'],tough:140,tags:{aoe:1,summon:'slime'},boss:1,spr:Gs('slime_king',{g:'#5fb04a',l:'#b8f09a',d:'#3f8a3a',k:'#16200f',y:'#e8c040'},5)},
   iron_man:{n:'鐵人伊爾迪姆',g:6,hp:1300,atk:26,def:22,spd:84,weak:['thunder','blunt'],resist:['slash','pierce'],tough:170,tags:{heavy:1,bind:1},boss:1,spr:Hs({weapon:'hammer',helm:1},{s:'#8a95a5',h:'#8a95a5',b:'#6a7585',m:'#b0b8c4',e:'#ffb040'},5)},
-  dread_lord:{n:'恐懼之主德雷德菲爾',g:5,hp:1900,atk:36,def:16,spd:110,weak:['holy','fire'],resist:['slash'],tough:190,atkdt:'dark',tags:{aoe:1,heavy:1,fear:1,summon:'wraith'},boss:1,spr:Gs('boss',{n:'#8a9a90',m:'#17130f',r:'#8aff9a',k:'#050503',a:'#241f17',c:'#332c20',s:'#453b2b',x:'#8aff9a',y:'#171410',d:'#0d0b08'},5)},
+  crystal_maggot:{n:'水晶蛆蟲',g:9,hp:18,atk:7,def:0,spd:90,weak:[],tough:6,noEss:1,spr:Gs('worm',{w:'#c8a8e8',k:'#3a1a5a',m:'#e8d0ff'})},
+  chaos_spirit:{n:'混沌之靈',g:9,hp:8,atk:5,def:0,spd:100,weak:[],tough:1,noEss:1,spr:Gs('wisp',{y:'#ff6060',o:'#60ff80',w:'#6080ff',k:'#1a0a1a'})},
+  dread_lord:{n:'恐懼之主德雷德菲爾',g:5,hp:1900,atk:36,def:14,spd:118,weak:['holy','fire'],tough:170,atkdt:'dark',tags:{aoe:1,fear:1,summon:'crystal_maggot'},boss:1,spr:Hs({robe:1,hood:1},{s:'#9aa090',h:'#4a4038',b:'#2a2620',e:'#8aff9a',x:'#6a6050'},4)},
+  abyss_lord:{n:'深淵之主貝爾札克',g:5,hp:2300,atk:40,def:18,spd:112,weak:['holy'],tough:205,atkdt:'dark',tags:{aoe:1,silence:1,summon:'abyss_watcher'},boss:1,spr:Gs('boss',{n:'#8a6ab0',m:'#140a1e',r:'#c060ff',k:'#05020a',a:'#241640',c:'#33205a',s:'#452c78',x:'#c060ff',y:'#160c28',d:'#0c0616'},5)},
   gunner_captain:{n:'沙漠槍手隊長',g:7,hp:1000,atk:30,def:10,spd:112,weak:['slash'],tough:140,tags:{aoe:1,summon:'bandit_archer'},boss:1,spr:Hs({weapon:'bow',hood:1},{s:'#c08a5a',h:'#3a2a1a',b:'#8a6a3a'},5)},
+  regret_lord:{n:'後悔之主',g:5,hp:2000,atk:34,def:19,spd:107,weak:['holy','fire'],resist:['slash','pierce'],tough:198,atkdt:'dark',tags:{aoe:1,enrage:1,summon:'bandit_archer'},boss:1,spr:Gs('boss',{n:'#9a8aa0',m:'#15121a',r:'#c8c0ff',k:'#050308',a:'#201a2a',c:'#2e2638',s:'#3f3650',x:'#c8c0ff',y:'#1a1522',d:'#100d16'},5)},
   doomsday_knight:{n:'末日騎士',g:5,hp:2200,atk:38,def:20,spd:100,weak:['dark'],resist:['holy'],tough:200,tags:{heavy:1,aoe:1,summon:'fallen_creation'},boss:1,spr:Hs({weapon:'sword',helm:1},{s:'#e8e0d0',h:'#e8e0d0',b:'#e8e0d0',m:'#d8b45a',e:'#40a0ff',x:'#f0d070',t:'#d8b45a'},5)},
+  chaos_lord:{n:'混沌之主利亞基斯',g:4,hp:2600,atk:42,def:19,spd:113,weak:['holy'],tough:212,atkdt:'magic',tags:{aoe:1,bind:1,summon:'chaos_spirit'},boss:1,spr:Gs('boss',{n:'#c0a060',m:'#140f08',r:'#ff8040',k:'#070402',a:'#2a2012',c:'#3a2c18',s:'#4a3a22',x:'#ff8040',y:'#1a140a',d:'#0f0b06'},5)},
   doppelganger:{n:'分身魔',g:5,hp:2200,atk:36,def:14,spd:118,weak:['holy','magic'],resist:['slash'],tough:180,tags:{heavy:1,summon:'bandit'},boss:1,spr:Hs({weapon:'daggers'},{s:'#2a2a3a',h:'#1a1a2a',b:'#3a3050',e:'#ffffff',x:'#8a8aa0'},5)},
-  soul_keeper:{n:'靈魂守護者浩希耶爾',g:4,hp:3600,atk:46,def:20,spd:108,weak:['holy'],resist:['slash','pierce'],tough:240,atkdt:'dark',tags:{aoe:1,heavy:1,fear:1,summon:'blood_wraith'},boss:1,spr:Gs('boss',{n:'#c0a0ff',m:'#3a2a5a',r:'#e0a0ff',k:'#0a0614',a:'#4a3470',c:'#6a4a9a',s:'#8a7ab0',x:'#c0b0e0',y:'#3a2a4a',d:'#2a1e3a'},5)}
+  sky_lord:{n:'天空之主',g:4,hp:3000,atk:44,def:21,spd:115,weak:['dark'],resist:['holy'],tough:225,atkdt:'holy',tags:{aoe:1,heavy:1,bind:1,summon:'tower_guardian'},boss:1,spr:Gs('boss',{n:'#f0e0a0',m:'#1a2030',r:'#80d0ff',k:'#060a12',a:'#243048',c:'#344060',s:'#44527a',x:'#cfe8ff',y:'#1a2436',d:'#0e131e'},5)},
+  soul_keeper:{n:'靈魂守護者浩希耶爾',g:4,hp:3600,atk:46,def:20,spd:108,weak:['holy'],resist:['slash','pierce'],tough:240,atkdt:'dark',tags:{aoe:1,heavy:1,fear:1,summon:'blood_wraith'},boss:1,spr:Gs('boss',{n:'#c0a0ff',m:'#3a2a5a',r:'#e0a0ff',k:'#0a0614',a:'#4a3470',c:'#6a4a9a',s:'#8a7ab0',x:'#c0b0e0',y:'#3a2a4a',d:'#2a1e3a'},5)},
+  silence_lord:{n:'寂靜之主希利亞特',g:4,hp:3800,atk:48,def:23,spd:118,weak:['holy'],resist:['slash','pierce'],tough:255,atkdt:'dark',tags:{aoe:1,heavy:1,silence:1,summon:'blood_wraith'},boss:1,spr:Gs('boss',{n:'#707070',m:'#0a0a0c',r:'#e8e8f0',k:'#020203',a:'#15151a',c:'#1f1f26',s:'#2a2a33',x:'#e8e8f0',y:'#0e0e12',d:'#060608'},5)}
 };
 /* ---------- 區域 ---------- */
 const FIELDS={
@@ -591,9 +610,29 @@ const RIFTS={
   doppel_forest:{n:'分身魔森林',f:4,boss:'doppelganger',minions:['bandit'],cost:1500},
   soul_fortress:{n:'靈魂要塞',f:5,boss:'soul_keeper',minions:['blood_wraith'],cost:3500}
 };
-/* 各層的層主(自訂內容,原作只給名字);鍵是樓層數,打的時候在該層安全區挑戰,可重複挑戰取得戰利品 */
+/* 各層的層主(鍵是樓層數,打的時候在該層安全區挑戰,可重複挑戰取得戰利品)。
+   根據原作設定站(나무위키)查到的各層主輪廓去客製化技能與機制,不互相套用同一招式:
+   - 恐懼之主德雷德菲爾:原作裡其實是個 160 公分、瘦小的「冒牌貨」,殺了真正的百夫長德雷德菲爾並奪名,
+     會不斷重生(可重複挑戰)。手下是從水晶壁爬出來的蛆蟲。打輸只會死觸發戰鬥的那個人,其他人逃得掉。
+   - 深淵之主貝爾札克:原作裡連續打倒恐懼之主九次才會出現。戰場會瀰漫「深淵之霧」,封印精髓技能。
+   - 後悔之主:原作裡越打越強(全能力強化),這裡用新的「覺醒」機制重現。
+   - 混沌之主利亞基斯:原作技能是「絕望之雨」(範圍傷害+地形侵蝕)與「惡意裂隙」(分身亂擊),
+     手下是一擊必死的「混沌之靈」雜兵。
+   - 天空之主:原作沒有具體招式,自訂崩塔系技能。
+   - 寂靜之主希利亞特:原作招式「不言令」會封鎖範圍內的精髓技能,這裡用同一套「沉默」機制重現。 */
 const FLOORMASTER={
-  1:{n:'恐懼之主德雷德菲爾',key:'dread_lord',minions:['wraith','wraith']}
+  1:{n:'恐懼之主德雷德菲爾',key:'dread_lord',minions:['crystal_maggot','crystal_maggot','crystal_maggot'],
+    desc:'水晶洞窟深處流傳著,這個瘦小的「恐懼之主」其實不是真正的德雷德菲爾——而是殺了他、奪走名字的冒牌貨。打輸了,牠只會拖走觸發這場戰鬥的人。'},
+  2:{n:'後悔之主',key:'regret_lord',minions:['bandit_archer','bandit'],
+    desc:'水下的祭壇一碰就引發酸蝕爆炸。據說後悔之主會隨著傷勢越打越強,絕對不能拖久。'},
+  3:{n:'混沌之主利亞基斯',key:'chaos_lord',minions:['chaos_spirit','chaos_spirit','chaos_spirit'],
+    desc:'魔女的獻祭儀式喚醒了混沌之主利亞基斯,隨行的混沌之靈不堪一擊,但祂的絕望之雨與惡意裂隙會讓隊伍節節敗退。'},
+  4:{n:'天空之主',key:'sky_lord',minions:['tower_guardian','tower_guardian'],
+    desc:'守護著這座被魔女一派稱為「天空之塔」的地底遺跡。傳說獨自一人打倒祂的探險者,能得到額外的賞賜。'},
+  5:{n:'寂靜之主希利亞特',key:'silence_lord',minions:['blood_wraith'],
+    desc:'原本是帝國的探險者,後來叛變投靠魔女。一隻眼、過長的手臂——牠的「不言令」能封鎖範圍內所有精髓技能。'},
+  abyss:{n:'深淵之主貝爾札克',key:'abyss_lord',minions:['abyss_watcher','abyss_watcher'],
+    desc:'接連打倒恐懼之主九次後,深淵之主貝爾札克開始在水晶洞窟裡徘徊。濃霧般的深淵之霧會封鎖精髓技能。'}
 };
 const NUM={
   n9999:{n:'No.9999 擴充型背包',r:'單',d:'全滅時,身上的戰利品保留一半',eff:{keepLoot:1},price:400},
@@ -623,7 +662,7 @@ const DAYS_IN_MONTH=30,LIVING=2,TAX=20,POTION=30,TORCH=60,MAXPOT=5;
 /* ================= STATE ================= */
 let S=null,B=null,SAVED=null;
 function newState(){return{v:5,uid:1,month:1,day:1,stone:450,potions:2,torches:1,debt:0,dorm:1,members:[],bag:[],items:[],tavern:[],shop:[],reqs:[],active:[],contrib:0,fame:0,examPassed:false,
-  known:[],kc:{},riftsCleared:0,removals:0,revives:0,riftCD:{},floorBoss:{},maxFloor:1,log:[],auto:false,fast:false,sel:[],startFloor:1,tab:'home',run:null,screen:'intro',fallen:[],draft:null};}
+  known:[],kc:{},riftsCleared:0,removals:0,revives:0,riftCD:{},floorBoss:{},dreadKills:0,maxFloor:1,log:[],auto:false,fast:false,sel:[],startFloor:1,tab:'home',run:null,screen:'intro',fallen:[],draft:null};}
 const getM=id=>S.members.find(m=>m.id===+id);
 const hero=()=>S.members.find(m=>m.hero);
 const hasT=(m,t)=>m.traits.includes(t);
@@ -996,7 +1035,7 @@ function libraryTab(){
 }
 function monNote(k){const t=MON[k].tags||{},n=[];
   if(t.passive)n.push('不會主動攻擊');if(t.spirit)n.push('靈體,物理攻擊幾乎無效');if(t.poison)n.push('攻擊帶毒');if(t.stealth)n.push('會融入周圍隱身');if(t.curse)n.push('先出手攻擊會被下「怨恨之印」');
-  if(t.bind)n.push('會束縛對手');if(t.heal)n.push('會治療同伴');if(t.buff)n.push('會強化同伴');if(t.fear)n.push('會讓人恐懼');if(t.summon)n.push(`會召喚${monName(t.summon)}`);if(t.drain)n.push('攻擊時吸血');if(t.noheal)n.push('傷口難以癒合');
+  if(t.bind)n.push('會束縛對手');if(t.heal)n.push('會治療同伴');if(t.buff)n.push('會強化同伴');if(t.fear)n.push('會讓人恐懼');if(t.silence)n.push('會下沉默,封鎖精髓技能');if(t.enrage)n.push('生命降低時會覺醒,越打越強');if(t.summon)n.push(`會召喚${monName(t.summon)}`);if(t.drain)n.push('攻擊時吸血');if(t.noheal)n.push('傷口難以癒合');
   if(MON[k].atkdt)n.push(`${DT[MON[k].atkdt]}屬性攻擊`);return n.join('、')||'沒有特別的能力';}
 ACT.research=k=>{if(S.stone<30)return;S.stone-=30;learn(k);toast(`查到了${monName(k)}的資料`);save();render();};
 ACT.buyLibEss=k=>{if(S.stone<GRADE[9].price)return;S.stone-=GRADE[9].price;const it=makeEss(k);S.bag.push(it);log(`在圖書館買下${essInfo(it).n}。`);save();render();};
@@ -1191,7 +1230,7 @@ ACT.enterLab=()=>{
   const party=S.sel.map(getM).filter(m=>m&&!m.dead);if(!party.length||S.day!==1||S.debt)return;
   const f=clamp(S.startFloor,1,S.maxFloor);party.forEach(m=>{m.soul=stats(m).soul;});
   S.run={party:party.map(m=>m.id),floor:f,h:0,loot:{stone:0,ess:[],items:[]},prev:null,torchH:0,curse:false,witchH:0,abyss:false,collapse:null,tower:null,orb:false};
-  if(f===1&&Math.random()<.04)S.run.abyss=true;
+  if(f===1&&((S.dreadKills||0)>=9||Math.random()<.01))S.run.abyss=true;
   setupFloor(f,f===2?pick(['beast','dead','desert','gforest']):null);
   if(Math.random()<.015)S.run.collapsePending=true;
   S.screen='dungeon';
@@ -1273,7 +1312,7 @@ function mapHTML(){
 }
 function foesHTML(list){return `<div class="foes">${list.map(k=>`<div class="foe ${MON[k].elite||MON[k].boss?'elite':''}"><img src="${monImg(k,3)}" alt="">${MON[k].n}<span class="num" style="font-size:10px;color:var(--gold)">${MON[k].g}級</span><span class="wk">${isKnown(k)?(MON[k].weak||[]).map(x=>`<span>${DT[x]}</span>`).join(''):'<span class="uk">弱點?</span>'}</span></div>`).join('')}</div>`;}
 function floorMasterBlock(f){const fm=FLOORMASTER[f];if(!fm)return'';
-  return `<p class="desc" style="margin-top:10px">這一層的層主「${fm.n}」潛伏在安全區之外的黑暗深處。</p>${foesHTML([fm.key,...fm.minions])}<div class="row"><button class="btn primary" data-act="fmaster" data-arg="${f}">挑戰${fm.n}</button></div>`;}
+  return `<p class="desc" style="margin-top:10px">${fm.desc||`這一層的層主「${fm.n}」潛伏在安全區之外的黑暗深處。`}</p>${foesHTML([fm.key,...fm.minions])}<div class="row"><button class="btn primary" data-act="fmaster" data-arg="${f}">挑戰${fm.n}</button></div>`;}
 function eventHTML(r){
   const run=S.run,f=run.floor,act=(label,a,arg='',cls='',dis=false)=>`<button class="btn ${cls}" data-act="${a}" data-arg="${arg}" ${dis?'disabled':''}>${label}</button>`;
   const back=act('退回上一間','move',run.prev);
@@ -1281,11 +1320,11 @@ function eventHTML(r){
   const wait=act(`在這裡等到迷宮關閉(${fmtH(Math.max(0,stayLimit(run)-run.h))})`,'waitClose','','primary');
   switch(r.type){
     case'entry':return `<h3>降落點</h3><p class="desc">傳送門把你們丟在這裡。迷宮關閉前沒有辦法回城。</p><div class="row">${camp}</div>`;
-    case'sage':return `<h3>大賢者紀念碑</h3><p class="desc">水晶洞窟的中心部。古老的石碑旁很少有怪物靠近,是這一層的安全區。可以安心休息,也可以在這裡等到迷宮關閉。</p><div class="row">${act('休息(8 小時,不會被偷襲)','campSafe','','')}${wait}</div>${floorMasterBlock(f)}`;
+    case'sage':return `<h3>大賢者紀念碑</h3><p class="desc">水晶洞窟的中心部。古老的石碑旁很少有怪物靠近,是這一層的安全區。可以安心休息,也可以在這裡等到迷宮關閉。</p><div class="row">${act('休息(8 小時,不會被偷襲)','campSafe','','')}${wait}</div>${floorMasterBlock(f)}${run.abyss?floorMasterBlock('abyss'):''}`;
     case'hut':return `<h3>魔女小屋</h3><p class="desc">從樹皮的縫隙鑽進去,是魔女森林裡唯一的安全處。小屋每次只能維持 8 小時。</p><div class="row">${act('休息(8 小時,不會被偷襲)','campSafe')}${wait}</div>${floorMasterBlock(f)}`;
     case'redstart':return `<h3>大魔境・起始點</h3><p class="desc">紅色的光照著這片安全區。數十條像溜滑梯一樣的峽谷從這裡向外延伸。</p><div class="row">${act('休息(8 小時,不會被偷襲)','campSafe')}${wait}</div>${floorMasterBlock(f)}`;
     case'portal':return `<h3>傳送門石碑・往${FIELDS[r.to].n}</h3><p class="desc">第 1 層四個方向各有一座傳送門,這一座通往第 2 層的「${FIELDS[r.to].n}」。第 2 層會在第 10 天關閉。</p><div class="row">${act(`前往${FIELDS[r.to].n}`,'descend',r.to,'primary')}${camp}</div>`;
-    case'stairs':return f===2?`<h3>傳送門石碑・往朝聖者之路</h3><p class="desc">往下是第 3 層朝聖者之路,會在第 15 天關閉。</p><div class="row">${act('前往第 3 層','descend','','primary')}${camp}</div>`
+    case'stairs':return f===2?`<h3>傳送門石碑・往朝聖者之路</h3><p class="desc">往下是第 3 層朝聖者之路,會在第 15 天關閉。</p><div class="row">${act('前往第 3 層','descend','','primary')}${camp}</div>${floorMasterBlock(2)}`
       :`<h3>傳送門石碑・往天空之塔</h3><p class="desc">魔女森林中心的傳送門。第 4 層天空之塔是獨立的樓層,一進去就會遭遇成群的怪物。</p><div class="row">${act('前往第 4 層','descend','','primary')}${camp}</div>`;
     case'f6gate':return `<h3>亡靈峽谷的盡頭</h3><p class="desc">再往下是需要船才能渡過的第 6 層大海。原型的迷宮到這裡為止。</p><div class="row">${camp}${wait}</div>`;
     case'combat':case'elite':
@@ -1315,7 +1354,7 @@ function towerChoices(){const c=['courage','wisdom','patience'];if(Math.random()
 function towerHTML(){
   const t=S.run.tower;
   if(t.stage>=100&&!t.guardDone)return{map:`<p class="mute">第 100 階。中心部的傳送門石碑前,站著必定出現的 5 級守衛。</p>`,event:`<h3>天空之塔・第 100 階</h3>${foesHTML(['sky_sentinel','tower_guardian'])}<div class="row"><button class="btn primary" data-act="towerBoss">迎戰</button><button class="btn" data-act="camp">紮營休息(8 小時)</button></div>`};
-  if(t.guardDone)return{map:'<p class="mute">守衛倒下了。傳送門石碑的門要照正確的順序打開。</p>',event:`<h3>往大魔境的傳送門</h3><p class="desc">第 5 層大魔境會在第 30 天關閉。</p><div class="row"><button class="btn primary" data-act="descend">前往第 5 層</button><button class="btn" data-act="camp">紮營休息(8 小時)</button></div>`};
+  if(t.guardDone)return{map:'<p class="mute">守衛倒下了。傳送門石碑的門要照正確的順序打開。</p>',event:`<h3>往大魔境的傳送門</h3><p class="desc">第 5 層大魔境會在第 30 天關閉。</p><div class="row"><button class="btn primary" data-act="descend">前往第 5 層</button><button class="btn" data-act="camp">紮營休息(8 小時)</button></div>${floorMasterBlock(4)}`};
   return{map:`<div class="mrow" style="grid-template-columns:60px 1fr 70px"><span>攀登</span>${meter(t.stage,100,'xp')}<span class="num">${t.stage}/100</span></div><p class="mute" style="font-size:12.5px">天空之塔也叫修練之塔。選一道階梯往上爬,到第 100 階就能找到通往第 5 層的傳送門。</p>`,
     event:`<h3>選擇階梯</h3><div class="stairs">${t.choices.map((c,i)=>`<button class="stair ${c==='fate'?'fate':''}" data-act="stair" data-arg="${i}"><b>${STAIRS[c].n}</b><small>${STAIRS[c].d}</small></button>`).join('')}</div><div class="row"><button class="btn" data-act="camp">在平台紮營(8 小時)</button></div>`};
 }
@@ -1477,7 +1516,7 @@ function upcoming(n){const live=B.units.filter(aliveU).map(u=>({u,av:u.av}));con
   for(let i=0;i<n;i++){let a=live[0];for(const x of live)if(x.av<a.av)a=x;const t=a.av;live.forEach(x=>x.av-=t);out.push(a.u);a.av=10000/effSpd(a.u);}return out;}
 function renderOrder(){const el=$('#bOrder');if(!el||!B)return;const now=B.actor&&aliveU(B.actor)&&!B.actorDone;const list=now?[B.actor,...upcoming(7)]:upcoming(8);
   el.innerHTML=`<span class="lbl">順序</span>`+list.map((u,i)=>`<div class="oi ${u.side} ${i===0&&now?'now':''}" title="${u.name}"><img src="${u.icon}" alt="${u.name}"></div>`).join('');}
-const INTENT={atk:['攻擊',0],aoe:['範圍攻擊',1],charge:['準備蓄力',0],smash:['重擊!',1],summon:['召喚',1],bind:['束縛',1],fear:['恐嚇',1],heal:['治療',0],buff:['強化同伴',0],watch:['觀望',0]};
+const INTENT={atk:['攻擊',0],aoe:['範圍攻擊',1],charge:['準備蓄力',0],smash:['重擊!',1],summon:['召喚',1],bind:['束縛',1],fear:['恐嚇',1],silence:['沉默',1],enrage:['力量覺醒',1],enrage2:['徹底覺醒',1],heal:['治療',0],buff:['強化同伴',0],watch:['觀望',0]};
 function statusLabels(u){return u.buffs.filter(b=>b.label&&b.label!=='嚴寒'&&b.label!=='地縛靈').map(b=>b.label);}
 function renderStage(){const el=$('#bStage');if(!el||!B)return;const tgt=B.target&&aliveU(B.target)?B.target:null;
   el.innerHTML=B.units.filter(u=>u.side==='e').map(u=>{const it=INTENT[u.intent]||INTENT.atk,kn=isKnown(u.key);
@@ -1498,8 +1537,9 @@ function renderCmd(){const el=$('#bCmd');if(!el||!B)return;const a=B.actor;
   const t=curTarget(a);
   const btn=(arg,title,sub,cost,cls='',dis=false)=>`<button class="cmdb ${cls}" data-act="bCmd" data-arg="${arg}" ${dis?'disabled':''}><b>${title}</b>${cost?`<span class="c">魂力 ${cost}</span>`:''}<small>${sub}</small></button>`;
   let h=`<div class="who">${a.name} 的回合 <span class="mute" style="font-size:12.5px;font-family:var(--f-body)">目標:${t?t.name:'—'}(點怪物切換)</span></div><div class="cmdg">`;
+  const silenced=hasBuff(a,'silence');
   h+=btn('atk','普通攻擊',`${DT[a.dt]}擊,魂力 +12${t&&isKnown(t.key)&&t.weak.includes(a.dt)?',<span style="color:var(--good)">打中弱點</span>':''}`,0);
-  for(const k of a.skills){const s=SK[k],c=skillCost(a,k);h+=btn('sk:'+k,s.n,s.d,c,'sk',a.soul<c);}
+  for(const k of a.skills){const s=SK[k],c=skillCost(a,k);h+=btn('sk:'+k,s.n,silenced?'沉默中,無法使用精髓技能':s.d,c,'sk',silenced||a.soul<c);}
   h+=btn('def','防禦','受到的傷害減半,魂力 +15',0);
   h+=btn('pot',`藥水(${S.potions})`,'生命最低的隊友回復 40%',0,'',!S.potions||B.opt.exam);
   if(!B.opt.rift&&!B.opt.exam&&!B.opt.collapse&&!B.opt.boss&&!B.opt.fmaster)h+=btn('flee','逃跑','70% 機率成功,退回上一個房間',0);
@@ -1514,7 +1554,7 @@ ACT.bFast=()=>{S.fast=!S.fast;const b=$('#bFast');if(b)b.textContent=`速度:${S
 ACT.bCmd=arg=>{if(!B||!B.waiting)return;const a=B.actor;let act;
   if(arg==='atk')act={type:'atk',t:curTarget(a)};else if(arg==='def')act={type:'def'};
   else if(arg==='pot'){if(!S.potions)return;act={type:'pot'};}else if(arg==='flee')act={type:'flee'};
-  else if(arg.startsWith('sk:')){const k=arg.slice(3);if(a.soul<skillCost(a,k))return;act={type:'sk',k,t:curTarget(a)};}
+  else if(arg.startsWith('sk:')){const k=arg.slice(3);if(hasBuff(a,'silence')||a.soul<skillCost(a,k))return;act={type:'sk',k,t:curTarget(a)};}
   if(!act)return;const r=B.waiting;B.waiting=null;renderCmd();r(act);};
 function nextActor(){const live=B.units.filter(aliveU);let a=live[0];for(const u of live)if(u.av<a.av)a=u;const t=a.av;live.forEach(u=>u.av-=t);return a;}
 async function battleLoop(tok,opt){
@@ -1555,7 +1595,8 @@ async function takeTurn(a,tok){
 }
 function autoChoose(a){
   const foes=targetable('e',a),allies=B.units.filter(u=>u.side==='p'&&aliveU(u));
-  const can=k=>a.soul>=skillCost(a,k);const low=allies.filter(u=>u.hp/u.maxhp<.5).length;
+  const silenced=hasBuff(a,'silence');
+  const can=k=>!silenced&&a.soul>=skillCost(a,k);const low=allies.filter(u=>u.hp/u.maxhp<.5).length;
   for(const k of a.skills){const s=SK[k];if(!can(k))continue;
     if(s.kind==='heal'&&low>=1)return{type:'sk',k};
     if(s.kind==='aoe'&&foes.length>=2)return{type:'sk',k};
@@ -1573,7 +1614,7 @@ function partyTarget(){
 }
 function decideIntent(a){
   const t=a.tags;if(a.intent==='charge')return'smash';
-  if(a.boss){const pat=['atk',t.aoe?'aoe':'atk',t.bind?'bind':t.fear?'fear':'atk',t.heavy?'charge':'atk'];const it=pat[a.pat%pat.length];a.pat++;return it;}
+  if(a.boss){const pat=['atk',t.aoe?'aoe':'atk',t.bind?'bind':t.fear?'fear':t.silence?'silence':'atk',t.heavy?'charge':'atk'];const it=pat[a.pat%pat.length];a.pat++;return it;}
   const r=Math.random();
   if(t.heal&&B&&B.units.some(u=>u.side==='e'&&aliveU(u)&&u.hp/u.maxhp<.6)&&r<.5)return'heal';
   if(t.buff&&r<.2)return'buff';
@@ -1583,7 +1624,10 @@ function decideIntent(a){
   if(t.aoe&&r<.3)return'aoe';
   return'atk';
 }
-function enemyAct(a){if(a.tags.summon&&!a.summoned&&a.hp<a.maxhp*.5&&B.units.filter(u=>u.side==='e'&&aliveU(u)).length<5)return{type:'summon'};return{type:a.intent};}
+function enemyAct(a){if(a.tags.summon&&!a.summoned&&a.hp<a.maxhp*.5&&B.units.filter(u=>u.side==='e'&&aliveU(u)).length<5)return{type:'summon'};
+  if(a.tags.enrage&&!a.enraged&&a.hp<a.maxhp*.5)return{type:'enrage'};
+  if(a.tags.enrage&&a.enraged&&!a.enraged2&&a.hp<a.maxhp*.2)return{type:'enrage2'};
+  return{type:a.intent};}
 function applyStatus(t,kind,src){
   if(!aliveU(t))return;
   if(kind==='poison'){t.buffs=t.buffs.filter(b=>b.label!=='中毒');t.buffs.push({label:'中毒',dot:Math.max(2,src.atk*.3),t:3});pop(t,'中毒','st');}
@@ -1601,11 +1645,14 @@ async function perform(a,act,tok){
       case'aoe':{await say('範圍攻擊!','bad',a);for(const t of foesOf(a))await hit(a,t,.75,a.atkdt,0,{multi:1});await delay();break;}
       case'bind':{const t=partyTarget();if(!t)break;await say('束縛!','bad',a);addBuff(t,{bind:1,t:3},'束縛');pop(t,'束縛','st');await delay();break;}
       case'fear':{await say('恐嚇!','bad',a);foesOf(a).forEach(t=>{addBuff(t,{atk:-.25,t:2},'恐懼');pop(t,'恐懼','st');});await delay();break;}
+      case'silence':{await say('沉默!','bad',a);foesOf(a).forEach(t=>{addBuff(t,{silence:1,t:2},'沉默');pop(t,'沉默','st');});await delay();break;}
+      case'enrage':{a.enraged=true;await say('力量覺醒!','bad',a);addBuff(a,{atk:.3,def:.25,t:99},'覺醒');pop(a,'覺醒','bad');break;}
+      case'enrage2':{a.enraged2=true;await say('徹底覺醒!','bad',a);addBuff(a,{atk:.3,def:.25,t:99},'徹底覺醒');pop(a,'徹底覺醒','bad');break;}
       case'heal':{const al=allyOf(a);const t=al.reduce((x,y)=>y.hp/y.maxhp<x.hp/x.maxhp?y:x,al[0]);const h=healU(t,t.maxhp*.25);await say('治療','good',a);if(h)pop(t,'+'+h,'good');await delay();break;}
       case'buff':{await say('強化同伴','bad',a);allyOf(a).forEach(t=>addBuff(t,{def:.5,t:2},'狂熱'));await delay();break;}
       default:{const t=partyTarget();if(!t)break;await hit(a,t,1,a.atkdt,0,{});}
     }
-    if(act.type!=='summon'&&!a.dead)a.intent=decideIntent(a);renderStage();return;
+    if(!['summon','enrage','enrage2'].includes(act.type)&&!a.dead)a.intent=decideIntent(a);renderStage();return;
   }
   switch(act.type){
     case'atk':{const t=act.t&&aliveU(act.t)?act.t:curTarget(a);if(!t)return;a.soul=Math.min(a.soulMax,a.soul+12);await hit(a,t,1,a.dt,10,{});break;}
@@ -1719,7 +1766,15 @@ async function endBattle(tok){
     if(opt.rift){S.riftCD[opt.riftKey]=S.month+2;S.riftsCleared++;S.fame+=5;log(`打倒了裂縫「${RIFTS[opt.riftKey].n}」的守護者。`);}
     if(opt.tower&&run.tower){if(opt.boss)run.tower.guardDone=true;else{run.tower.stage=Math.min(100,run.tower.stage+(run.tower.pending||0));run.tower.choices=towerChoices();}}
     if(opt.collapse&&run.collapse){run.collapse.wave++;}
-    if(opt.fmaster){S.floorBoss=S.floorBoss||{};if(!S.floorBoss[opt.fmaster]){S.floorBoss[opt.fmaster]=true;S.fame+=8;}log(`打倒了第 ${opt.fmaster} 層的層主「${FLOORMASTER[opt.fmaster].n}」!`);}
+    if(opt.fmaster){S.floorBoss=S.floorBoss||{};if(!S.floorBoss[opt.fmaster]){S.floorBoss[opt.fmaster]=true;S.fame+=8;}log(`打倒了第 ${opt.fmaster} 層的層主「${FLOORMASTER[opt.fmaster].n}」!`);
+      if(opt.fmaster===1){S.dreadKills=(S.dreadKills||0)+1;if(S.dreadKills>=9)log('接連打倒了九次「恐懼之主」,深處傳來了更深沉的氣息……');}
+      if(opt.fmaster==='abyss')S.dreadKills=0;
+      if(opt.fmaster===4&&pu.length===1){S.stone+=800;log(`${pu[0].m.name} 獨自打倒了天空之主,守衛認可了這份孤高的實力,額外獲得 800 石幣。`);}}
+  }else if(opt.fmaster===1){
+    const victim=pick(pu).m;deaths.push(victim.name);killMember(victim);
+    pu.filter(u=>u.m!==victim).forEach(u=>{u.m.soul=u.soul;u.m.hp=Math.max(1,Math.round(u.maxhp*.2));addStress(u.m,15);});
+    run.party=run.party.filter(id=>{const m=getM(id);return m&&!m.dead;});
+    log(`恐懼之主消失前,拖走了觸發這場戰鬥的${victim.name},其他人僥倖逃了回來。`);
   }else{for(const u of pu){deaths.push(u.m.name);killMember(u.m);}run.party=[];}
   B=null;
   if(!run.party.length){wipeOut(deaths);return;}
@@ -1734,7 +1789,7 @@ async function endBattle(tok){
   if(downed.length)parts.push(`<p class="mute">${downed.join('、')} 重傷撿回一命,壓力大增。</p>`);
   if(deaths.length)parts.push(`<p style="color:var(--blood)">${deaths.join('、')} 傷得太重,沒能撐下去。</p>`);
   if(opt.tower&&!opt.boss&&run.tower)parts.push(`<p class="mute">天空之塔:第 ${run.tower.stage} 階</p>`);
-  modal(opt.rift?'守護者倒下了':opt.fmaster?'層主倒下了':'勝利',parts.join(''));
+  modal(!win?'恐懼之主消失了':opt.rift?'守護者倒下了':opt.fmaster?'層主倒下了':'勝利',parts.join(''));
 }
 function wipeOut(deaths){
   const run=S.run,keep=runHas('keepLoot')||false;

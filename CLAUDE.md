@@ -19,8 +19,8 @@
 - `STATE`:`newState()`、`stats(m)`、精髓相關(`makeEss`、`essInfo`、`absorbCheck`)。
 - `SPRITES`:`humanoid()` 與 `GRIDS` 產生像素圖,`gridCanvas()` 自動加外框。
 - `CITY`:城市分頁(住處、酒館、公會、圖書館、交易所、大神殿、鐵匠鋪、雜貨店)、`processDays()`。角色登記後是單人出發,同伴要去酒館招募:`TAVERN_TIERS`(等級門檻,越高級要求的名聲/貢獻點/樓層進度越高)、`refreshTavern()`(每月 1、15 日換人)、`tavernTab()`、`ACT.recruit`。
-- `LABYRINTH`:`genFloor()`(第 1 層十字四區、第 2 層四區之一、第 3 層朝聖者之路、第 5 層三峽谷)、天空之塔(`towerHTML`、`ACT.stair`)、次元崩壞、時間與關閉(`advanceTime`、`eject`)、`FLOORMASTER`+`floorMasterBlock()`+`ACT.fmaster`(各層安全區可挑戰的層主,資料驅動,加新層主只要加表格項目)。
-- `TURN-BASED BATTLE`:`startBattle`、`battleLoop`(非同步,玩家回合用 Promise 等待指令)、`hit`、`fall`、`endBattle`、跳字 `pop()`。
+- `LABYRINTH`:`genFloor()`(第 1 層十字四區、第 2 層四區之一、第 3 層朝聖者之路、第 5 層三峽谷)、天空之塔(`towerHTML`、`ACT.stair`)、次元崩壞、時間與關閉(`advanceTime`、`eject`)、`FLOORMASTER`+`floorMasterBlock()`+`ACT.fmaster`(6 個層主都做了:第 1~5 層各一個 + 第 1 層的深淵之主貝爾札克特殊事件款,鍵 `'abyss'`,資料驅動,之後要加新層主只要加表格項目)。
+- `TURN-BASED BATTLE`:`startBattle`、`battleLoop`(非同步,玩家回合用 Promise 等待指令)、`hit`、`fall`、`endBattle`、跳字 `pop()`。敵方標籤除了原本的 `heavy`/`aoe`/`bind`/`fear`/`summon` 外,層主補完時新增了兩個通用機制:`silence`(沉默,下在玩家身上會讓精髓技能按鈕變灰、AI 也不會選技能,`renderCmd`/`autoChoose`/`ACT.bCmd` 都有擋)、`enrage`(覺醒,生命降到 50%/20% 各觸發一次永久強化,邏輯在 `enemyAct`)。6 個層主的技能、小怪都各自客製化,不互相套用同一招,細節見 `docs/design-notes.md`。
 - 互動統一用 `data-act` / `data-change` / `data-input` 事件委派到 `ACT` 物件。
 
 ## 開發慣例
@@ -30,7 +30,6 @@
 - 新增怪物要同時補:`MON`(含 `spr` 像素圖)、`ESS`(若會掉精髓)、所屬 `FIELDS` 的 `pool`。
 
 ## 下一步候選
-- 依實際遊玩調整平衡(目前偏難,裂縫守護者與層主在沒有適當精髓/裝備時幾乎打不贏)。
-- 各層層主戰:第 1 層恐懼之主已做(`FLOORMASTER`,在安全區挑戰),還缺深淵之主貝爾札克、後悔之主、混沌之主利亞基斯、天空之主、寂靜之主——照 `FLOORMASTER` 表格加項目即可複用畫面與戰鬥邏輯。
+- 依實際遊玩調整平衡(目前偏難,裂縫守護者與層主在沒有適當精髓/裝備時幾乎打不贏;單人開局前期的難度曲線也要看)。
 - 地下樓層、第 6 層以後。
 - 移植到 Godot 4:資料表轉成 JSON 或 Resource,戰鬥邏輯照 `TURN-BASED BATTLE` 區塊搬。
