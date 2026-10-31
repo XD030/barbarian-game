@@ -1,0 +1,36 @@
+# 蠻族迷宮生存
+
+以韓國網路小說《게임 속 바바리안으로 살아남기》(台版《變成蠻族!遊戲生存戰》)的世界觀與機制為基礎的同人迷宮生存遊戲,個人自玩用。
+
+## 最重要的方向
+- **世界觀、機制、設定照原作**;劇情與主角是玩家自己的冒險,不使用比約恩或原作劇情。
+- 原作沒有細節的地方才自訂,並在 `docs/design-notes.md` 標明哪些是原作、哪些是自訂。
+- 玩法結構參考 Steam 遊戲 Dungeon Settlers:城市經營 + 四人小隊下迷宮 + 同伴永久死亡。
+- 戰鬥是回合制,有依速度排列的順序條(類似崩壞:星穹鐵道),版面像神魔之塔:上方是怪物圖片,下方是隊伍頭像與血條。**不要文字訊息框**,傷害數字和狀態直接跳在角色身上。
+- 主角死亡要到三神教大神殿復活,第一次免費,之後收費遞增;同伴死亡是永久的。
+
+## 目前的檔案
+- `index.html`:整個遊戲(單一檔案,原生 JS,無外部套件,像素圖用程式產生)。用瀏覽器直接打開就能玩,存檔在 localStorage(鍵 `barbarian-labyrinth-v5`)。
+- `docs/design-notes.md`:設計紀錄、已實作的原作設定、自訂部分、尚未做的原作要素。
+- `tests/smoke.js`:無介面流程測試,`node tests/smoke.js`。
+
+## index.html 結構(搜尋區塊註解)
+- `DATA`:`WEAPON`、`RACE`、`TRAIT`、`GRADE`、`SK`(主動技能)、`PS`(被動)、`ESS`(精髓)、`MON`(怪物與像素圖設定)、`FIELDS`(區域)、`FLOORS`、`RIFTS`、`NUM`(編號物品)。
+- `STATE`:`newState()`、`stats(m)`、精髓相關(`makeEss`、`essInfo`、`absorbCheck`)。
+- `SPRITES`:`humanoid()` 與 `GRIDS` 產生像素圖,`gridCanvas()` 自動加外框。
+- `CITY`:城市分頁(住處、公會、圖書館、交易所、大神殿、鐵匠鋪、雜貨店)、`processDays()`。
+- `LABYRINTH`:`genFloor()`(第 1 層十字四區、第 2 層四區之一、第 3 層朝聖者之路、第 5 層三峽谷)、天空之塔(`towerHTML`、`ACT.stair`)、次元崩壞、時間與關閉(`advanceTime`、`eject`)、`FLOORMASTER`+`floorMasterBlock()`+`ACT.fmaster`(各層安全區可挑戰的層主,資料驅動,加新層主只要加表格項目)。
+- `TURN-BASED BATTLE`:`startBattle`、`battleLoop`(非同步,玩家回合用 Promise 等待指令)、`hit`、`fall`、`endBattle`、跳字 `pop()`。
+- 互動統一用 `data-act` / `data-change` / `data-input` 事件委派到 `ACT` 物件。
+
+## 開發慣例
+- 介面文字一律繁體中文(台灣用語)。
+- 改完一定跑 `node tests/smoke.js`,確認沒有例外、戰鬥不會卡住。
+- 調整數值時,可以寫一次性腳本模擬多場戰鬥看勝率(參考 smoke.js 的假 DOM 寫法)。
+- 新增怪物要同時補:`MON`(含 `spr` 像素圖)、`ESS`(若會掉精髓)、所屬 `FIELDS` 的 `pool`。
+
+## 下一步候選
+- 依實際遊玩調整平衡(目前偏難,裂縫守護者與層主在沒有適當精髓/裝備時幾乎打不贏)。
+- 各層層主戰:第 1 層恐懼之主已做(`FLOORMASTER`,在安全區挑戰),還缺深淵之主貝爾札克、後悔之主、混沌之主利亞基斯、天空之主、寂靜之主——照 `FLOORMASTER` 表格加項目即可複用畫面與戰鬥邏輯。
+- 地下樓層、第 6 層以後。
+- 移植到 Godot 4:資料表轉成 JSON 或 Resource,戰鬥邏輯照 `TURN-BASED BATTLE` 區塊搬。

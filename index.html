@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>蠻族迷宮生存</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=Silkscreen&display=swap">
+<style>
+/* Layout: sticky calendar bar; city = roster | portal panel + district tabs; labyrinth = map/tower + room events | party; battle = portrait column: order bar, monster stage, team faces, commands, floating popups */
+:root{
+  --bg:#16120e; --panel:#211b15; --panel2:#2a2219; --line:#3b3025; --ink:#ece2cf; --mute:#a3937b; --dim:#6f6352;
+  --torch:#e6a03b; --torch-hi:#ffd27f; --blood:#c4493a; --mind:#9b7fd6; --soul:#5aa9d6; --gold:#d8b45a; --void:#0e0b08; --good:#bfe39a;
+  --f-title:"LXGW WenKai TC","Noto Serif TC","Songti TC",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Silkscreen","Courier New",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:14px;line-height:1.55;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+h1,h2,h3{font-family:var(--f-title);font-weight:700;margin:0;text-wrap:balance}
+h2{font-size:18px;color:var(--torch-hi)}
+h3{font-size:15px}
+p{margin:0}
+.wrap{max-width:1180px;margin:0 auto}
+.mute{color:var(--mute)} .dim{color:var(--dim)}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line);
+  margin:0 calc(-1 * max(16px,env(safe-area-inset-right,0px))) 18px calc(-1 * max(16px,env(safe-area-inset-left,0px)));
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top-in{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.brand{font-family:var(--f-title);font-size:20px;color:var(--torch);white-space:nowrap}
+.day{font-family:var(--f-title);color:var(--ink);white-space:nowrap}
+.day.open{color:var(--torch-hi)}
+.res{display:flex;flex-wrap:wrap;gap:6px 14px;flex:1;min-width:0}
+.res span{white-space:nowrap;color:var(--mute)}
+.res b{font-family:var(--f-num);font-weight:400;color:var(--ink);margin-left:4px}
+.res .low b{color:var(--blood)}
+.btn{font:inherit;background:var(--panel2);color:var(--ink);border:1px solid var(--line);padding:6px 11px;border-radius:4px;cursor:pointer;line-height:1.3}
+.btn:hover:not(:disabled){border-color:var(--torch)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,.room:focus-visible,.foeU:focus-visible,.opt:focus-visible,.swatch:focus-visible,.cmdb:focus-visible,.tab:focus-visible{outline:2px solid var(--torch-hi);outline-offset:2px}
+.btn.primary{background:var(--torch);border-color:var(--torch);color:#1c1309;font-weight:700}
+.btn.primary:hover:not(:disabled){background:var(--torch-hi)}
+.btn.danger{border-color:#6a2c24;color:#f0b4a8}
+.btn.sm{padding:3px 8px;font-size:12.5px}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:4px 6px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.panel-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.camp{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+.side{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:920px){.camp{grid-template-columns:1fr}}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.tab{font:inherit;font-size:13px;background:none;border:1px solid transparent;color:var(--mute);padding:4px 9px;border-radius:4px;cursor:pointer}
+.tab[aria-selected="true"]{color:var(--torch-hi);border-color:var(--torch);background:var(--panel2)}
+.tab:hover{color:var(--ink)}
+.meter{height:6px;background:var(--void);border-radius:3px;overflow:hidden}
+.meter i{display:block;height:100%;transition:width .25s}
+.hp i{background:var(--blood)} .st i{background:var(--mind)} .xp i{background:var(--gold)} .sl i{background:var(--soul)} .tm i{background:var(--torch)} .tg i{background:#e8e0cc}
+.st.hi i{background:#c66ad6}
+.mrow{display:grid;grid-template-columns:34px 1fr 64px;gap:8px;align-items:center;font-size:12.5px;color:var(--mute)}
+.mrow .num{text-align:right;color:var(--ink);font-size:11px}
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.mcard{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.mcard.is-sel{border-color:var(--torch);box-shadow:inset 0 0 0 1px var(--torch)}
+.mcard.dead{opacity:.6;border-style:dashed}
+.mhead{display:flex;gap:10px;align-items:center}
+.spr{image-rendering:pixelated;width:45px;height:51px;flex:none;background:var(--void);border-radius:4px}
+.mname{flex:1;min-width:0;display:flex;flex-direction:column}
+.mname b{font-family:var(--f-title);font-size:16px}
+.mname span{font-size:12.5px;color:var(--mute)}
+.lv{font-family:var(--f-num);font-style:normal;color:var(--gold);font-size:11px;margin-left:4px}
+.go{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--mute);cursor:pointer;white-space:nowrap}
+.go input{accent-color:var(--torch);width:16px;height:16px}
+.statline{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--mute)}
+.statline b{font-family:var(--f-num);font-weight:400;color:var(--ink);font-size:11px;margin-left:3px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:11.5px;padding:1px 7px;border-radius:10px;border:1px solid var(--line);color:var(--mute);background:var(--void);cursor:help;white-space:nowrap}
+.chip.good{color:#b9d9a0;border-color:#3d5230}
+.chip.bad{color:#e3a99c;border-color:#5a2f27}
+.chip.ess{color:var(--ink)}
+.chip.ess::before{content:"";display:inline-block;width:7px;height:7px;border-radius:2px;background:var(--c,#888);margin-right:5px;vertical-align:1px}
+.chip.rb::before{background:linear-gradient(90deg,#f55,#fb4,#5d5,#5bf,#b6f)}
+.chip.empty{border-style:dashed;color:var(--dim);cursor:default}
+.chip.hero{color:#1c1309;background:var(--torch);border-color:var(--torch)}
+.chip.grade{color:var(--gold);border-color:#5a4a28}
+.chip.item{color:#a8d0f0;border-color:#2a4a62}
+.mact{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px solid var(--line);padding-top:8px}
+.mact label{font-size:12.5px;color:var(--mute);display:flex;gap:4px;align-items:center}
+.list{display:flex;flex-direction:column}
+.item{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item small{grid-column:1/-1;color:var(--mute);font-size:12px}
+.cost{font-size:12px;color:var(--mute)}
+.cost .no{color:var(--blood)}
+.recruit{display:grid;grid-template-columns:45px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.recruit:last-child{border-bottom:0}
+.log{font-size:12.5px;color:var(--mute);display:flex;flex-direction:column;gap:4px;max-height:260px;overflow:auto}
+.log .d{font-family:var(--f-num);font-size:10.5px;color:var(--dim);margin-right:6px}
+.notice{border-left:3px solid var(--torch);padding:6px 10px;background:var(--panel2);font-size:13px}
+.notice.bad{border-color:var(--blood)}
+.sub{font-family:var(--f-title);color:var(--ink);font-size:15px;margin-top:4px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13px;color:var(--mute)}
+.kv b{color:var(--ink);font-weight:500}
+.dun{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+@media (max-width:920px){.dun{grid-template-columns:1fr}}
+.dmain{display:flex;flex-direction:column;gap:16px;min-width:0}
+.mapbox{overflow-x:auto;padding:6px 2px}
+.map{display:grid;justify-content:center;align-items:center;--cell:clamp(44px,12vw,68px);--gap:clamp(8px,2.6vw,18px);margin:0 auto;width:max-content}
+.map.w5{--cell:clamp(38px,10.5vw,60px);--gap:clamp(6px,2vw,14px)}
+.room{width:var(--cell);height:var(--cell);border:2px solid #2a221a;background:var(--void);display:grid;place-items:center;font-family:var(--f-title);font-size:clamp(16px,4vw,22px);color:var(--dim);border-radius:5px;padding:0;position:relative}
+.room.known{background:#241d16;color:var(--mute);border-color:var(--line)}
+.room.visited{background:#3a2e22;color:var(--ink);border-color:#56462f}
+.room.cleared{color:var(--mute)}
+.room.threat{color:#f08a74}
+.room.safe{color:var(--good)}
+.room.cur{border-color:var(--torch);box-shadow:0 0 0 3px rgba(230,160,59,.22),inset 0 0 20px rgba(230,160,59,.22);color:var(--torch-hi)}
+.room.can{cursor:pointer;border-style:dashed;border-color:var(--mute)}
+.room.can:hover{border-color:var(--torch-hi);background:#3f3122}
+.room .cnt{position:absolute;right:3px;bottom:1px;font-family:var(--f-num);font-size:10px;color:#f08a74}
+.room .fz{position:absolute;left:3px;top:1px;width:6px;height:6px;border-radius:2px;background:var(--fz,transparent)}
+.corr-h{height:6px;background:#4a3c2c;border-radius:2px}
+.corr-v{width:6px;height:var(--gap);background:#4a3c2c;margin:0 auto;border-radius:2px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--dim);justify-content:center}
+.legend b{font-family:var(--f-title);color:var(--mute);margin-right:3px}
+.event h3{font-size:18px;color:var(--ink)}
+.event .desc{color:var(--mute)}
+.foes{display:flex;flex-wrap:wrap;gap:8px}
+.foe{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--mute);background:var(--void);border:1px solid var(--line);border-radius:5px;padding:6px 8px;min-width:76px}
+.foe img{image-rendering:pixelated;height:42px;width:auto}
+.foe.elite{border-color:#7a3a2c;color:#f0a090}
+.mini{display:grid;grid-template-columns:45px 1fr;gap:8px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.mini:last-child{border-bottom:0}
+.mini .mname b{font-size:14px}
+.loot{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 12px;font-size:13px;color:var(--mute)}
+.loot b{font-family:var(--f-num);font-weight:400;color:var(--ink);font-size:12px;margin-left:4px}
+.stairs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.stair{font:inherit;text-align:left;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:10px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.stair b{font-family:var(--f-title);font-size:16px;color:var(--torch-hi)}
+.stair small{color:var(--mute);font-size:12px}
+.stair.fate{border-color:#8a5ac0}
+.stair.fate b{color:#d0a8ff}
+.stair:hover{border-color:var(--torch)}
+.bt{position:relative;max-width:600px;margin:0 auto;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel);display:flex;flex-direction:column}
+.bt-top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;background:var(--panel2);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.bt-top h2{font-size:16px}
+.order{display:flex;gap:4px;align-items:center;padding:6px 10px;background:var(--void);overflow-x:auto;border-bottom:1px solid var(--line)}
+.order .lbl{font-size:11px;color:var(--dim);margin-right:4px;white-space:nowrap}
+.oi{flex:none;width:30px;height:30px;border-radius:5px;border:2px solid var(--line);background:#1a1510;display:grid;place-items:center;overflow:hidden}
+.oi img{image-rendering:pixelated;max-width:26px;max-height:26px}
+.oi.p{border-color:#4a6a8a} .oi.e{border-color:#7a3a2c}
+.oi.now{width:38px;height:38px;border-color:var(--torch-hi);box-shadow:0 0 8px rgba(255,210,127,.5)}
+.stage{position:relative;min-height:240px;padding:16px 8px 10px;display:flex;justify-content:center;align-items:flex-end;gap:6px;flex-wrap:wrap;background:var(--stagebg,linear-gradient(#1b2530,#0e1218))}
+.foeU{background:none;border:0;color:inherit;font:inherit;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border-radius:6px;min-width:0;flex:0 1 112px;position:relative}
+.foeU img{image-rendering:pixelated;max-width:100%;height:auto;filter:drop-shadow(0 4px 0 rgba(0,0,0,.45))}
+.foeU.sel{background:rgba(255,210,127,.1);box-shadow:inset 0 0 0 2px var(--torch-hi)}
+.foeU.dead{opacity:0;pointer-events:none;transition:opacity .5s}
+.foeU.broken img{filter:grayscale(.6) brightness(.8)}
+.foeU.hid img{opacity:.35}
+.foeU.act img{filter:drop-shadow(0 0 7px var(--torch-hi)) drop-shadow(0 4px 0 rgba(0,0,0,.45))}
+.foeU .fn{font-size:12px;color:var(--ink);white-space:nowrap;text-shadow:0 1px 0 #000}
+.foeU .fg{font-family:var(--f-num);font-size:10px;color:var(--gold)}
+.foeU .bars{width:min(96px,100%);display:flex;flex-direction:column;gap:2px}
+.foeU .meter{height:5px}
+.intent{position:absolute;top:-4px;right:0;font-size:11px;padding:0 6px;border-radius:8px;background:#3a1a14;color:#ffb09a;border:1px solid #7a3a2c;white-space:nowrap}
+.intent.calm{background:#1e1a14;color:var(--mute);border-color:var(--line)}
+.wk{display:flex;gap:3px;justify-content:center;flex-wrap:wrap}
+.wk span{font-size:10.5px;padding:0 4px;border-radius:3px;background:#2a3a20;color:#c8e8a8;border:1px solid #4a6a30}
+.wk span.rs{background:#2a1c1c;color:#b08880;border-color:#4a2a26}
+.wk span.uk{background:#1e1a14;color:var(--dim);border-color:var(--line)}
+.wk span.sp{background:#1c2232;color:#a8c0f0;border-color:#2a3a5a}
+.sts{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;min-height:14px}
+.sts span{font-size:10px;color:#e8c0f0;background:#2a1830;border-radius:3px;padding:0 3px}
+.team{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:10px;background:var(--panel2);border-top:3px double var(--line)}
+.pt{display:flex;flex-direction:column;gap:3px;align-items:stretch;min-width:0;padding:4px;border-radius:6px;border:1px solid transparent}
+.pt .face{aspect-ratio:1;border-radius:6px;border:2px solid #4a6a8a;background:linear-gradient(#2a3442,#141a22);display:grid;place-items:center;overflow:hidden}
+.pt .face img{image-rendering:pixelated;width:88%;height:auto}
+.pt.now{border-color:var(--torch-hi);background:rgba(255,210,127,.08)}
+.pt.now .face{border-color:var(--torch-hi)}
+.pt.down .face{filter:grayscale(1);opacity:.45}
+.pt .pn{font-size:11.5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt .meter{height:5px}
+.pt .pv{font-family:var(--f-num);font-size:9.5px;color:var(--mute);text-align:center}
+.cmd{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:150px}
+.cmd .who{font-family:var(--f-title);color:var(--torch-hi);font-size:15px}
+.cmdg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.cmdb{font:inherit;text-align:left;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:7px 10px;cursor:pointer;display:flex;flex-direction:column;gap:1px;min-width:0}
+.cmdb b{font-weight:700;font-size:14px}
+.cmdb small{color:var(--mute);font-size:11.5px;line-height:1.35}
+.cmdb .c{font-family:var(--f-num);font-size:10px;color:var(--soul)}
+.cmdb.sk{border-color:#3a4f62}
+.cmdb:hover:not(:disabled){border-color:var(--torch)}
+.cmdb:disabled{opacity:.4;cursor:not-allowed}
+.wait{color:var(--dim);font-size:13px;text-align:center;padding-top:30px}
+.fxl{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3}
+.pop{position:absolute;transform:translate(-50%,0);font-weight:700;font-size:18px;color:#fff;text-shadow:0 2px 0 #000,0 0 6px #000;white-space:nowrap;animation:popup .95s ease-out forwards}
+.pop.bad{color:#ff8a70} .pop.good{color:var(--good)} .pop.gold{color:var(--torch-hi);font-size:16px} .pop.weak{color:#ffe070;font-size:22px} .pop.crit{color:#ffb040;font-size:22px} .pop.dim{color:#c8bfae;font-size:15px} .pop.st{color:#e8c0f0;font-size:15px}
+@keyframes popup{0%{opacity:0;transform:translate(-50%,8px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.12)}100%{opacity:0;transform:translate(-50%,-36px) scale(1)}}
+.banner{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);font-family:var(--f-title);font-size:26px;color:var(--torch-hi);background:rgba(14,11,8,.85);border:1px solid var(--torch);padding:6px 22px;border-radius:6px;white-space:nowrap;animation:banner 1.15s ease forwards}
+.banner.bad{color:#ff8a70;border-color:var(--blood)}
+@keyframes banner{0%{opacity:0}15%{opacity:1}80%{opacity:1}100%{opacity:0}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.intro{max-width:760px;margin:6vh auto 0;display:flex;flex-direction:column;gap:22px}
+.intro h1{font-size:clamp(36px,8vw,58px);color:var(--torch);line-height:1.1}
+.intro .lede{font-family:var(--f-title);font-size:18px;color:var(--ink);line-height:1.8;max-width:34em}
+.strip{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.strip img{image-rendering:pixelated;max-width:100%;height:auto}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.rules div{border-left:2px solid var(--torch);padding-left:10px;font-size:13px;color:var(--mute)}
+.rules b{display:block;color:var(--ink);font-family:var(--f-title);font-size:15px}
+.pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.pick{cursor:pointer;text-align:left;font:inherit;color:inherit}
+.create{display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:760px){.create{grid-template-columns:1fr}}
+.preview{align-items:center;text-align:center;position:sticky;top:calc(70px + env(safe-area-inset-top,0px))}
+@media (max-width:760px){.preview{position:static}}
+.preview img{image-rendering:pixelated;max-width:100%;height:auto;background:var(--void);border-radius:6px;padding:10px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>span{font-family:var(--f-title);color:var(--torch-hi);font-size:15px}
+.field input{font:inherit;font-size:16px;background:var(--void);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:7px 10px;max-width:260px}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.opt{font:inherit;text-align:left;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:7px 10px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.opt small{color:var(--mute);font-size:12px;line-height:1.4}
+.opt[aria-pressed="true"]{border-color:var(--torch);box-shadow:inset 0 0 0 1px var(--torch);background:#352a1d}
+.opt:hover{border-color:var(--torch)}
+.swatch{width:28px;height:28px;border-radius:50%;background:var(--c);border:2px solid var(--line);cursor:pointer;padding:0}
+.swatch[aria-pressed="true"]{border-color:var(--torch-hi);box-shadow:0 0 0 2px var(--torch)}
+.modal{position:fixed;inset:0;background:rgba(8,6,4,.74);display:grid;place-items:center;z-index:30;padding:16px}
+.modal[hidden]{display:none}
+.box{max-width:540px;width:100%;max-height:85vh;overflow:auto;background:var(--panel);border:1px solid var(--torch);border-radius:8px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.box h2{font-size:21px}
+.box ul{margin:0;padding-left:18px;color:var(--mute)}
+.box li{margin:3px 0}
+.box .acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--torch);color:var(--ink);padding:8px 14px;border-radius:5px;z-index:40;font-size:13.5px;max-width:calc(100% - 32px);pointer-events:none}
+@media (prefers-reduced-motion:reduce){.meter i,.foeU.dead{transition:none}.pop{animation-duration:.6s}}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="top-in" id="top"></div></header>
+<main class="wrap" id="screen"></main>
+<div class="modal" id="modal" hidden><div class="box" id="modalBox" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+'use strict';
+const SAVE_KEY='barbarian-labyrinth-v5';
+const $=s=>document.querySelector(s);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.floor(rnd(a,b+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* =====================================================================
+   DATA — 依原作《게임 속 바바리안으로 살아남기》世界觀整理,數值為遊戲用
+   ===================================================================== */
+const DT={slash:'斬',pierce:'刺',blunt:'鈍',magic:'魔',fire:'火',ice:'冰',thunder:'雷',holy:'聖',dark:'暗'};
+const PHYS=['slash','pierce','blunt'];
+const WEAPON={
+  shield:{n:'盾與單手錘',dt:'blunt',hp:125,atk:9,def:10,spd:92,line:3,pass:'格擋:25% 機率減免 60% 傷害',block:.25,price:150},
+  hammer:{n:'雙手戰鎚',dt:'blunt',hp:108,atk:16,def:4,spd:84,line:3,pass:'重擊:20% 機率讓目標行動延後',stun:.2,price:180},
+  sword:{n:'長劍',dt:'slash',hp:98,atk:12,def:5,spd:100,line:3,pass:'爆擊率 +10%',crit:.10,price:150},
+  spear:{n:'長槍',dt:'pierce',hp:94,atk:12,def:4,spd:97,line:2,pass:'削減體勢 +50%',brk:1.5,price:150},
+  daggers:{n:'雙短刀',dt:'slash',hp:82,atk:9,def:3,spd:118,line:3,pass:'爆擊率 +20%',crit:.20,price:150},
+  bow:{n:'弓',dt:'pierce',hp:74,atk:12,def:2,spd:103,line:1,pass:'站在後排,較少被攻擊',price:150},
+  staff:{n:'法杖',dt:'magic',hp:68,atk:13,def:1,spd:95,line:1,robe:1,pass:'魂力上限 +30,無視 40% 防禦',soul:30,pen:.4,price:200}
+};
+const RACE={
+  human:{n:'人類',d:'稅金減半,魂力 +10',tax:.5,soul:10},
+  barb:{n:'蠻族',d:'巨大強壯:生命 +25%、攻擊 +2,但生活開銷較大',hp:1.25,atk:2,live:1.5},
+  dwarf:{n:'矮人',d:'防禦 +3,鍛造費用 -25%,速度 -5',def:3,spd:-5,forge:.75},
+  elf:{n:'精靈',d:'速度 +4、魂力 +10、魔抗 +5,能察覺陷阱',spd:4,soul:10,mres:5,trap:1},
+  beast:{n:'獸人',d:'速度 +8,嗅覺敏銳能察覺陷阱',spd:8,trap:1},
+  fairy:{n:'妖精',d:'魂力 +25、魔抗 +8、速度 +6,生命 -20%',hp:.8,soul:25,mres:8,spd:6},
+  dragon:{n:'龍人族',d:'因祖先的功績免繳稅金,防禦 +2',tax:0,def:2}
+};
+const TRAIT={
+  bg_merc:{n:'傭兵出身',d:'攻擊 +3',good:1,bg:1},
+  bg_hunter:{n:'獵人出身',d:'全隊精髓掉落 +1%,能看出相鄰房間的敵人數量',good:1,bg:1},
+  bg_scholar:{n:'學者出身',d:'一開始就熟知第 1 層的怪物',good:1,bg:1},
+  bg_noble:{n:'沒落貴族',d:'開局多帶 300 石幣,名聲 +10',good:1,bg:1},
+  bg_drifter:{n:'流浪者',d:'自身壓力增加 -30%',good:1,bg:1},
+  brave:{n:'勇猛',d:'壓力增加 -30%',good:1}, coward:{n:'膽小',d:'壓力增加 +40%'}, pacifist:{n:'和平主義',d:'厭惡戰鬥,攻擊 -25%'},
+  glutton:{n:'大胃王',d:'每天生活費加倍'}, tough:{n:'強韌',d:'生命 +15%',good:1}, greedy:{n:'貪財',d:'戰鬥獲得魔石 +10%',good:1},
+  quick:{n:'敏捷',d:'速度 +6',good:1}, lucky:{n:'幸運',d:'精髓掉落 +1%',good:1}, insomniac:{n:'失眠',d:'休息時壓力回復減半'},
+  diligent:{n:'勤勞',d:'打工收入 +50%',good:1}, lazy:{n:'懶散',d:'打工收入 -50%'}, bloodlust:{n:'嗜血',d:'擊倒敵人時回復 10% 生命',good:1}
+};
+const RANDOM_TRAITS=['brave','coward','pacifist','glutton','tough','greedy','quick','lucky','insomniac','diligent','lazy','bloodlust'];
+const CLASH={brave:'coward',coward:'brave',diligent:'lazy',lazy:'diligent'};
+/* 原作:9 級怪首殺經驗 1、8 級 2;守護者額外 +3;開啟傳送門 +2 */
+const GRADE={9:{stone:10,xp:1,ev:1,price:350},8:{stone:30,xp:2,ev:3,price:1200},7:{stone:80,xp:3,ev:8,price:3500},6:{stone:200,xp:5,ev:20,price:9000},5:{stone:500,xp:8,ev:50,price:25000},4:{stone:1200,xp:12,ev:120,price:60000}};
+const LV_XP=[0,0,3,7,12,18,26,36,48,62,78,96];
+const MAXLV=11;
+const COLORS=[['赤','#e05a4a'],['青','#4a9ae0'],['翠','#5ac06a'],['金','#e0b84a'],['紫','#a06ae0']];
+
+/* ---------- 技能(主動) ---------- */
+const SK={
+  trap:{n:'設置陷阱',cost:12,kind:'self',buff:{counter:1.5,t:2},label:'陷阱',d:'下一個攻擊自己的敵人受到 150% 反擊並被麻痺'},
+  poisonblade:{n:'淬毒',cost:10,kind:'single',mult:1.2,brk:10,status:'poison',d:'造成 120% 傷害並使目標中毒'},
+  pounce:{n:'撲擊',cost:10,kind:'single',mult:1.5,brk:15,delay:.3,d:'造成 150% 傷害並延後目標行動'},
+  devour:{n:'啃食',cost:12,kind:'single',mult:1.6,dt:'slash',brk:15,drain:.5,d:'造成 160% 斬擊傷害,回復傷害的 50%'},
+  merge:{n:'一體化',cost:10,kind:'self',buff:{untarget:1,def:1,t:1},label:'一體化',d:'與周圍融為一體:1 回合內無法被選為目標,防禦 +100%'},
+  track:{n:'追蹤',cost:8,kind:'debuff',debuff:{vuln:.25,t:3},label:'被追蹤',d:'標記目標,3 回合內受到的傷害 +25%'},
+  rend:{n:'撕裂',cost:12,kind:'single',mult:1.8,dt:'slash',brk:20,d:'造成 180% 斬擊傷害'},
+  stealth:{n:'隱身',cost:12,kind:'self',buff:{untarget:1,nextMul:1.6,t:1},label:'隱身',d:'1 回合內無法被選為目標,下一次攻擊 160%'},
+  thrust:{n:'突刺',cost:10,kind:'single',mult:1.6,dt:'pierce',brk:20,d:'造成 160% 刺擊傷害'},
+  shieldbash:{n:'盾擊',cost:10,kind:'single',mult:1.2,dt:'blunt',brk:20,delay:.35,d:'造成 120% 鈍擊傷害並延後目標行動'},
+  darkbolt:{n:'暗影彈',cost:14,kind:'single',mult:1.5,dt:'dark',brk:15,d:'造成 150% 暗屬性傷害'},
+  acid:{n:'酸液',cost:10,kind:'debuff',mult:.6,dt:'magic',debuff:{def:-.4,t:2},label:'腐蝕',d:'造成 60% 傷害,目標防禦 -40% 2 回合'},
+  boneguard:{n:'骨甲',cost:12,kind:'self',buff:{def:.7,t:2},label:'骨甲',d:'自身防禦 +70%,持續 2 回合'},
+  volley:{n:'連射',cost:14,kind:'multi',mult:.75,hits:3,dt:'pierce',brk:10,d:'隨機射出 3 箭,各 75% 刺擊傷害'},
+  bonespear:{n:'骨矛',cost:16,kind:'single',mult:1.7,dt:'dark',brk:20,d:'造成 170% 暗屬性傷害'},
+  wail:{n:'哀嚎',cost:18,kind:'debuffAll',debuff:{atk:-.3,t:2},label:'恐懼',d:'全體敵人恐懼,攻擊 -30% 2 回合'},
+  bleed:{n:'放血',cost:12,kind:'single',mult:1.2,dt:'slash',brk:15,status:'bleed',d:'造成 120% 傷害並使目標流血'},
+  burrow:{n:'鑽地',cost:12,kind:'self',buff:{untarget:1,nextMul:1.5,t:1},label:'鑽地',d:'鑽進地底:1 回合內無法被選為目標,下一次攻擊 150%'},
+  maul:{n:'重爪',cost:14,kind:'single',mult:1.9,dt:'slash',brk:25,d:'造成 190% 斬擊傷害'},
+  dust:{n:'迷幻粉',cost:18,kind:'debuffAll',status:'poison',debuff:{spd:-.15,t:2},label:'迷幻',d:'全體敵人中毒,速度 -15% 2 回合'},
+  corpseflame:{n:'屍火',cost:16,kind:'single',mult:1.7,dt:'fire',brk:20,d:'火與暗混合的投射物,造成 170% 火屬性傷害'},
+  wisp:{n:'鬼火',cost:12,kind:'single',mult:.8,dt:'fire',status:'burn',brk:10,d:'造成 80% 火屬性傷害並使目標燃燒'},
+  bark:{n:'樹皮',cost:12,kind:'self',buff:{def:.6,t:2},heal:.1,label:'樹皮',d:'自身防禦 +60% 2 回合,回復 10% 生命'},
+  frostbite:{n:'凍咬',cost:14,kind:'single',mult:1.5,dt:'ice',brk:20,delay:.3,d:'造成 150% 冰屬性傷害並延後目標行動'},
+  frenzy:{n:'狂亂打擊',cost:14,kind:'single',mult:2.0,brk:20,d:'造成 200% 傷害'},
+  ghoulcall:{n:'召喚食屍鬼',cost:20,kind:'multi',mult:.7,hits:3,dt:'slash',brk:10,d:'召來食屍鬼撕咬,隨機 3 次各 70% 斬擊傷害'},
+  triplebite:{n:'三頭撕咬',cost:16,kind:'multi',mult:.65,hits:3,dt:'slash',brk:10,d:'隨機咬 3 次,各 65% 斬擊傷害'},
+  restraint:{n:'束縛',cost:18,kind:'debuff',debuff:{bind:1,t:3},label:'束縛',d:'目標無法行動,直到受到傷害為止'},
+  stoneskin:{n:'石膚',cost:12,kind:'self',buff:{def:.8,t:2},label:'石膚',d:'自身防禦 +80%,持續 2 回合'},
+  sandstorm:{n:'沙暴',cost:20,kind:'aoe',mult:.8,dt:'magic',brk:10,debuff:{atk:-.2,t:2},label:'視線不良',d:'全體敵人 80% 傷害,攻擊 -20% 2 回合'},
+  swallow:{n:'吞噬',cost:20,kind:'single',mult:2.0,dt:'blunt',brk:25,d:'造成 200% 鈍擊傷害'},
+  quake:{n:'地形爆發',cost:22,kind:'aoe',mult:1.0,dt:'blunt',brk:15,d:'對全體敵人造成 100% 鈍擊傷害'},
+  featherpierce:{n:'穿甲羽',cost:16,kind:'single',mult:2.0,dt:'pierce',ignore:1,brk:20,d:'造成 200% 刺擊傷害,無視防禦'},
+  fervor:{n:'狂熱',cost:16,kind:'ally',buff:{def:2,t:1},label:'狂熱',d:'生命最低的隊友物理防禦 ×3,持續 1 回合'},
+  weakspot:{n:'弱點看破',cost:14,kind:'debuff',debuff:{def:-.5,vuln:.15,t:2},label:'破綻',d:'目標防禦 -50%、受到傷害 +15%,持續 2 回合'},
+  pierce:{n:'穿透射擊',cost:20,kind:'single',mult:2.4,dt:'pierce',ignore:1,brk:25,d:'造成 240% 刺擊傷害,無視防禦'},
+  whirl:{n:'旋風斬',cost:22,kind:'aoe',mult:1.1,dt:'slash',brk:10,d:'對全體敵人造成 110% 斬擊傷害'},
+  thermal:{n:'熱感知',cost:16,kind:'team',buff:{crit:.15,t:3},label:'熱感知',d:'全隊爆擊率 +15%,持續 3 回合'},
+  tongue:{n:'舌擊',cost:12,kind:'single',mult:1.4,brk:15,delay:.3,d:'造成 140% 傷害並延後目標行動'},
+  roar:{n:'咆哮',cost:16,kind:'self',buff:{def:.6,taunt:1,t:2},label:'嘲諷',d:'嘲諷所有敵人,防禦 +60%,持續 2 回合'},
+  roots:{n:'治癒之根',cost:30,kind:'heal',heal:.25,d:'全隊回復 25% 生命'},
+  manabolt:{n:'魔力彈',cost:16,kind:'single',mult:1.7,dt:'magic',brk:20,d:'造成 170% 魔法傷害'},
+  fireslash:{n:'炎斬',cost:16,kind:'single',mult:1.7,dt:'fire',brk:20,d:'造成 170% 火屬性傷害'},
+  corrode:{n:'腐蝕',cost:14,kind:'debuff',mult:.8,dt:'dark',debuff:{def:-.4,t:3},label:'腐蝕',d:'造成 80% 暗屬性傷害,防禦 -40% 3 回合'},
+  charge:{n:'衝鋒',cost:20,kind:'single',mult:2.2,dt:'pierce',brk:30,d:'造成 220% 刺擊傷害'},
+  poisonweapon:{n:'武器塗毒',cost:14,kind:'self',buff:{poisonHit:1,t:3},label:'塗毒',d:'3 回合內攻擊必定使目標中毒'},
+  warcry:{n:'戰吼',cost:20,kind:'team',buff:{atk:.25,t:2},label:'戰吼',d:'全隊攻擊 +25%,持續 2 回合'},
+  banner:{n:'戰旗',cost:22,kind:'team',buff:{costdown:.3,def:.2,t:3},label:'戰旗',d:'全隊技能魂力消耗 -30%、防禦 +20%,持續 3 回合'},
+  giantform:{n:'巨人化',cost:30,kind:'self',buff:{atk:.5,def:.5,t:3},heal:.3,label:'巨人化',d:'身體巨大化:攻擊、防禦 +50% 3 回合,回復 30% 生命'},
+  berserk:{n:'狂暴',cost:18,kind:'self',buff:{atk:.6,def:-.3,t:3},label:'狂暴',d:'攻擊 +60%、防禦 -30%,持續 3 回合'},
+  mines:{n:'魔法地雷',cost:22,kind:'aoe',mult:1.2,dt:'magic',brk:15,d:'對全體敵人造成 120% 魔法傷害'},
+  mudbind:{n:'泥沼',cost:18,kind:'debuff',mult:.8,dt:'blunt',debuff:{bind:1,t:3},label:'束縛',d:'造成 80% 傷害,目標無法行動直到受到傷害'},
+  icewall:{n:'鐵冰之牆',cost:22,kind:'team',buff:{def:.6,t:2},label:'冰牆',d:'全隊防禦 +60%,持續 2 回合'},
+  resentment:{n:'怨念',cost:26,kind:'aoe',mult:1.0,dt:'dark',brk:15,debuff:{noheal:1,t:3},label:'怨念',d:'全體敵人 100% 暗屬性傷害,3 回合內無法回復'},
+  magma:{n:'岩漿噴發',cost:26,kind:'aoe',mult:1.4,dt:'fire',brk:15,d:'對全體敵人造成 140% 火屬性傷害'},
+  curse:{n:'詛咒',cost:20,kind:'debuff',debuff:{atk:-.3,def:-.3,t:3},label:'詛咒',d:'目標攻擊、防禦 -30%,持續 3 回合'},
+  randomtrap:{n:'隨機陷阱',cost:20,kind:'random',d:'對目標施放隨機的攻擊或詛咒'},
+  madness:{n:'內在瘋狂',cost:20,kind:'self',buff:{madness:1,t:3},label:'瘋狂',d:'防禦歸零,原本防禦的 2 倍轉為攻擊,持續 3 回合'},
+  burninghide:{n:'燃燒外皮',cost:24,kind:'self',buff:{thorns:.4,t:3},label:'燃燒外皮',d:'皮膚覆蓋火焰:被攻擊時反彈 40% 傷害,持續 3 回合'},
+  hellfire:{n:'地獄火',cost:36,kind:'aoe',mult:1.8,dt:'fire',brk:20,d:'對全體敵人造成 180% 火屬性傷害'},
+  bloodcurse:{n:'血咒',cost:26,kind:'debuff',mult:1.4,dt:'dark',status:'bleed',debuff:{noheal:1,t:3},label:'血咒',d:'造成 140% 暗屬性傷害並流血,3 回合內無法回復'},
+  soulreap:{n:'靈魂收割',cost:45,kind:'aoe',mult:2.0,dt:'magic',brk:30,d:'對全體敵人造成 200% 魔法傷害'},
+  judgement:{n:'審判',cost:40,kind:'aoe',mult:1.8,dt:'holy',brk:30,d:'對全體敵人造成 180% 神聖傷害'},
+  blooddrain:{n:'吸血',cost:24,kind:'single',mult:2.0,dt:'dark',brk:25,drain:1,d:'造成 200% 暗屬性傷害,回復等量生命'},
+  batswarm:{n:'蝙蝠群',cost:26,kind:'aoe',mult:1.0,dt:'dark',brk:10,d:'對全體敵人造成 100% 暗屬性傷害'},
+  blizzard:{n:'暴風雪',cost:28,kind:'aoe',mult:1.2,dt:'ice',brk:15,debuff:{spd:-.2,t:2},label:'凍結',d:'全體敵人 120% 冰屬性傷害,速度 -20% 2 回合'},
+  slimeshield:{n:'黏液護膜',cost:28,kind:'heal',heal:.2,buff:{def:.4,t:2},label:'黏液',d:'全隊回復 20% 生命,防禦 +40% 2 回合'},
+  ironwall:{n:'鐵壁',cost:28,kind:'team',buff:{def:.7,t:2},label:'鐵壁',d:'全隊防禦 +70%,持續 2 回合'},
+  spiritdemon:{n:'僕從',cost:34,kind:'aoe',mult:1.6,dt:'dark',brk:20,d:'召喚靈魔,對全體敵人造成 160% 暗屬性傷害'},
+  mirror:{n:'鏡像',cost:26,kind:'self',buff:{dodge:.5,t:3},label:'鏡像',d:'50% 機率閃避攻擊,持續 3 回合'},
+  copystrike:{n:'模仿打擊',cost:24,kind:'single',mult:2.2,brk:25,d:'造成 220% 傷害'},
+  soulshield:{n:'靈魂護盾',cost:30,kind:'team',buff:{def:.5,mres:30,t:3},label:'靈魂護盾',d:'全隊防禦 +50%、魔抗 +30,持續 3 回合'},
+  despairwave:{n:'絕望波動',cost:32,kind:'aoe',mult:1.0,dt:'dark',brk:15,debuff:{atk:-.3,t:2},label:'絕望',d:'對全體敵人造成 100% 暗屬性傷害,攻擊 -30%,持續 2 回合'}
+};
+/* ---------- 被動 ---------- */
+const PS={
+  paralyzeHit:{n:'麻痺毒',d:'攻擊有 20% 機率讓目標麻痺,行動延後'},
+  poisonArrow:{n:'毒箭',d:'攻擊有 30% 機率讓目標中毒'},
+  scent:{n:'嗅覺強化',d:'爆擊率 +6%,能攻擊隱身的敵人'},
+  preserve:{n:'肉體保存',d:'每回合自然再生 +3%'},
+  ambush:{n:'奇襲',d:'每場戰鬥的第一次攻擊無視防禦'},
+  rottenSlime:{n:'腐敗黏液',d:'15% 機率閃避物理攻擊'},
+  momentum:{n:'疾走',d:'每次行動後速度 +5%(最多 3 層)'},
+  herosPath:{n:'英雄之路',d:'生命低於 50% 時,防禦與魔抗 +50%'},
+  chivalry:{n:'騎士道',d:'受到致命傷害時以 1 點生命撐住(每場戰鬥一次)'},
+  greed:{n:'貪婪',d:'精髓掉落率 +2%'}
+};
+/* ---------- 精髓:能力值 + 主動(顏色決定) + 被動 ---------- */
+const ESS={
+  goblin:{g:9,st:{atk:2,def:1},acts:['trap','poisonblade'],pas:'paralyzeHit'},
+  ghoul:{g:9,st:{hp:20,spd:3},acts:['pounce','devour']},
+  gnome:{g:9,st:{def:3,hp:10},acts:['merge']},
+  bladewolf:{g:9,st:{spd:5,atk:1},acts:['track'],pas:'scent'},
+  goblin_sword:{g:9,st:{atk:3},acts:['rend'],pas:'paralyzeHit'},
+  goblin_archer:{g:9,st:{spd:4,atk:2},acts:['stealth'],pas:'poisonArrow'},
+  kobold:{g:9,st:{atk:2,hp:15},acts:['thrust']},
+  kobold_shield:{g:9,st:{def:4,hp:15},acts:['shieldbash']},
+  fallen_gnome:{g:9,st:{def:3,mres:3},acts:['merge','darkbolt']},
+  slime:{g:9,st:{hp:35,atk:-2,def:-2,spd:-4},acts:['acid']},
+  skel_warrior:{g:9,st:{def:3,atk:1},acts:['boneguard']},
+  skel_archer:{g:9,st:{atk:2,spd:2},acts:['volley']},
+  skel_mage:{g:9,st:{soul:15},acts:['bonespear']},
+  banshee:{g:9,st:{mres:8},acts:['wail']},
+  elder_ghoul:{g:9,st:{hp:35,spd:2},acts:['devour']},
+  giant_bladewolf:{g:9,st:{hp:20,spd:4},acts:['rend','track']},
+  bloody_bladewolf:{g:9,st:{spd:5,ls:.05},acts:['bleed'],pas:'scent'},
+  wall_mole:{g:9,st:{def:3,hp:15},acts:['burrow']},
+  halfmoon_bear:{g:9,st:{hp:40,atk:2},acts:['maul']},
+  fairy:{g:9,st:{soul:15,spd:3},acts:['dust']},
+  wraith:{g:9,st:{soul:15,mres:5},acts:['corpseflame']},
+  witch_lamp:{g:9,st:{soul:10},acts:['wisp']},
+  woodman:{g:9,st:{hp:30,def:2},acts:['bark']},
+  frost_wolf:{g:9,st:{spd:4,mres:4},acts:['frostbite']},
+  sabertooth:{g:8,st:{atk:5,spd:3},acts:['rend','maul']},
+  werewolf:{g:8,st:{atk:5,spd:4},acts:['frenzy'],pas:'preserve'},
+  death_fiend:{g:8,st:{hp:40,def:2},acts:['ghoulcall'],pas:'preserve'},
+  chimera_wolf:{g:8,st:{atk:3,hp:30},acts:['triplebite']},
+  ghoul_lord:{g:8,st:{hp:50,ls:.06},acts:['devour','ghoulcall']},
+  stone_golem:{g:8,st:{def:5,hp:40},acts:['restraint']},
+  monolith:{g:8,st:{def:6,hp:50},acts:['stoneskin']},
+  sandman:{g:8,st:{mres:5,spd:3},acts:['sandstorm']},
+  sandworm:{g:8,st:{hp:50,atk:2},acts:['swallow']},
+  wormstone:{g:8,st:{def:5,hp:20},acts:['quake']},
+  iron_falcon:{g:8,st:{spd:6,atk:3},acts:['featherpierce']},
+  orc_shaman:{g:8,st:{soul:15,mres:3},acts:['fervor']},
+  steelhill_guard:{g:8,st:{atk:4,spd:3,def:2},acts:['weakspot','pierce','quake'],pas:'ambush'},
+  orc_warrior:{g:8,st:{atk:6,hp:30},acts:['whirl']},
+  orc_archer:{g:8,st:{atk:4,spd:3},acts:['pierce']},
+  lizardman:{g:8,st:{hp:30,def:3},acts:['thermal']},
+  frogman:{g:8,st:{spd:3,hp:20},acts:['tongue'],pas:'rottenSlime'},
+  owlbear:{g:8,st:{hp:60,atk:3},acts:['roar']},
+  dryad:{g:8,st:{soul:20,regen:.03},acts:['roots']},
+  homunculus:{g:8,st:{soul:20,atk:2},acts:['manabolt']},
+  fire_dead:{g:8,st:{atk:4,mres:4},acts:['fireslash']},
+  fallen_creation:{g:8,st:{hp:50,def:2},acts:['corrode']},
+  dullahan:{g:7,st:{atk:8,def:5},acts:['charge']},
+  hobgoblin:{g:7,st:{atk:6,hp:40},acts:['poisonweapon']},
+  iron_giant:{g:7,st:{def:8,hp:80},acts:['quake']},
+  orc_champion:{g:7,st:{atk:8,hp:60},acts:['warcry']},
+  half_troll:{g:7,st:{hp:80,regen:.05},acts:['berserk']},
+  carnivaro:{g:7,st:{spd:6,atk:5,mres:4},acts:['mines','track'],pas:'momentum'},
+  redmud:{g:7,st:{hp:70,def:3},acts:['mudbind']},
+  ice_orc_shaman:{g:7,st:{mres:8,soul:15},acts:['icewall']},
+  death_knight:{g:6,st:{atk:10,def:8},acts:['resentment']},
+  tower_guardian:{g:6,st:{def:10,hp:60},acts:['boneguard']},
+  stoneburn:{g:6,st:{def:8,atk:6},acts:['magma']},
+  cursestone:{g:6,st:{mres:10,def:6},acts:['curse']},
+  abyss_goblin:{g:5,st:{atk:8,spd:5},acts:['randomtrap'],pas:'paralyzeHit'},
+  abyss_ghoul:{g:5,st:{hp:100,ls:.1},acts:['devour']},
+  abyss_gnome:{g:5,st:{def:12,hp:60},acts:['merge','restraint']},
+  abyss_bladewolf:{g:5,st:{spd:10,atk:10},acts:['madness'],pas:'scent'},
+  deathworm:{g:5,st:{hp:120,def:8},acts:['swallow']},
+  orc_hero:{g:5,st:{atk:10,hp:80,def:5},acts:['warcry','banner','giantform'],pas:'herosPath'},
+  ifrit:{g:5,st:{atk:12,mres:10},acts:['burninghide']},
+  hellflame:{g:5,st:{soul:30,atk:10},acts:['hellfire']},
+  blood_wraith:{g:5,st:{atk:10,soul:20},acts:['bloodcurse']},
+  souleater:{g:5,st:{soul:40,mres:6},acts:['soulreap']},
+  sky_sentinel:{g:5,st:{def:12,hp:100},acts:['judgement']},
+  vampire:{g:5,st:{atk:10,ls:.1,spd:6},acts:['blooddrain','batswarm'],guard:1},
+  yeti:{g:7,st:{hp:60,mres:6},acts:['blizzard','maul'],guard:1},
+  slime_king:{g:6,st:{hp:60,regen:.04},acts:['slimeshield','acid'],guard:1},
+  iron_man:{g:6,st:{def:8,hp:60},acts:['ironwall','restraint'],guard:1},
+  dread_lord:{g:5,st:{atk:8,def:4,hp:40},acts:['despairwave'],pas:'ambush',guard:1},
+  gunner_captain:{g:7,st:{atk:6,spd:4},acts:['volley','pierce'],guard:1},
+  doomsday_knight:{g:5,st:{atk:10,def:6},acts:['spiritdemon'],pas:'chivalry',guard:1},
+  doppelganger:{g:5,st:{spd:8,atk:5},acts:['mirror','copystrike'],guard:1},
+  soul_keeper:{g:4,st:{soul:40,atk:8},acts:['soulreap','soulshield'],guard:1}
+};
+/* ---------- 怪物 ---------- */
+const Hs=(o,p,sc)=>({t:'h',o,p,sc}),Gs=(g,p,sc)=>({t:'g',g,p,sc});
+const BONE={s:'#e6dfcc',h:'#e6dfcc',b:'#cfc8b4',l:'#e6dfcc',e:'#000',x:'#9a7a5a'};
+const MON={
+  goblin:{n:'哥布林',g:9,hp:40,atk:9,def:2,spd:96,weak:['slash'],tough:20,tags:{poison:.3},spr:Hs({weapon:'club',ears:'elf'},{s:'#7a9a45',h:'#7a9a45',b:'#6a4a2e'})},
+  ghoul:{n:'食屍鬼',g:9,hp:55,atk:10,def:1,spd:102,weak:['blunt','holy'],tough:20,tags:{passive:1},spr:Hs({ears:'elf'},{s:'#9aa58a',h:'#5a6050',b:'#4a4a40',e:'#ff4040'})},
+  gnome:{n:'地精',g:9,hp:42,atk:8,def:7,spd:84,weak:['blunt'],resist:['pierce'],tough:25,tags:{stealth:1},spr:Hs({weapon:'club',beard:1,helm:1},{s:'#a08060',h:'#c0a080',b:'#7a5a3a',m:'#6a4a2a'})},
+  bladewolf:{n:'刃狼',g:9,hp:38,atk:10,def:0,spd:124,weak:['pierce'],tough:15,spr:Gs('wolf',{w:'#7a8a9a',x:'#d8e0e8',k:'#ff5a3a',n:'#222',t:'#5a6a7a'})},
+  abyss_goblin:{n:'深淵哥布林',g:5,hp:380,atk:30,def:10,spd:104,weak:['slash','holy'],tough:70,tags:{poison:.5,fear:1},spr:Hs({weapon:'club',ears:'elf'},{s:'#3a2a5a',h:'#3a2a5a',b:'#1a1030',e:'#c060ff'},4)},
+  abyss_ghoul:{n:'深淵食屍鬼',g:5,hp:450,atk:32,def:8,spd:112,weak:['holy'],tough:70,tags:{drain:.3},spr:Hs({ears:'elf'},{s:'#4a3a6a',h:'#2a1a3a',b:'#1a1030',e:'#ff40c0'},4)},
+  abyss_gnome:{n:'深淵地精',g:5,hp:420,atk:28,def:18,spd:90,weak:['blunt','holy'],tough:80,tags:{stealth:1,bind:1},spr:Hs({weapon:'club',beard:1,helm:1},{s:'#4a3a5a',h:'#6a5a8a',b:'#2a1a3a',m:'#1a0a2a',e:'#c060ff'},4)},
+  abyss_bladewolf:{n:'深淵刃狼',g:5,hp:360,atk:34,def:6,spd:135,weak:['pierce','holy'],tough:60,spr:Gs('wolf',{w:'#3a2a5a',x:'#c060ff',k:'#ff40c0',n:'#000',t:'#2a1a40'},4)},
+  abyss_watcher:{n:'深淵監視者',g:9,hp:14,atk:9,def:0,spd:110,weak:[],tough:5,atkdt:'dark',tags:{poison:.5},noEss:1,spr:Gs('eye',{p:'#3a2a5a',w:'#e0d0f0',r:'#c060ff',k:'#000'})},
+  giant_bladewolf:{n:'巨型刃狼',g:9,hp:70,atk:12,def:2,spd:118,weak:['pierce'],tough:25,spr:Gs('wolf',{w:'#6a7a8a',x:'#e0e8f0',k:'#ff5a3a',n:'#222',t:'#4a5a6a'},4)},
+  bloody_bladewolf:{n:'血色刃狼',g:9,hp:55,atk:13,def:1,spd:126,weak:['pierce'],tough:20,tags:{drain:.2},spr:Gs('wolf',{w:'#8a3a3a',x:'#ff8080',k:'#ffd040',n:'#222',t:'#6a2a2a'})},
+  wall_mole:{n:'壁鼴鼠',g:9,hp:60,atk:11,def:5,spd:92,weak:['blunt'],tough:25,tags:{stealth:1},spr:Gs('mole',{m:'#6a5040',k:'#ff3030',n:'#d08080',c:'#d0c0a0'})},
+  halfmoon_bear:{n:'半月岩熊',g:9,hp:110,atk:13,def:6,spd:80,weak:['pierce'],tough:35,tags:{heavy:1},spr:Gs('bear',{b:'#4a4038',k:'#ffd040',n:'#1a1210'})},
+  sabertooth:{n:'劍齒虎',g:8,hp:140,atk:17,def:5,spd:118,weak:['pierce'],tough:40,spr:Gs('wolf',{w:'#c08a40',x:'#2a1a10',k:'#40ff60',n:'#222',t:'#a07030'},4)},
+  werewolf:{n:'狼人',g:8,hp:160,atk:18,def:6,spd:110,weak:['holy','slash'],tough:45,tags:{heavy:1,regen:.05},spr:Hs({ears:'beast'},{s:'#6a5a4a',h:'#4a3a2a',b:'#5a4a3a',e:'#ffd040'},4)},
+  elder_ghoul:{n:'老食屍鬼',g:9,hp:95,atk:12,def:2,spd:96,weak:['blunt','holy'],tough:30,tags:{passive:1},spr:Hs({ears:'elf'},{s:'#8a9578',h:'#4a5040',b:'#3a3a30',e:'#ff4040'},4)},
+  skel_warrior:{n:'骷髏戰士',g:9,hp:60,atk:11,def:6,spd:92,weak:['blunt','holy'],resist:['pierce','slash'],tough:25,spr:Hs({weapon:'sword'},BONE)},
+  skel_archer:{n:'骷髏弓手',g:9,hp:45,atk:11,def:3,spd:100,weak:['blunt','holy'],resist:['pierce'],tough:20,spr:Hs({weapon:'bow'},BONE)},
+  skel_mage:{n:'骷髏法師',g:9,hp:42,atk:12,def:2,spd:98,weak:['blunt','holy'],tough:20,atkdt:'dark',tags:{aoe:1},spr:Hs({weapon:'staff',robe:1},{...BONE,b:'#3a2a4a',o:'#b07aff'})},
+  banshee:{n:'女妖',g:9,hp:50,atk:11,def:0,spd:106,weak:['magic','holy'],tough:20,atkdt:'dark',tags:{spirit:1,fear:1,curse:1},spr:Hs({robe:1,hood:1},{s:'#c0d0e0',h:'#e0e8f0',b:'#a0b0c8',e:'#000'})},
+  death_fiend:{n:'死亡惡鬼',g:8,hp:200,atk:18,def:9,spd:94,weak:['holy','fire'],tough:55,tags:{heavy:1,summon:'ghoul',regen:.04},spr:Hs({weapon:'shield'},{s:'#7a8070',h:'#3a3a30',b:'#3a3a3a',e:'#ff4040',w:'#4a3a2a'},4)},
+  chimera_wolf:{n:'奇美拉狼',g:8,hp:150,atk:16,def:5,spd:112,weak:['pierce'],tough:40,tags:{aoe:1},spr:Gs('wolf',{w:'#5a4a6a',x:'#a0e060',k:'#ff4040',n:'#222',t:'#6aa040'},4)},
+  ghoul_lord:{n:'食屍鬼領主',g:8,hp:220,atk:17,def:6,spd:98,weak:['blunt','holy'],tough:55,tags:{drain:.3,summon:'ghoul'},spr:Hs({ears:'elf',horns:1},{s:'#8a957a',h:'#3a4030',b:'#2a2a20',e:'#ff4040',n:'#d0c8b0',m:'#3a4030'},4)},
+  dullahan:{n:'無頭騎士',g:7,hp:360,atk:23,def:12,spd:100,weak:['holy'],resist:['slash'],tough:80,tags:{heavy:1},spr:Hs({weapon:'spear'},{s:'#2a2a3a',h:'#2a2a3a',b:'#2a2a3a',e:'#2a2a3a'},4)},
+  death_knight:{n:'死亡騎士',g:6,hp:600,atk:30,def:16,spd:100,weak:['holy'],resist:['slash','pierce'],tough:110,tags:{heavy:1,aoe:1,noheal:1},spr:Hs({weapon:'sword',helm:1},{s:'#3a3a4a',h:'#2a2a3a',b:'#1a1a2a',m:'#4a4a5a',e:'#80c0ff',x:'#a0b0c0'},4)},
+  kobold:{n:'狗頭人',g:9,hp:46,atk:9,def:3,spd:98,weak:['slash'],tough:20,spr:Hs({weapon:'spear',ears:'beast'},{s:'#9a7a5a',h:'#8a6a4a',b:'#5a4a3a'})},
+  kobold_shield:{n:'狗頭人盾兵',g:9,hp:60,atk:8,def:9,spd:88,weak:['blunt'],resist:['slash'],tough:30,spr:Hs({weapon:'shield',ears:'beast'},{s:'#9a7a5a',h:'#8a6a4a',b:'#4a4a5a'})},
+  fallen_gnome:{n:'墮落地精',g:9,hp:50,atk:10,def:6,spd:86,weak:['blunt','holy'],resist:['pierce'],tough:25,atkdt:'dark',tags:{stealth:1},spr:Hs({weapon:'club',beard:1,helm:1},{s:'#5a4a5a',h:'#3a2a3a',b:'#2a1a2a',m:'#4a2a4a',e:'#c040ff'})},
+  stone_golem:{n:'石魔像',g:8,hp:220,atk:16,def:14,spd:76,weak:['blunt','magic'],resist:['slash','pierce'],tough:60,tags:{bind:1},spr:Gs('golem',{s:'#8a7d6b',e:'#ffb347',m:'#5f7a45'})},
+  monolith:{n:'巨石兵',g:8,hp:260,atk:17,def:16,spd:70,weak:['blunt'],resist:['slash','pierce'],tough:70,tags:{heavy:1},spr:Gs('golem',{s:'#6a6a70',e:'#40c0ff',m:'#4a4a50'},4)},
+  sandman:{n:'沙人',g:8,hp:130,atk:15,def:4,spd:104,weak:['ice','magic'],resist:['slash','pierce'],tough:40,tags:{aoe:1,fear:1},spr:Hs({robe:1},{s:'#d0b080',h:'#c0a070',b:'#c0a070',e:'#3a2a10'})},
+  sandworm:{n:'沙蟲',g:8,hp:200,atk:18,def:7,spd:90,weak:['pierce','ice'],tough:50,tags:{heavy:1,bind:1},spr:Gs('worm',{w:'#c0a070',k:'#3a2a10',m:'#8a3a2a'},4)},
+  deathworm:{n:'死亡蠕蟲',g:5,hp:900,atk:36,def:16,spd:92,weak:['ice'],tough:140,tags:{heavy:1,aoe:1,bind:1},elite:1,spr:Gs('worm',{w:'#6a3a5a',k:'#ff4040',m:'#2a0a1a'},5)},
+  goblin_sword:{n:'哥布林劍士',g:9,hp:50,atk:11,def:3,spd:98,weak:['slash'],tough:22,tags:{poison:.3},spr:Hs({weapon:'sword',ears:'elf'},{s:'#7a9a45',h:'#7a9a45',b:'#5a4a3a'})},
+  goblin_archer:{n:'哥布林弓手',g:9,hp:36,atk:10,def:1,spd:102,weak:['pierce'],tough:15,tags:{poison:.4,stealth:1},spr:Hs({weapon:'bow',ears:'elf'},{s:'#7a9a45',h:'#4a3a24',b:'#5a5a2e'})},
+  hobgoblin:{n:'大哥布林',g:7,hp:320,atk:22,def:9,spd:96,weak:['slash'],tough:70,tags:{heavy:1,poison:.4},elite:1,spr:Hs({weapon:'hammer',ears:'elf'},{s:'#6a8a3a',h:'#3a2a1a',b:'#5a3a2a'},4)},
+  wormstone:{n:'蠕石',g:8,hp:180,atk:15,def:15,spd:78,weak:['blunt'],resist:['slash','pierce'],tough:55,tags:{aoe:1},spr:Gs('worm',{w:'#7a7a80',k:'#ffb040',m:'#4a4a50'},4)},
+  iron_falcon:{n:'鐵隼',g:8,hp:110,atk:18,def:8,spd:132,weak:['blunt','thunder'],tough:35,spr:Gs('wings',{w:'#8a95a5',b:'#b0b8c4',k:'#ffd040'},4)},
+  steelhill_guard:{n:'鋼丘守衛',g:8,hp:170,atk:17,def:10,spd:106,weak:['blunt'],tough:45,tags:{bind:1},spr:Hs({weapon:'bow',hood:1},{s:'#8a8a80',h:'#5a5a50',b:'#6a6a60'})},
+  iron_giant:{n:'鐵岩巨人',g:7,hp:420,atk:24,def:18,spd:76,weak:['thunder','blunt'],resist:['slash','pierce'],tough:90,tags:{heavy:1,aoe:1},elite:1,spr:Gs('golem',{s:'#5a5a62',e:'#ff7a30',m:'#3a3a42'},4)},
+  orc_shaman:{n:'獸人薩滿',g:8,hp:120,atk:15,def:5,spd:100,weak:['slash'],tough:35,atkdt:'magic',tags:{buff:1,heal:1},spr:Hs({weapon:'staff',robe:1},{s:'#6a7a3a',h:'#2a2a1a',b:'#5a3a5a',o:'#a0ff60'})},
+  orc_warrior:{n:'獸人戰士',g:8,hp:170,atk:19,def:8,spd:96,weak:['pierce'],tough:45,tags:{heavy:1},spr:Hs({weapon:'hammer'},{s:'#6a7a3a',h:'#2a2a1a',b:'#6a3a2a'})},
+  orc_archer:{n:'獸人弓手',g:8,hp:120,atk:17,def:4,spd:104,weak:['slash'],tough:35,spr:Hs({weapon:'bow'},{s:'#6a7a3a',h:'#2a2a1a',b:'#5a4a2a'})},
+  orc_champion:{n:'獸人大戰士',g:7,hp:420,atk:25,def:12,spd:98,weak:['pierce'],tough:90,tags:{heavy:1,aoe:1},elite:1,spr:Hs({weapon:'hammer',horns:1},{s:'#5a6a2a',h:'#1a1a10',b:'#7a2a1a',n:'#e8dcc0',m:'#5a3a2a'},4)},
+  orc_hero:{n:'獸人英雄',g:5,hp:1100,atk:38,def:18,spd:104,weak:['pierce'],tough:150,tags:{heavy:1,aoe:1,fear:1},elite:1,spr:Hs({weapon:'sword',horns:1,helm:1},{s:'#4a5a2a',h:'#1a1a10',b:'#8a6a2a',m:'#d8b45a',n:'#e8dcc0',x:'#f0d070'},5)},
+  lizardman:{n:'蜥蜴人',g:8,hp:160,atk:17,def:9,spd:100,weak:['ice'],tough:45,spr:Hs({weapon:'spear'},{s:'#4a7a4a',h:'#3a6a3a',b:'#5a4a2a',e:'#ffd040'})},
+  frogman:{n:'蛙人',g:8,hp:140,atk:16,def:6,spd:108,weak:['thunder','slash'],resist:['blunt'],tough:40,tags:{poison:.3},spr:Hs({},{s:'#5a8a6a',h:'#4a7a5a',b:'#3a5a4a',e:'#ffe060'})},
+  fairy:{n:'妖精',g:9,hp:40,atk:11,def:0,spd:118,weak:['magic','fire'],tough:15,atkdt:'magic',tags:{spirit:1,passive:1,poison:.6},spr:Gs('fairy',{w:'#c0e8ff',h:'#f0d070',s:'#ffd8c0',k:'#2a1a1a',b:'#80c060'})},
+  wraith:{n:'怨靈',g:9,hp:55,atk:13,def:2,spd:104,weak:['magic','holy'],tough:25,atkdt:'fire',tags:{spirit:1},spr:Hs({weapon:'staff',robe:1,hood:1},{s:'#3a3050',h:'#2a2340',b:'#2a2340',e:'#c08aff',o:'#ff8a40'})},
+  witch_lamp:{n:'魔女燈',g:9,hp:30,atk:9,def:0,spd:112,weak:['magic','ice'],tough:10,atkdt:'fire',tags:{spirit:1},spr:Gs('wisp',{y:'#ffd070',o:'#ff8a30',w:'#fff0c0',k:'#3a1a00'})},
+  woodman:{n:'木頭人',g:9,hp:90,atk:11,def:8,spd:80,weak:['fire','slash'],resist:['pierce'],tough:30,spr:Gs('tree',{w:'#7a5a3a',e:'#ffe060',l:'#5a8a3a'})},
+  owlbear:{n:'梟熊',g:8,hp:220,atk:19,def:8,spd:92,weak:['pierce'],tough:55,tags:{heavy:1},spr:Gs('bear',{b:'#7a6040',k:'#ffd040',n:'#d0a040'},4)},
+  dryad:{n:'樹精',g:8,hp:130,atk:14,def:5,spd:104,weak:['fire'],tough:35,atkdt:'magic',tags:{heal:1,bind:1},spr:Hs({robe:1},{s:'#a0c080',h:'#4a8a3a',b:'#5a8a4a',e:'#ffe060'})},
+  homunculus:{n:'人造人',g:8,hp:140,atk:17,def:6,spd:100,weak:['holy'],tough:40,atkdt:'magic',tags:{aoe:1},spr:Hs({},{s:'#e0b0b0',h:'#e0b0b0',b:'#c09090',e:'#40ff80'})},
+  half_troll:{n:'半巨魔',g:7,hp:400,atk:24,def:10,spd:92,weak:['fire'],tough:85,tags:{regen:.08,heavy:1},elite:1,spr:Hs({weapon:'club'},{s:'#5a7a6a',h:'#3a4a3a',b:'#4a3a2a'},4)},
+  carnivaro:{n:'卡納巴洛',g:7,hp:340,atk:26,def:8,spd:122,weak:['holy'],tough:75,tags:{aoe:1,fear:1},elite:1,spr:Gs('wolf',{w:'#2a1a2a',x:'#c040c0',k:'#ff40ff',n:'#000',t:'#4a1a4a'},4)},
+  tower_guardian:{n:'天空塔守衛',g:6,hp:500,atk:28,def:16,spd:96,weak:['blunt','thunder'],resist:['slash'],tough:100,tags:{heavy:1},spr:Hs({weapon:'spear',helm:1},{s:'#cfd6dc',h:'#cfd6dc',b:'#8a95a5',m:'#b0b8c4',e:'#40c0ff'},4)},
+  sky_sentinel:{n:'天空哨兵',g:5,hp:1400,atk:38,def:20,spd:104,weak:['thunder','blunt'],tough:180,tags:{heavy:1,aoe:1,bind:1},boss:1,spr:Gs('boss',{n:'#f0e0a0',m:'#c0c8d8',r:'#40c0ff',k:'#0a1420',a:'#8a95a5',c:'#b0b8c4',s:'#cfd6dc',x:'#f0f0ff',y:'#6b4a2a',d:'#5a6070'},5)},
+  fire_dead:{n:'火之亡者',g:8,hp:180,atk:20,def:6,spd:100,weak:['ice','holy'],resist:['fire'],tough:45,atkdt:'fire',spr:Hs({weapon:'sword'},{s:'#3a2a2a',h:'#ff6a20',b:'#2a1a1a',e:'#ffd040',x:'#ff8a40'})},
+  redmud:{n:'紅泥',g:7,hp:380,atk:23,def:10,spd:82,weak:['ice'],resist:['slash','pierce','fire'],tough:80,tags:{bind:1},spr:Gs('slime',{g:'#a03a2a',l:'#ff8a60',d:'#5a1a10',k:'#ffd040'},4)},
+  stoneburn:{n:'石焰',g:6,hp:560,atk:30,def:20,spd:84,weak:['ice'],resist:['fire','slash'],tough:110,atkdt:'fire',tags:{aoe:1,heavy:1},spr:Gs('golem',{s:'#5a3a2a',e:'#ffd040',m:'#ff6a20'},4)},
+  ifrit:{n:'伊弗利特',g:5,hp:900,atk:38,def:14,spd:112,weak:['ice'],resist:['fire'],tough:140,atkdt:'fire',tags:{aoe:1},elite:1,spr:Hs({horns:1,robe:1},{s:'#ff6a20',h:'#ffd040',b:'#c03a10',n:'#ffd040',m:'#ff6a20',e:'#fff0a0'},5)},
+  hellflame:{n:'地獄火焰',g:5,hp:700,atk:40,def:8,spd:118,weak:['ice'],resist:['fire','slash','pierce'],tough:120,atkdt:'fire',tags:{spirit:1,aoe:1},spr:Gs('wisp',{y:'#ffb040',o:'#ff3a10',w:'#fff0a0',k:'#3a0a00'},5)},
+  frost_wolf:{n:'霜狼',g:9,hp:120,atk:20,def:4,spd:126,weak:['fire'],resist:['ice'],tough:30,atkdt:'ice',spr:Gs('wolf',{w:'#c0d8e8',x:'#ffffff',k:'#40a0ff',n:'#222',t:'#a0c0d8'})},
+  ice_orc_shaman:{n:'冰獸人薩滿',g:7,hp:340,atk:26,def:10,spd:100,weak:['fire'],resist:['ice'],tough:70,atkdt:'ice',tags:{buff:1,aoe:1},spr:Hs({weapon:'staff',robe:1},{s:'#8ab0c0',h:'#e0f0ff',b:'#3a5a8a',o:'#a0e0ff'},4)},
+  fallen_creation:{n:'墮落造物',g:8,hp:220,atk:21,def:8,spd:96,weak:['holy'],tough:50,atkdt:'dark',spr:Hs({},{s:'#4a3a4a',h:'#2a1a2a',b:'#3a2a3a',e:'#ff40c0'},4)},
+  cursestone:{n:'詛咒石',g:6,hp:520,atk:28,def:22,spd:80,weak:['holy','blunt'],resist:['slash','pierce'],tough:110,atkdt:'dark',tags:{fear:1,noheal:1},spr:Gs('golem',{s:'#3a2a4a',e:'#c040ff',m:'#6a3a8a'},4)},
+  blood_wraith:{n:'血怨鬼',g:5,hp:760,atk:38,def:10,spd:116,weak:['holy'],resist:['slash','pierce'],tough:130,atkdt:'dark',tags:{spirit:1,drain:.3,aoe:1},spr:Hs({weapon:'staff',robe:1,hood:1},{s:'#5a1010',h:'#3a0808',b:'#3a0808',e:'#ff2020',o:'#ff4040'},4)},
+  souleater:{n:'噬魂者',g:5,hp:820,atk:40,def:12,spd:110,weak:['holy'],tough:140,atkdt:'dark',tags:{aoe:1,fear:1},spr:Gs('eye',{p:'#2a1a3a',w:'#d0c0e0',r:'#8040ff',k:'#000'},5)},
+  slime:{n:'史萊姆',g:9,hp:36,atk:7,def:0,spd:90,weak:['slash','fire'],tough:10,spr:Gs('slime',{g:'#6fbf5a',l:'#b8f09a',d:'#3f8a3a',k:'#16200f'})},
+  bandit:{n:'劫掠探險者',g:8,hp:120,atk:15,def:6,spd:100,weak:[],tough:30,noEss:1,spr:Hs({weapon:'sword',hood:1},{s:'#e2b78f',h:'#3a2a1e',b:'#4a3a2a'})},
+  bandit_archer:{n:'劫掠弓手',g:8,hp:90,atk:15,def:3,spd:104,weak:[],tough:25,noEss:1,spr:Hs({weapon:'bow',hood:1},{s:'#d2a77f',h:'#3a2a1e',b:'#3a4a2a'})},
+  examiner:{n:'公會考官',g:5,hp:900,atk:28,def:14,spd:108,weak:[],tough:150,tags:{heavy:1},noEss:1,boss:1,spr:Hs({weapon:'sword',helm:1},{s:'#e2b78f',h:'#3a2a1e',b:'#3a4a6a',m:'#c0c8d0'},5)},
+  vampire:{n:'吸血鬼',g:5,hp:1300,atk:34,def:14,spd:118,weak:['holy','fire'],tough:170,tags:{drain:.4,aoe:1,summon:'bloody_bladewolf'},boss:1,spr:Hs({weapon:'sword',hood:1},{s:'#e8e0e8',h:'#1a1a1a',b:'#2a0a14',e:'#ff2020',x:'#c0c0d0'},5)},
+  yeti:{n:'雪人',g:7,hp:900,atk:24,def:12,spd:92,weak:['fire'],resist:['ice'],tough:130,atkdt:'ice',tags:{heavy:1,aoe:1,bind:1},boss:1,spr:Gs('bear',{b:'#e8f0f8',k:'#40a0ff',n:'#6a7a8a'},5)},
+  slime_king:{n:'史萊姆之王',g:6,hp:1000,atk:20,def:8,spd:88,weak:['slash','fire'],tough:140,tags:{aoe:1,summon:'slime'},boss:1,spr:Gs('slime_king',{g:'#5fb04a',l:'#b8f09a',d:'#3f8a3a',k:'#16200f',y:'#e8c040'},5)},
+  iron_man:{n:'鐵人伊爾迪姆',g:6,hp:1300,atk:26,def:22,spd:84,weak:['thunder','blunt'],resist:['slash','pierce'],tough:170,tags:{heavy:1,bind:1},boss:1,spr:Hs({weapon:'hammer',helm:1},{s:'#8a95a5',h:'#8a95a5',b:'#6a7585',m:'#b0b8c4',e:'#ffb040'},5)},
+  dread_lord:{n:'恐懼之主德雷德菲爾',g:5,hp:1900,atk:36,def:16,spd:110,weak:['holy','fire'],resist:['slash'],tough:190,atkdt:'dark',tags:{aoe:1,heavy:1,fear:1,summon:'wraith'},boss:1,spr:Gs('boss',{n:'#8a9a90',m:'#17130f',r:'#8aff9a',k:'#050503',a:'#241f17',c:'#332c20',s:'#453b2b',x:'#8aff9a',y:'#171410',d:'#0d0b08'},5)},
+  gunner_captain:{n:'沙漠槍手隊長',g:7,hp:1000,atk:30,def:10,spd:112,weak:['slash'],tough:140,tags:{aoe:1,summon:'bandit_archer'},boss:1,spr:Hs({weapon:'bow',hood:1},{s:'#c08a5a',h:'#3a2a1a',b:'#8a6a3a'},5)},
+  doomsday_knight:{n:'末日騎士',g:5,hp:2200,atk:38,def:20,spd:100,weak:['dark'],resist:['holy'],tough:200,tags:{heavy:1,aoe:1,summon:'fallen_creation'},boss:1,spr:Hs({weapon:'sword',helm:1},{s:'#e8e0d0',h:'#e8e0d0',b:'#e8e0d0',m:'#d8b45a',e:'#40a0ff',x:'#f0d070',t:'#d8b45a'},5)},
+  doppelganger:{n:'分身魔',g:5,hp:2200,atk:36,def:14,spd:118,weak:['holy','magic'],resist:['slash'],tough:180,tags:{heavy:1,summon:'bandit'},boss:1,spr:Hs({weapon:'daggers'},{s:'#2a2a3a',h:'#1a1a2a',b:'#3a3050',e:'#ffffff',x:'#8a8aa0'},5)},
+  soul_keeper:{n:'靈魂守護者浩希耶爾',g:4,hp:3600,atk:46,def:20,spd:108,weak:['holy'],resist:['slash','pierce'],tough:240,atkdt:'dark',tags:{aoe:1,heavy:1,fear:1,summon:'blood_wraith'},boss:1,spr:Gs('boss',{n:'#c0a0ff',m:'#3a2a5a',r:'#e0a0ff',k:'#0a0614',a:'#4a3470',c:'#6a4a9a',s:'#8a7ab0',x:'#c0b0e0',y:'#3a2a4a',d:'#2a1e3a'},5)}
+};
+/* ---------- 區域 ---------- */
+const FIELDS={
+  ccN:{n:'水晶洞窟・北(哥布林)',pool:['goblin'],light:1,c:'#7a9a45'},
+  ccS:{n:'水晶洞窟・南(食屍鬼)',pool:['ghoul'],light:1,c:'#9aa58a'},
+  ccE:{n:'水晶洞窟・東(刃狼)',pool:['bladewolf'],light:1,c:'#7a8a9a'},
+  ccW:{n:'水晶洞窟・西(地精)',pool:['gnome'],light:1,c:'#a08060'},
+  ccC:{n:'水晶洞窟・中心部',pool:[],light:1,safe:1},
+  beast:{n:'野獸巢穴',pool:['giant_bladewolf','bloody_bladewolf','wall_mole','halfmoon_bear','sabertooth'],elite:['werewolf','sabertooth'],traps:1,light:1},
+  dead:{n:'死者之地',pool:['ghoul','elder_ghoul','skel_warrior','skel_archer','skel_mage','banshee','death_fiend','chimera_wolf'],elite:['dullahan','ghoul_lord','death_knight'],traps:0,dark:1},
+  desert:{n:'岩石沙漠',pool:['gnome','kobold','kobold_shield','fallen_gnome','stone_golem','sandman','sandworm'],elite:['monolith','deathworm'],traps:1,light:1},
+  gforest:{n:'哥布林森林',pool:['goblin','goblin_sword','goblin_archer'],elite:['hobgoblin'],traps:3,light:1},
+  steelhill:{n:'鋼岩丘陵',pool:['wormstone','iron_falcon','steelhill_guard'],elite:['iron_giant'],traps:1,dark:1,c:'#8a8a90'},
+  orc:{n:'獸人聚落',pool:['orc_shaman','orc_warrior','orc_archer'],elite:['orc_champion','orc_hero'],traps:1,dark:1,dense:1,c:'#6a7a3a'},
+  marsh:{n:'綠尾沼澤',pool:['lizardman','frogman'],elite:['half_troll'],traps:1,dark:1,c:'#4a7a4a'},
+  estuary:{n:'漆黑河口',pool:['frogman','lizardman'],elite:['half_troll'],traps:1,dark:1,c:'#3a4a5a'},
+  witch:{n:'魔女森林',pool:['fairy','wraith','witch_lamp','woodman','owlbear','dryad','homunculus'],elite:['half_troll','carnivaro'],traps:1,dark:1,fx:'witch',c:'#a05ac0'},
+  tower:{n:'天空之塔',pool:['orc_warrior','orc_archer','orc_shaman','iron_falcon','steelhill_guard','owlbear','lizardman','homunculus','tower_guardian'],light:1},
+  redstart:{n:'大魔境・起始點',pool:[],safe:1,light:1},
+  hellfire:{n:'地獄火峽谷',pool:['fire_dead','redmud','stoneburn','hellflame'],elite:['ifrit'],dark:1,fx:'ember',c:'#e05a2a'},
+  frost:{n:'冰霜峽谷',pool:['frost_wolf','ice_orc_shaman','redmud'],elite:['ice_orc_shaman'],dark:1,fx:'frost',c:'#80c0e0'},
+  specter:{n:'亡靈峽谷',pool:['fallen_creation','cursestone','blood_wraith','souleater'],elite:['souleater'],dark:1,fx:'specter',c:'#8a5ac0'}
+};
+const FLOORS={1:{n:'水晶洞窟',stay:7,bg:'linear-gradient(#14303a,#0a1418)'},2:{n:'第 2 層',stay:10,bg:'linear-gradient(#262028,#100c0e)'},3:{n:'朝聖者之路',stay:15,bg:'linear-gradient(#1c2a1a,#0b120a)'},4:{n:'天空之塔',stay:23,bg:'linear-gradient(#2a3446,#12161e)'},5:{n:'大魔境',stay:30,bg:'linear-gradient(#3a1612,#140806)'}};
+const RIFTS={
+  blood_fortress:{n:'血色城塞',f:1,boss:'vampire',minions:['bloody_bladewolf','ghoul'],cost:150},
+  glacier_cave:{n:'冰河洞窟',f:1,boss:'yeti',minions:['frost_wolf'],cost:120},
+  green_mine:{n:'綠色礦坑',f:1,boss:'slime_king',minions:['slime','slime'],cost:100},
+  steel_tomb:{n:'鋼鐵之墓',f:1,boss:'iron_man',minions:['stone_golem'],cost:130},
+  gun_desert:{n:'槍砲沙漠',f:2,boss:'gunner_captain',minions:['bandit_archer','bandit'],cost:300},
+  white_temple:{n:'白色神殿',f:3,boss:'doomsday_knight',minions:['fallen_creation'],cost:700},
+  doppel_forest:{n:'分身魔森林',f:4,boss:'doppelganger',minions:['bandit'],cost:1500},
+  soul_fortress:{n:'靈魂要塞',f:5,boss:'soul_keeper',minions:['blood_wraith'],cost:3500}
+};
+/* 各層的層主(自訂內容,原作只給名字);鍵是樓層數,打的時候在該層安全區挑戰,可重複挑戰取得戰利品 */
+const FLOORMASTER={
+  1:{n:'恐懼之主德雷德菲爾',key:'dread_lord',minions:['wraith','wraith']}
+};
+const NUM={
+  n9999:{n:'No.9999 擴充型背包',r:'單',d:'全滅時,身上的戰利品保留一半',eff:{keepLoot:1},price:400},
+  n8811:{n:'No.8811 迅捷長靴',r:'單',d:'速度 +8',eff:{spd:8},price:350},
+  n7702:{n:'No.7702 鐵壁護符',r:'單',d:'防禦 +5',eff:{def:5},price:350},
+  n6630:{n:'No.6630 魂石墜飾',r:'單',d:'魂力 +25',eff:{soul:25},price:350},
+  n0303:{n:'No.303 保溫石',r:'單',d:'不受寒冷影響(冰霜峽谷、冰河洞窟)',eff:{warm:1},price:300},
+  n5148:{n:'No.5148 吸血鬼之牙',r:'雙',d:'吸血 10%',eff:{ls:.1},price:800},
+  n4410:{n:'No.4410 再生指環',r:'雙',d:'每回合回復 4% 生命',eff:{regen:.04},price:800},
+  n3307:{n:'No.3307 先知之眼',r:'雙',d:'迷宮中能看清兩格內的房間',eff:{sight:1},price:900},
+  n2725:{n:'No.2725 幸運硬幣',r:'雙',d:'精髓掉落率 +2%',eff:{luck:.02},price:900},
+  n1964:{n:'No.1964 狂戰士之血',r:'雙',d:'生命低於 30% 時攻擊 +40%',eff:{rage:.4},price:800},
+  n0911:{n:'No.911 破魔戒指',r:'雙',d:'魔抗 +15',eff:{mres:15},price:800},
+  n0077:{n:'No.77 英雄的護手',r:'三',d:'攻擊 +8、爆擊率 +8%',eff:{atk:8,crit:.08},price:2500}
+};
+const RT={
+  entry:{g:'入',n:'降落點'},combat:{g:'戰',n:'怪物'},elite:{g:'精',n:'精英怪物'},chest:{g:'寶',n:'寶箱'},resource:{g:'晶',n:'魔石礦脈'},
+  trap:{g:'陷',n:'陷阱'},spring:{g:'泉',n:'治癒泉水'},merchant:{g:'商',n:'流浪商人'},empty:{g:'空',n:'空地'},stairs:{g:'門',n:'傳送門石碑'},
+  portal:{g:'門',n:'傳送門石碑'},altar:{g:'壇',n:'裂縫祭壇'},rift:{g:'裂',n:'裂縫'},sage:{g:'碑',n:'大賢者紀念碑'},hut:{g:'屋',n:'魔女小屋'},
+  redstart:{g:'安',n:'起始點'},f6gate:{g:'海',n:'通往第 6 層'}
+};
+const SAFE_ROOMS=['sage','hut','redstart'];
+const NAMES=['艾登','莉娜','葛雷','薇拉','托倫','米拉','卡爾','希爾達','羅文','伊莎','貝恩','諾拉','達瑞克','芙蕾雅','歐林','塞拉','雷克','艾薇','古斯','妮雅','哈根','露絲','布蘭','凱特','瑟琳','杜蘭','安柏','洛克','梅芙','提歐'];
+const BARB_NAMES=['阿克森','烏爾格','卡拉克','莫拉德','希庫','瓦爾加','托格','布蘭卡','約根','哈爾德'];
+const DAYS_IN_MONTH=30,LIVING=2,TAX=20,POTION=30,TORCH=60,MAXPOT=5;
+
+/* ================= STATE ================= */
+let S=null,B=null,SAVED=null;
+function newState(){return{v:5,uid:1,month:1,day:1,stone:300,potions:2,torches:1,debt:0,dorm:1,members:[],bag:[],items:[],guild:[],shop:[],reqs:[],active:[],contrib:0,fame:0,examPassed:false,
+  known:[],kc:{},riftsCleared:0,removals:0,revives:0,riftCD:{},floorBoss:{},maxFloor:1,log:[],auto:false,fast:false,sel:[],startFloor:1,tab:'home',run:null,screen:'intro',picks:[],cands:[],fallen:[],draft:null};}
+const getM=id=>S.members.find(m=>m.id===+id);
+const hero=()=>S.members.find(m=>m.hero);
+const hasT=(m,t)=>m.traits.includes(t);
+const capacity=()=>3+S.dorm*2;
+const living=()=>S.members.filter(m=>!m.dead);
+const monName=k=>MON[k].n;
+function save(){if(B||!S||['intro','pick','create'].includes(S.screen))return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
+function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(s&&s.v===5&&s.members)return s;}catch(e){}return null;}
+function log(msg){S.log.unshift({d:`${S.month}/${S.day}`,m:msg});S.log.length=Math.min(S.log.length,60);}
+function learn(k){if(k&&MON[k]&&!S.known.includes(k))S.known.push(k);}
+const isKnown=k=>S.known.includes(k);
+
+/* ---------- essences ---------- */
+function makeEss(k,gd){return{k,c:ri(0,ESS[k].acts.length-1),gd:!!(gd||ESS[k].guard)};}
+function essInfo(it){const d=ESS[it.k],mul=it.gd?1.5:1,st={};for(const[s,v]of Object.entries(d.st))st[s]=Math.round(v*mul*100)/100;
+  const acts=it.gd?d.acts.slice():[d.acts[it.c%d.acts.length]];
+  const col=it.gd?['虹','']:COLORS[(d.acts.length>1?it.c:it.c)%COLORS.length];
+  return{n:`${col[0]}色・${monName(it.k)}精髓`,short:`${monName(it.k)}精髓`,g:d.g,st,acts,pas:d.pas||null,color:col[1],gd:it.gd};}
+function essDesc(it){const e=essInfo(it),p=[],lb={hp:'生命',atk:'攻擊',def:'防禦',spd:'速度',soul:'魂力',mres:'魔抗'};
+  for(const[s,v]of Object.entries(e.st)){if(lb[s])p.push(`${lb[s]} ${v>0?'+':''}${v}`);else if(s==='ls')p.push(`吸血 ${Math.round(v*100)}%`);else if(s==='regen')p.push(`再生 ${Math.round(v*100)}%`);}
+  return `${e.g}級${e.gd?'・守護者':''}。${p.join('、')}。主動「${e.acts.map(a=>SK[a].n).join('」「')}」${e.pas?`;被動「${PS[e.pas].n}」`:''}`;}
+function essSkillDesc(it){const e=essInfo(it);return e.acts.map(a=>`「${SK[a].n}」${SK[a].d}(魂力 ${SK[a].cost})`).join('<br>')+(e.pas?`<br>被動「${PS[e.pas].n}」${PS[e.pas].d}`:'');}
+const essSlots=m=>m.lv;
+function memberActs(m){return[...new Set(m.ess.flatMap(it=>essInfo(it).acts))];}
+function memberPas(m){return[...new Set(m.ess.map(it=>ESS[it.k].pas).filter(Boolean))];}
+function absorbCheck(m,it){
+  const e=essInfo(it);
+  const up=it.gd&&m.ess.findIndex(x=>x.k===it.k&&!x.gd);
+  if(it.gd&&up>=0)return{ok:true,upgrade:up};
+  if(m.ess.length>=essSlots(m))return{ok:false,why:'槽滿了'};
+  const acts=memberActs(m),pas=memberPas(m);
+  if(e.acts.some(a=>acts.includes(a))||(e.pas&&pas.includes(e.pas)))return{ok:false,why:'技能重複'};
+  return{ok:true};
+}
+const essPrice=it=>Math.round(GRADE[ESS[it.k].g].price*(it.gd?2:1)*.5);
+/* ---------- members ---------- */
+function genName(race){
+  const used=new Set(S.members.map(m=>m.name).concat(S.guild.map(m=>m.name),(S.cands||[]).map(m=>m.name)));
+  const src=race==='barb'?BARB_NAMES:NAMES;const opts=src.filter(n=>!used.has(n));
+  return opts.length?pick(opts):pick(src)+ri(2,9);
+}
+function makeMember(o={}){
+  const race=o.race||pick(Object.keys(RACE)),weapon=o.weapon||pick(Object.keys(WEAPON));
+  let traits=o.traits;
+  if(!traits){traits=[];const n=Math.random()<0.45?2:1;let g=0;while(traits.length<n&&g++<50){const t=pick(RANDOM_TRAITS);if(!traits.includes(t)&&!traits.includes(CLASH[t]))traits.push(t);}}
+  const m={id:S.uid++,name:o.name||genName(race),race,weapon,lv:o.lv||1,xp:LV_XP[o.lv||1]||0,hp:1,soul:0,stress:0,wpn:0,arm:0,traits,ess:o.ess||[],kills:[],floors:[],job:'rest',look:o.look??ri(0,5),num:null,bonusSoul:0};
+  const st=stats(m);m.hp=st.maxhp;m.soul=st.soul;return m;
+}
+function stats(m){
+  const w=WEAPON[m.weapon],r=RACE[m.race];
+  let hp=w.hp*(r.hp||1),atk=w.atk+(r.atk||0),def=w.def+(r.def||0),spd=w.spd+(r.spd||0),soul=40+(w.soul||0)+(r.soul||0)+(m.bonusSoul||0),mres=r.mres||0,crit=.05+(w.crit||0),ls=0,regen=0;
+  const L=m.lv-1;hp*=1+.07*L;atk+=1.2*L;def+=.5*L;soul+=Math.min(L,4)*10+Math.max(0,L-4)*30;spd+=L*.5;
+  atk+=m.wpn*3;def+=m.arm*2;hp+=m.arm*12;
+  for(const it of m.ess){const e=essInfo(it).st;hp+=e.hp||0;atk+=e.atk||0;def+=e.def||0;spd+=e.spd||0;soul+=e.soul||0;mres+=e.mres||0;ls+=e.ls||0;regen+=e.regen||0;}
+  if(memberPas(m).includes('preserve'))regen+=.03;
+  if(memberPas(m).includes('scent'))crit+=.06;
+  if(m.num){const f=NUM[m.num.id].eff;atk+=f.atk||0;def+=f.def||0;spd+=f.spd||0;soul+=f.soul||0;mres+=f.mres||0;ls+=f.ls||0;regen+=f.regen||0;crit+=f.crit||0;}
+  if(hasT(m,'tough'))hp*=1.15;if(hasT(m,'quick'))spd+=6;if(hasT(m,'pacifist'))atk*=.75;if(hasT(m,'bg_merc'))atk+=3;
+  return{maxhp:Math.max(10,Math.round(hp)),atk:Math.max(1,Math.round(atk*10)/10),def:Math.max(0,Math.round(def*10)/10),spd:Math.max(40,Math.round(spd)),soul:Math.round(soul),mres:Math.round(mres),crit,ls,regen};
+}
+function essValue(m){return m.ess.reduce((a,it)=>a+GRADE[ESS[it.k].g].ev*(it.gd?1.5:1),0);}
+function essGrade(m){const v=essValue(m);return v<4?9:v<12?8:v<35?7:v<90?6:v<220?5:4;}
+const rankCap=()=>S.examPassed?4:S.contrib>=30?6:7;
+function expGrade(m){return Math.max(essGrade(m),rankCap());}
+function stressMult(m){let k=1;if(hasT(m,'brave'))k*=.7;if(hasT(m,'coward'))k*=1.4;if(hasT(m,'bg_drifter'))k*=.7;return k;}
+function addStress(m,v){m.stress=clamp(m.stress+(v>0?v*stressMult(m):v),0,100);}
+function gainXp(m,xp){m.xp+=xp;const ups=[];while(m.lv<MAXLV&&m.xp>=LV_XP[m.lv+1]){const r=m.hp/stats(m).maxhp;m.lv++;m.hp=Math.round(r*stats(m).maxhp);ups.push(m.lv);}return ups;}
+function killMember(m){
+  if(m.hero){m.dead=true;m.hp=0;S.sel=S.sel.filter(id=>id!==m.id);log(`${m.name} 死在了迷宮裡。遺體在迷宮關閉時被送回,安置在大神殿。`);return;}
+  S.members=S.members.filter(x=>x.id!==m.id);S.sel=S.sel.filter(id=>id!==m.id);S.fallen.push({name:m.name,lv:m.lv,d:`${S.month}/${S.day}`});log(`${m.name}(Lv${m.lv})死在了迷宮裡。`);
+  if(m.num)S.items.push(m.num);
+}
+function reviveCost(){const h=hero();return S.revives===0?0:150*(h?h.lv:1)*S.revives;}
+const removeCost=()=>500*Math.pow(2,S.removals);
+function taxOf(m){return Math.round(TAX*(RACE[m.race].tax??1));}
+function livingCost(m){return Math.round(LIVING*(RACE[m.race].live||1)*(hasT(m,'glutton')?2:1));}
+
+/* ================= SPRITES ================= */
+const OUT='#140f0b',SPR={},URL_CACHE={};
+function gridCanvas(grid,pal,sc){
+  const h=grid.length,w=Math.max(...grid.map(r=>r.length)),W=w+2,H=h+2;
+  const px=Array.from({length:H},()=>Array(W).fill(null));
+  for(let y=0;y<h;y++)for(let x=0;x<grid[y].length;x++){const ch=grid[y][x];if(ch!=='.'&&pal[ch])px[y+1][x+1]=pal[ch];}
+  const out=px.map(r=>r.slice());
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(!px[y][x]){if((px[y-1]&&px[y-1][x])||(px[y+1]&&px[y+1][x])||px[y][x-1]||px[y][x+1])out[y][x]=OUT;}
+  const cv=document.createElement('canvas');cv.width=W*sc;cv.height=H*sc;const g=cv.getContext('2d');
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(out[y][x]){g.fillStyle=out[y][x];g.fillRect(x*sc,y*sc,sc,sc);}
+  return cv;
+}
+function humanoid(o){
+  const W=13,H=15,g=Array.from({length:H},()=>Array(W).fill('.'));
+  const set=(x,y,c)=>{if(x>=0&&x<W&&y>=0&&y<H)g[y][x]=c;};
+  const rect=(x0,y0,x1,y1,c)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)set(x,y,c);};
+  rect(4,2,7,4,'s');rect(4,1,7,1,'h');set(4,2,'h');set(3,2,'h');set(3,3,'h');
+  if(o.helm){rect(3,1,8,1,'m');rect(4,0,7,0,'m');set(3,2,'m');set(3,3,'m');}
+  if(o.hood){rect(3,0,8,1,'b');set(3,2,'b');set(3,3,'b');set(3,4,'b');set(8,2,'b');}
+  set(6,3,'e');
+  if(o.beard)rect(4,4,7,5,'h');
+  if(o.horns){set(3,0,'n');set(8,0,'n');set(2,0,'n');set(9,0,'n');if(!o.helm)rect(3,1,8,1,'m');}
+  if(o.ears==='elf')set(2,3,'s');
+  if(o.ears==='beast'){set(4,0,'h');set(7,0,'h');}
+  if(o.wings){rect(0,4,1,7,'q');set(0,3,'q');}
+  rect(3,5,8,9,'b');rect(3,8,8,8,'t');
+  rect(2,5,2,8,'b');set(2,9,'s');rect(9,5,9,7,'b');set(9,8,'s');
+  if(o.robe){rect(3,9,8,12,'b');rect(2,11,9,12,'b');set(4,13,'f');set(7,13,'f');}
+  else{rect(4,10,5,12,'l');rect(6,10,7,12,'l');rect(4,13,5,13,'f');rect(6,13,7,13,'f');}
+  switch(o.weapon){
+    case'shield':rect(9,5,11,11,'w');rect(10,6,10,10,'x');break;
+    case'hammer':rect(10,3,10,12,'y');rect(9,0,12,2,'x');break;
+    case'sword':rect(10,0,10,7,'x');rect(9,8,11,8,'y');set(10,9,'y');break;
+    case'spear':rect(11,2,11,13,'y');rect(11,0,11,1,'x');set(10,1,'x');set(12,1,'x');break;
+    case'daggers':rect(10,5,10,8,'x');set(10,9,'y');rect(1,7,1,9,'x');break;
+    case'bow':set(10,1,'y');set(11,2,'y');rect(12,3,12,8,'y');set(11,9,'y');set(10,10,'y');rect(10,2,10,9,'q');break;
+    case'staff':rect(10,2,10,13,'y');rect(9,0,11,1,'o');break;
+    case'club':rect(10,2,11,7,'w');set(10,8,'y');break;
+  }
+  return g.map(r=>r.join(''));
+}
+const SKIN={human:'#e2b78f',barb:'#c58b5f',dwarf:'#e6a982',elf:'#f1d6b6',beast:'#b98656',fairy:'#f8e0d0',dragon:'#8fb08a'};
+const HAIR=['#3a2a1e','#7a4a2a','#c9a24a','#a8a39a','#8a2f22','#1f1f2a'];
+const BODY={shield:'#6f7c8c',hammer:'#7a4a32',sword:'#8a3a2c',spear:'#3a5a7a',daggers:'#3a3a44',bow:'#4c6a3a',staff:'#4a3b7a'};
+function heroGrid(race,weapon){return humanoid({weapon,robe:WEAPON[weapon].robe,ears:race==='elf'||race==='fairy'?'elf':race==='beast'?'beast':null,horns:race==='barb'||race==='dragon',beard:race==='dwarf',wings:race==='fairy',helm:weapon==='shield'&&race!=='barb'&&race!=='dragon'});}
+function heroPal(race,weapon,look){return{s:SKIN[race],h:HAIR[look%HAIR.length],b:BODY[weapon],t:'#4a3524',l:'#3a2f28',f:'#251c16',e:'#1a1210',n:race==='dragon'?'#d8c070':'#e8dcc0',m:'#9aa3ad',w:'#7a5230',x:'#cfd6dc',y:'#6b4a2a',o:'#7fd0e8',q:race==='fairy'?'#c0e8ff':'#d8d0b8'};}
+function heroCanvas(race,weapon,look,sc=3){const k=`h_${race}_${weapon}_${look}_${sc}`;return SPR[k]||(SPR[k]=gridCanvas(heroGrid(race,weapon),heroPal(race,weapon,look),sc));}
+function portraitCanvas(race,weapon,look){const k=`p_${race}_${weapon}_${look}`;if(SPR[k])return SPR[k];
+  const g=heroGrid(race,weapon).slice(0,8).map(r=>r.slice(1,11));return SPR[k]=gridCanvas(g,heroPal(race,weapon,look),5);}
+const GRIDS={
+  wolf:['............w.w.','...........wwww.','t.........wwwkwn','tt.wwwwwwwwwwww.','.twwwwxwwxwwwww.','..wwwwwwwwwww...','..ww.ww..ww.ww..','..w..w....w..w..'],
+  bear:['..............bb..','.............bbbb.','....bbbbbbbbbbbkbn','..bbbbbbbbbbbbbbb.','.bbbbbbbbbbbbbbb..','.bbbbbbbbbbbbbbb..','.bbbbbbbbbbbbbb...','..bbb.bbb..bbb.bb.','..bbb.bbb..bbb.bb.'],
+  slime:['............','....gggg....','...gglggg...','..gllggggg..','..glgggggg..','.ggggkggkgg.','.gggggggggg.','.gggggggggg.','..dddddddd..'],
+  slime_king:['....y.yy.y....','....yyyyyy....','...gggggggg...','..gglggggggg..','.gllggggggggg.','.glggkgggkggg.','gggggggggggggg','gggggggggggggg','gggggggggggggg','.dddddddddddd.'],
+  golem:['.....ssss.......','....ssssss......','....sssese......','....ssssss......','..ssssssssss....','.ssssssmsssss...','ssssssssssssss..','ss.ssssssss.ss..','ss.sssmmsss.ss..','ss.ssssssss.ss..','ss.ssssssss.ss..','...ssss.ssss....','...sss...sss....','..ssss...ssss...'],
+  eye:['...pppp...','..pwwwwp..','.pwwrrwwp.','.pwrkkrwp.','.pwwrrwwp.','..pwwwwp..','...pppp...','....p.p...'],
+  wings:['w..........w','ww........ww','www.bbbb.www','wwwwbkbkwwww','.wwwbbbbwww.','..w.bbbb.w..','....b..b....'],
+  worm:['......wwww......','....wwwwwwww....','...wwkwwwwkww...','..wwwwmmmmwwww..','..wwwmmmmmmwww..','...wwwwwwwwww...','....wwwwwwww....','.....wwwwww.....','....wwwwwwww....'],
+  mole:['....mmmm....','..mmmmmmmm..','.mmkmmmmkmm.','.mmmmnnmmmm.','mmmmmmmmmmmm','cc.mmmmmm.cc','c...mmmm...c'],
+  fairy:['w.....w..','ww.hh.ww.','wwhsshww.','.wsksswww','..bbbb...','..bbbb...','...b.b...'],
+  wisp:['...yy...','..yooy..','.yowwoy.','.owkkwo.','.owwwwo.','..owwo..','...oo...','....o...'],
+  tree:['..l..l..l.......','..llllllll......','...wwwwww.......','...wewwew.......','...wwwwww.......','.wwwwwwwwww.....','wwwwwlwwwwww....','ww.wwwwwww.ww...','ww.wwwlwww.ww...','...wwwwwww......','..www..www......','.wwww..wwww.....'],
+  boss:['...n..........n...','...nn........nn...','....nnmmmmmmnn....','.....mmmmmmmm.....','.....mrrmmrrm.....','.....mmmmmmmm.....','......mkkkkm......','...aaaaaaaaaaaa...','..aaaaaaaaaaaaaa.x','..aa.accccccaa.axx','..aa.acrrrrcaa.ax.','..aa.accccccaa.ay.','..ss.aaaaaaaa..sy.','.....aaaaaaaa...y.','.....aaa..aaa...y.','.....aaa..aaa...y.','....aaaa..aaaa..y.','....dddd..dddd....']
+};
+function monCanvas(key,sc){
+  const sp=MON[key].spr;sc=sc||sp.sc||3;const k=`m_${key}_${sc}`;if(SPR[k])return SPR[k];
+  if(sp.t==='g')return SPR[k]=gridCanvas(GRIDS[sp.g],sp.p,sc);
+  const pal=Object.assign({t:'#3a2a1a',l:'#3a2f28',f:'#251c16',e:'#1a1210',w:'#6b4a2a',x:'#cfd6dc',y:'#6b4a2a',q:'#c8c0a8',m:'#777',n:'#e8dcc0',o:'#7fd0e8'},sp.p);
+  return SPR[k]=gridCanvas(humanoid(sp.o),pal,sc);
+}
+function imgOf(cv){if(!cv._id){cv._id=Math.random().toString(36).slice(2);URL_CACHE[cv._id]=cv.toDataURL();}return URL_CACHE[cv._id];}
+const heroImg=m=>imgOf(heroCanvas(m.race,m.weapon,m.look));
+const faceImg=m=>imgOf(portraitCanvas(m.race,m.weapon,m.look));
+const monImg=(k,sc)=>imgOf(monCanvas(k,sc));
+
+/* ================= UI HELPERS ================= */
+const ACT={};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el||el.disabled)return;const f=ACT[el.dataset.act];if(f){e.preventDefault();f(el.dataset.arg,el);}});
+document.addEventListener('change',e=>{const el=e.target.closest('[data-change]');if(!el)return;const f=ACT[el.dataset.change];if(f)f(el.dataset.arg,el);});
+document.addEventListener('input',e=>{const el=e.target.closest('[data-input]');if(el&&ACT[el.dataset.input])ACT[el.dataset.input](el.dataset.arg,el);});
+let toastT=0;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600);}
+function modal(title,body,buttons=[{label:'確定',act:'closeModal',cls:'primary'}]){
+  $('#modalBox').innerHTML=`<h2>${title}</h2><div class="mbody">${body}</div><div class="acts">${buttons.map(b=>`<button class="btn ${b.cls||''}" data-act="${b.act}" data-arg="${b.arg??''}">${b.label}</button>`).join('')}</div>`;
+  $('#modal').hidden=false;const f=$('#modalBox .acts .btn:last-child');if(f)f.focus();
+}
+ACT.closeModal=()=>{$('#modal').hidden=true;};
+function meter(v,max,cls){return `<div class="meter ${cls}"><i style="width:${clamp(v/max*100,0,100)}%"></i></div>`;}
+function mrow(label,v,max,cls){return `<div class="mrow"><span>${label}</span>${meter(v,max,cls)}<span class="num">${Math.round(v)}/${Math.round(max)}</span></div>`;}
+function essChip(it){const e=essInfo(it);return `<span class="chip ess ${e.gd?'rb':''}" style="--c:${e.color}" title="${essDesc(it)}">${e.n}</span>`;}
+function traitChips(m){return (m.hero?'<span class="chip hero" title="你自己。死亡後要到大神殿復活">主角</span>':'')+`<span class="chip grade" title="精髓總價值決定,上限受公會認證影響">${expGrade(m)}級</span>`+m.traits.map(t=>`<span class="chip ${TRAIT[t].good?'good':'bad'}" title="${TRAIT[t].d}">${TRAIT[t].n}</span>`).join('');}
+function essChips(m){let h=m.ess.map(essChip).join('');for(let i=m.ess.length;i<essSlots(m);i++)h+=`<span class="chip empty">空精髓槽</span>`;
+  if(m.num)h+=`<span class="chip item" title="${NUM[m.num.id].d}">${NUM[m.num.id].n}</span>`;return h;}
+
+/* ================= TOP BAR + RENDER ================= */
+function topHTML(){
+  if(!S||['intro','pick','create'].includes(S.screen))return `<span class="brand">蠻族迷宮生存</span>`;
+  const daily=living().reduce((a,m)=>a+livingCost(m),0),open=S.day===1&&!S.run;
+  return `<span class="brand">蠻族迷宮生存</span><span class="day ${open?'open':''}">第 <span class="num">${S.month}</span> 月 <span class="num">${S.day}</span> 日${open?' · 迷宮開啟':''}</span>
+  <div class="res"><span class="${S.stone<daily*5?'low':''}" title="每天生活費 ${daily}">石幣<b>${S.stone}</b></span><span>藥水<b>${S.potions}</b></span><span>火把<b>${S.torches}</b></span><span>名聲<b>${S.fame}</b></span><span>貢獻<b>${S.contrib}</b></span><span>最深<b>B${S.maxFloor}</b></span>${S.debt?`<span class="low">欠稅<b>${S.debt}</b></span>`:''}</div>
+  <button class="btn sm" data-act="help">玩法</button>`;
+}
+function render(){
+  $('#top').innerHTML=topHTML();
+  const f={intro:introHTML,create:createHTML,pick:pickHTML,base:baseHTML,dungeon:dungeonHTML,over:overHTML}[S.screen];
+  if(f)$('#screen').innerHTML=f();
+}
+
+/* ---------- intro / create / pick ---------- */
+function introHTML(){
+  const sprites=[heroCanvas('barb','hammer',1,4),heroCanvas('elf','bow',2,4),monCanvas('goblin',4),monCanvas('ghoul',4),monCanvas('bladewolf',4),monCanvas('gnome',4),monCanvas('slime_king',5)];
+  return `<section class="intro">
+    <h1>蠻族迷宮生存</h1>
+    <p class="lede">世界只剩下一座城市,拉夫多尼亞。每個月的第一天,拉維吉恩區次元廣場的傳送門會通往迷宮。進去的人要等那一層關閉才回得來,帶著魔石和精髓,或者再也沒有回來。你剛在探險者公會登記了名字,接下來發生的事只屬於你。</p>
+    <div class="strip">${sprites.map(c=>`<img src="${imgOf(c)}" width="${c.width}" height="${c.height}" alt="">`).join('')}</div>
+    <div class="rules">
+      <div><b>武器與精髓</b>沒有職業。武器決定攻擊類型,能力和技能全部來自精髓:一顆精髓給能力值、一個主動技能和一個被動,顏色決定是哪個主動技能。</div>
+      <div><b>等級就是精髓槽</b>經驗只來自第一次打倒某種怪物和開啟新的傳送門。每升一級多一個精髓槽。</div>
+      <div><b>關閉才能回城</b>迷宮每月 1 日開啟。各層關閉時間不同(1 層 7 天到 5 層 30 天),關閉時才會被傳回城市。</div>
+      <div><b>知識就是力量</b>沒研究過的怪物看不到弱點。到中央圖書館查資料,或親身交手來記錄。</div>
+      <div><b>裂縫</b>在祭壇獻上魔石打開裂縫,打倒守護者才出得來。守護者會留下裂縫石、編號物品或彩虹色的守護者精髓。</div>
+      <div><b>死亡</b>同伴死了就回不來。主角死了要到三神教大神殿復活,第一次免費。</div>
+    </div>
+    <div class="row">${SAVED?`<button class="btn primary" data-act="continue">繼續冒險(第 ${SAVED.month} 月 ${SAVED.day} 日)</button><button class="btn" data-act="newGame">建立新角色</button>`:`<button class="btn primary" data-act="newGame">建立角色</button>`}</div>
+  </section>`;
+}
+ACT.continue=()=>{S=SAVED;S.screen=S.run?'dungeon':'base';render();};
+ACT.newGame=()=>{S=newState();S.draft={name:'',race:'human',weapon:'sword',bg:'bg_merc',look:0};S.screen='create';render();};
+function optBtn(field,key,label,desc,on){return `<button class="opt" data-act="draft" data-arg="${field}:${key}" aria-pressed="${on}" title="${desc}"><b>${label}</b><small>${desc}</small></button>`;}
+function createHTML(){
+  const d=S.draft,st=stats({race:d.race,weapon:d.weapon,lv:1,wpn:0,arm:0,ess:[],traits:[d.bg]}),big=heroCanvas(d.race,d.weapon,d.look,6),w=WEAPON[d.weapon];
+  return `<section class="intro" style="max-width:1000px;margin-top:2vh">
+    <div><h1 style="font-size:clamp(28px,6vw,40px)">登記探險者</h1><p class="mute">公會的登記員抬頭看了你一眼,等你報上名字。</p></div>
+    <div class="create">
+      <div class="panel preview">
+        <img src="${imgOf(big)}" width="${big.width}" height="${big.height}" alt="角色預覽">
+        <div class="mname" style="align-items:center"><b>${d.name||'(未命名)'}</b><span>${RACE[d.race].n} · ${w.n} · ${TRAIT[d.bg].n}</span></div>
+        <div class="statline" style="justify-content:center"><span>生命<b>${st.maxhp}</b></span><span>攻擊<b>${st.atk}</b></span><span>防禦<b>${st.def}</b></span><span>速度<b>${st.spd}</b></span><span>魂力<b>${st.soul}</b></span><span>魔抗<b>${st.mres}</b></span></div>
+        <p class="mute" style="font-size:12.5px">攻擊類型:${DT[w.dt]}。${w.pass}</p>
+      </div>
+      <div class="panel">
+        <label class="field"><span>名字</span><input id="heroName" maxlength="8" placeholder="最多 8 個字" value="${d.name}" data-input="draftName" autocomplete="off"></label>
+        <div class="field"><span>髮色</span><div class="row">${HAIR.map((h,i)=>`<button class="swatch" style="--c:${h}" data-act="draft" data-arg="look:${i}" aria-pressed="${d.look===i}" aria-label="髮色 ${i+1}"></button>`).join('')}</div></div>
+        <div class="field"><span>種族</span><div class="opts">${Object.entries(RACE).map(([k,r])=>optBtn('race',k,r.n,r.d,d.race===k)).join('')}</div></div>
+        <div class="field"><span>初始武器</span><div class="opts">${Object.entries(WEAPON).map(([k,x])=>optBtn('weapon',k,x.n,`${DT[x.dt]}擊。${x.pass}`,d.weapon===k)).join('')}</div></div>
+        <div class="field"><span>出身</span><div class="opts">${Object.entries(TRAIT).filter(([,t])=>t.bg).map(([k,t])=>optBtn('bg',k,t.n,t.d,d.bg===k)).join('')}</div></div>
+        <div class="row"><button class="btn primary" data-act="confirmHero">登記並招募同伴</button><span class="mute" style="font-size:12.5px">剛登記的探險者都是 9 級,沒有任何精髓。</span></div>
+      </div>
+    </div>
+  </section>`;
+}
+ACT.draftName=(a,el)=>{S.draft.name=el.value.replace(/[<>&"'`]/g,'').slice(0,8);};
+ACT.draft=arg=>{const[f,v]=arg.split(':');S.draft[f]=f==='look'?+v:v;render();};
+ACT.confirmHero=()=>{
+  const d=S.draft;const h=makeMember({name:d.name.trim()||genName(d.race),race:d.race,weapon:d.weapon,traits:[d.bg],look:d.look});
+  h.hero=true;S.members.push(h);
+  if(d.bg==='bg_noble'){S.stone+=300;S.fame+=10;}
+  if(d.bg==='bg_scholar')['goblin','ghoul','gnome','bladewolf'].forEach(learn);
+  const ws=shuffle(Object.keys(WEAPON).filter(w=>w!==d.weapon)).slice(0,5);ws.push(pick(Object.keys(WEAPON)));
+  S.cands=ws.map(w=>makeMember({weapon:w}));S.picks=[];S.screen='pick';render();
+};
+function pickHTML(){
+  const h=S.members[0];
+  return `<section class="intro" style="max-width:1000px;margin-top:2vh">
+    <div><h1 style="font-size:clamp(28px,6vw,40px)">選三名同伴</h1><p class="mute">一個人撐不過第一層。${h.name},公會門口有六個新人願意跟你組隊。</p></div>
+    <div class="pickgrid">${S.cands.map(m=>{const st=stats(m),on=S.picks.includes(m.id);return `<button class="mcard pick ${on?'is-sel':''}" data-act="togglePick" data-arg="${m.id}" aria-pressed="${on}">
+      <div class="mhead"><img class="spr" src="${heroImg(m)}" alt=""><div class="mname"><b>${m.name}</b><span>${RACE[m.race].n} · ${WEAPON[m.weapon].n}</span></div>${on?'<span class="chip good">已選</span>':''}</div>
+      <div class="statline"><span>生命<b>${st.maxhp}</b></span><span>攻擊<b>${st.atk}</b></span><span>防禦<b>${st.def}</b></span><span>速度<b>${st.spd}</b></span><span>${DT[WEAPON[m.weapon].dt]}擊</span></div>
+      <div class="chips">${m.traits.map(t=>`<span class="chip ${TRAIT[t].good?'good':'bad'}" title="${TRAIT[t].d}">${TRAIT[t].n}</span>`).join('')}</div></button>`;}).join('')}</div>
+    <div class="row"><button class="btn primary" data-act="beginGame" ${S.picks.length===3?'':'disabled'}>帶著 ${S.picks.length}/3 人出發</button><span class="mute">不同攻擊類型能對付不同弱點的怪物。</span></div>
+  </section>`;
+}
+ACT.togglePick=id=>{id=+id;if(S.picks.includes(id))S.picks=S.picks.filter(x=>x!==id);else if(S.picks.length<3)S.picks.push(id);else toast('只能選三個人');render();};
+ACT.beginGame=()=>{
+  for(const id of S.picks)S.members.push(S.cands.find(c=>c.id===id));
+  S.cands=[];S.picks=[];S.draft=null;S.sel=S.members.map(m=>m.id);S.members.forEach(m=>m.job='work');
+  refreshGuild();refreshShop();genRequests();
+  log(`${S.members[0].name} 和三名同伴在拉維吉恩區租了一間舊倉庫當住處。`);
+  log('今天是迷宮開啟日。第 1 層水晶洞窟分成東西南北四區,中心的大賢者紀念碑附近是安全區。');
+  log('提示:沒下迷宮的日子派大家去打工,受傷的人改成休息。');
+  S.screen='base';save();render();
+};
+
+/* ================= CITY ================= */
+const TABS=[['home','住處'],['guild','探險者公會'],['library','中央圖書館'],['exchange','中央交易所'],['temple','大神殿'],['smith','鐵匠鋪'],['store','雜貨店']];
+function baseHTML(){
+  const party=S.sel.map(getM).filter(m=>m&&!m.dead);
+  const floors=[];for(let f=1;f<=S.maxFloor;f++)floors.push(f);
+  const open=S.day===1,until=DAYS_IN_MONTH-S.day+1;
+  return `<div class="camp">
+    <section class="panel">
+      <div class="panel-h"><h2>探險者</h2><span class="mute">勾選「出征」組隊,最多 4 人</span></div>
+      <div class="roster">${S.members.map(memberCard).join('')}</div>
+    </section>
+    <div class="side">
+      <section class="panel">
+        <h2>次元廣場</h2>
+        ${open?`<p class="notice">今天迷宮開啟。錯過要等下個月。</p>`:`<p class="mute">迷宮每月 1 日開啟,還有 <span class="num">${until}</span> 天。</p>`}
+        ${S.debt?`<p class="notice bad">你還欠 ${S.debt} 石幣的稅。欠稅的人進不了次元廣場。</p>`:''}
+        <p>${party.length?party.map(m=>m.name).join('、'):'<span class="mute">還沒選人</span>'} <span class="mute">(${party.length}/4)</span></p>
+        <div class="row"><label class="mute" for="startFloor">傳送到</label><select id="startFloor" data-change="setFloor">${floors.map(f=>`<option value="${f}" ${f===S.startFloor?'selected':''}>第 ${f} 層 ${FLOORS[f].n}</option>`).join('')}</select></div>
+        <div class="row"><button class="btn primary" data-act="enterLab" ${open&&party.length&&!S.debt?'':'disabled'}>進入迷宮</button><button class="btn" data-act="passDay">度過一天</button>${open?'':`<button class="btn" data-act="skipToOpen">快轉到開啟日</button>`}</div>
+      </section>
+      <section class="panel">
+        <div class="tabs" role="tablist">${TABS.map(([k,n])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-arg="${k}">${n}</button>`).join('')}</div>
+        ${tabHTML()}
+      </section>
+    </div>
+  </div>`;
+}
+ACT.tab=k=>{S.tab=k;save();render();};
+function tabHTML(){return({home:homeTab,guild:guildTab,library:libraryTab,exchange:exchangeTab,temple:templeTab,smith:smithTab,store:storeTab}[S.tab]||homeTab)();}
+function memberCard(m){
+  const st=stats(m),sel=S.sel.includes(m.id);
+  const next=m.lv<MAXLV?LV_XP[m.lv+1]:LV_XP[MAXLV],prev=LV_XP[m.lv];
+  if(m.dead)return `<article class="mcard dead"><div class="mhead"><img class="spr" src="${heroImg(m)}" alt=""><div class="mname"><b>${m.name}</b><span>已死亡,遺體安置在大神殿</span></div></div><div class="chips">${traitChips(m)}</div></article>`;
+  return `<article class="mcard ${sel?'is-sel':''}">
+    <div class="mhead"><img class="spr" src="${heroImg(m)}" alt=""><div class="mname"><b>${m.name}</b><span>${RACE[m.race].n} · ${WEAPON[m.weapon].n}<em class="lv">Lv${m.lv}</em></span></div>
+    <label class="go"><input type="checkbox" id="go-${m.id}" data-change="toggleSel" data-arg="${m.id}" ${sel?'checked':''}>出征</label></div>
+    <div>${mrow('生命',m.hp,st.maxhp,'hp')}${mrow('壓力',m.stress,100,m.stress>=70?'st hi':'st')}${mrow('經驗',m.xp-prev,Math.max(1,next-prev),'xp')}</div>
+    <div class="statline"><span>攻擊<b>${st.atk}</b></span><span>防禦<b>${st.def}</b></span><span>速度<b>${st.spd}</b></span><span>魂力<b>${st.soul}</b></span><span>魔抗<b>${st.mres}</b></span><span>${DT[WEAPON[m.weapon].dt]}擊</span></div>
+    <div class="chips">${traitChips(m)}${essChips(m)}</div>
+    <div class="mact"><label for="job-${m.id}">工作</label><select id="job-${m.id}" data-change="setJob" data-arg="${m.id}"><option value="rest" ${m.job==='rest'?'selected':''}>休息</option><option value="work" ${m.job==='work'?'selected':''}>打工</option></select>
+      ${m.num?`<button class="btn sm" data-act="unequip" data-arg="${m.id}">卸下編號物品</button>`:''}</div>
+  </article>`;
+}
+function homeTab(){
+  const c=150*S.dorm,max=S.dorm>=4;
+  return `<div class="kv"><span>住處</span><b>拉維吉恩區的舊倉庫</b><span>可住</span><b>${capacity()} 人(目前 ${living().length})</b><span>每日開銷</span><b>${living().reduce((a,m)=>a+livingCost(m),0)} 石幣</b><span>每月稅金</span><b>${living().reduce((a,m)=>a+taxOf(m),0)} 石幣(1 日繳)</b></div>
+    <div class="row"><button class="btn sm" data-act="dorm" ${!max&&S.stone>=c?'':'disabled'}>${max?'住處已擴建到最大':`擴建住處(${c} 石幣)`}</button><span class="mute" style="font-size:12px">多住 2 人,休息時壓力多降 6</span></div>
+    <div class="sub">日誌</div><div class="log">${S.log.map(l=>`<div><span class="d">${l.d}</span>${l.m}</div>`).join('')}</div>`;
+}
+/* --- guild --- */
+const REQ_DESC=r=>r.type==='kill'?`討伐 ${monName(r.k)} ×${r.n}`:r.type==='reach'?`抵達第 ${r.f} 層`:r.type==='deliver'?`繳交一顆${monName(r.k)}精髓`:r.type==='rift'?'清除任意一個裂縫':'';
+function reqProgress(r){if(r.type==='kill')return Math.min(r.n,(S.kc[r.k]||0)-r.base);if(r.type==='reach')return S.maxFloor>=r.f?1:0;if(r.type==='rift')return S.riftsCleared>r.base?1:0;if(r.type==='deliver')return S.bag.some(it=>it.k===r.k)?1:0;return 0;}
+function reqDone(r){return reqProgress(r)>=(r.type==='kill'?r.n:1);}
+function genRequests(){
+  const f=Math.min(5,S.maxFloor),pools=[];for(const[k,fd]of Object.entries(FIELDS)){const fl=fieldFloor(k);if(fl&&fl<=Math.min(5,f+1))pools.push(...fd.pool);}
+  const out=[];const mk=()=>{const t=pick(['kill','kill','kill','deliver','reach','rift']);
+    if(t==='kill'){const k=pick(pools.length?pools:['goblin']);const g=MON[k].g;const n=g>=9?ri(3,6):ri(1,3);return{type:'kill',k,n,stone:GRADE[g].stone*n*3+60,contrib:g>=9?3:6,fame:1};}
+    if(t==='deliver'){const k=pick(Object.keys(ESS).filter(e=>ESS[e].g===9));return{type:'deliver',k,stone:550,contrib:6,fame:2};}
+    if(t==='reach'&&f<5)return{type:'reach',f:f+1,stone:250*f,contrib:10,fame:3};
+    return{type:'rift',stone:600,contrib:12,fame:5};};
+  for(let i=0;i<3;i++){const r=mk();r.id=S.uid++;out.push(r);}S.reqs=out;
+}
+function fieldFloor(k){return({ccN:1,ccS:1,ccE:1,ccW:1,beast:2,dead:2,desert:2,gforest:2,steelhill:3,orc:3,marsh:3,estuary:3,witch:3,tower:4,hellfire:5,frost:5,specter:5})[k];}
+function refreshGuild(){const lvBonus=S.fame>=50?2:S.fame>=20?1:0;
+  S.guild=[0,1,2].map(()=>{const lv=Math.min(4,(Math.random()<.3?2:1)+lvBonus);const ess=Math.random()<.35?[makeEss(pick(['goblin','ghoul','gnome','bladewolf','kobold','goblin_archer']))]:[];const m=makeMember({lv,ess});return m;});}
+function refreshShop(){const cap=rankCap(),gmax=cap<=4?6:cap<=6?7:8;const pool=Object.keys(ESS).filter(k=>!ESS[k].guard&&ESS[k].g<=8&&ESS[k].g>=gmax&&!k.startsWith('abyss'));
+  S.shop=shuffle(pool).slice(0,3).map(k=>makeEss(k));}
+function recruitCost(m){return 150+m.lv*80+m.ess.length*120;}
+function guildTab(){
+  const cap=rankCap(),full=living().length>=capacity();
+  const canExam=S.contrib>=80&&!S.examPassed;
+  return `<div class="kv"><span>公會認證</span><b>${cap===7?'最高可認定為 7 級':cap===6?'中堅(可認定到 6 級)':'考試合格(可認定到 4 級)'}</b><span>貢獻點</span><b>${S.contrib}${S.contrib<30?'(滿 30 通過 6 級審查)':S.examPassed?'':'(滿 80 可報考 5 級)'}</b><span>名聲</span><b>${S.fame}</b></div>
+    ${canExam?`<button class="btn primary" data-act="exam">報考 5 級晉級考試(與考官交手)</button>`:''}
+    <div class="sub">委託(每月 1 日更新)</div>
+    <div class="list">${S.reqs.map(r=>`<div class="item"><span>${REQ_DESC(r)}</span><button class="btn sm" data-act="acceptReq" data-arg="${r.id}" ${S.active.length<3?'':'disabled'}>接受</button><small>報酬 ${r.stone} 石幣、貢獻 ${r.contrib}、名聲 ${r.fame}</small></div>`).join('')||'<p class="mute">這個月的委託都被接走了。</p>'}</div>
+    ${S.active.length?`<div class="sub">進行中</div><div class="list">${S.active.map(r=>{const done=reqDone(r);return `<div class="item"><span>${REQ_DESC(r)} <span class="mute">${r.type==='kill'?`${Math.max(0,reqProgress(r))}/${r.n}`:done?'可以回報':''}</span></span><button class="btn sm ${done?'primary':''}" data-act="claimReq" data-arg="${r.id}" ${done?'':'disabled'}>回報</button></div>`;}).join('')}</div>`:''}
+    <div class="sub">精髓交易(8 級以上,公會認證越高能買越高級)</div>
+    <div class="list">${S.shop.map((it,i)=>`<div class="item">${essChip(it)}<button class="btn sm" data-act="buyGuildEss" data-arg="${i}" ${S.stone>=GRADE[ESS[it.k].g].price?'':'disabled'}>${GRADE[ESS[it.k].g].price}</button><small>${essDesc(it)}</small></div>`).join('')||'<p class="mute">這個月的精髓賣完了。</p>'}</div>
+    <div class="sub">招募(每月 1 日、15 日換人)</div>
+    ${S.guild.map(m=>{const c=recruitCost(m);return `<div class="recruit"><img class="spr" src="${heroImg(m)}" alt=""><div class="mname"><b>${m.name} <em class="lv">Lv${m.lv}</em></b><span>${RACE[m.race].n} · ${WEAPON[m.weapon].n}</span><div class="chips" style="margin-top:3px">${m.traits.map(t=>`<span class="chip ${TRAIT[t].good?'good':'bad'}" title="${TRAIT[t].d}">${TRAIT[t].n}</span>`).join('')}${m.ess.map(essChip).join('')}</div></div><button class="btn sm" data-act="recruit" data-arg="${m.id}" ${!full&&S.stone>=c?'':'disabled'} title="${full?'住處住不下了':''}">${c}</button></div>`;}).join('')||'<p class="mute">今天沒有人在找隊伍。</p>'}`;
+}
+ACT.acceptReq=id=>{const r=S.reqs.find(x=>x.id===+id);if(!r||S.active.length>=3)return;if(r.type==='kill')r.base=S.kc[r.k]||0;if(r.type==='rift')r.base=S.riftsCleared;S.active.push(r);S.reqs=S.reqs.filter(x=>x!==r);save();render();};
+ACT.claimReq=id=>{const r=S.active.find(x=>x.id===+id);if(!r||!reqDone(r))return;
+  if(r.type==='deliver'){const i=S.bag.findIndex(it=>it.k===r.k);if(i<0)return;S.bag.splice(i,1);}
+  S.stone+=r.stone;S.contrib+=r.contrib;S.fame+=r.fame;S.active=S.active.filter(x=>x!==r);log(`完成委託「${REQ_DESC(r)}」,得到 ${r.stone} 石幣、貢獻 ${r.contrib}。`);
+  if(S.contrib>=30&&S.contrib-r.contrib<30)log('貢獻點滿 30,公會審查通過,認證上限提高到 6 級。');
+  save();render();};
+ACT.buyGuildEss=i=>{const it=S.shop[+i];if(!it)return;const p=GRADE[ESS[it.k].g].price;if(S.stone<p)return;S.stone-=p;S.bag.push(it);S.shop.splice(+i,1);log(`在公會買下${essInfo(it).n}。`);save();render();};
+ACT.recruit=id=>{const m=S.guild.find(x=>x.id===+id);if(!m)return;const c=recruitCost(m);if(S.stone<c||living().length>=capacity())return;S.stone-=c;S.members.push(m);S.guild=S.guild.filter(x=>x!==m);log(`${m.name}(${RACE[m.race].n}・${WEAPON[m.weapon].n})加入了隊伍。`);save();render();};
+ACT.exam=()=>{const party=S.sel.map(getM).filter(m=>m&&!m.dead);if(!party.length){toast('先勾選要參加考試的隊員');return;}startBattle(['examiner'],{exam:1});};
+/* --- library --- */
+const LIB_ESS=['goblin','ghoul','gnome','bladewolf','kobold','kobold_shield','goblin_archer','goblin_sword','skel_archer','skel_warrior','banshee','wall_mole'];
+function libraryTab(){
+  const seen=new Set();for(const[k,fd]of Object.entries(FIELDS)){const fl=fieldFloor(k);if(fl&&fl<=Math.min(5,S.maxFloor+1))fd.pool.forEach(x=>seen.add(x));}
+  const unknown=[...seen].filter(k=>!isKnown(k));
+  return `<p class="mute">拉維吉恩中央圖書館。不外借,只能在館內查閱。9 級精髓在這裡販售。</p>
+    <div class="sub">怪物資料(查詢費 30 石幣)</div>
+    ${unknown.length?`<div class="list">${unknown.map(k=>`<div class="item"><span>${monName(k)} <span class="lv">${MON[k].g}級</span></span><button class="btn sm" data-act="research" data-arg="${k}" ${S.stone>=30?'':'disabled'}>查詢</button></div>`).join('')}</div>`:'<p class="mute">附近樓層的怪物都查過了。</p>'}
+    <div class="sub">9 級精髓(顏色隨機)</div>
+    <div class="list">${LIB_ESS.map(k=>`<div class="item"><span>${monName(k)}精髓</span><button class="btn sm" data-act="buyLibEss" data-arg="${k}" ${S.stone>=GRADE[9].price?'':'disabled'}>${GRADE[9].price}</button><small>${ESS[k].acts.map(a=>`「${SK[a].n}」`).join('或')}${ESS[k].pas?`;被動「${PS[ESS[k].pas].n}」`:''}</small></div>`).join('')}</div>
+    <div class="sub">怪物圖鑑(${S.known.length})</div>
+    <div class="list">${S.known.map(k=>{const d=MON[k];return `<div class="item"><span>${d.n} <span class="lv">${d.g}級</span></span><span class="wk">${(d.weak||[]).map(x=>`<span>${DT[x]}</span>`).join('')}${(d.resist||[]).map(x=>`<span class="rs">${DT[x]}</span>`).join('')}${d.tags&&d.tags.spirit?'<span class="sp">靈體</span>':''}</span><small>${monNote(k)}</small></div>`;}).join('')}</div>`;
+}
+function monNote(k){const t=MON[k].tags||{},n=[];
+  if(t.passive)n.push('不會主動攻擊');if(t.spirit)n.push('靈體,物理攻擊幾乎無效');if(t.poison)n.push('攻擊帶毒');if(t.stealth)n.push('會融入周圍隱身');if(t.curse)n.push('先出手攻擊會被下「怨恨之印」');
+  if(t.bind)n.push('會束縛對手');if(t.heal)n.push('會治療同伴');if(t.buff)n.push('會強化同伴');if(t.fear)n.push('會讓人恐懼');if(t.summon)n.push(`會召喚${monName(t.summon)}`);if(t.drain)n.push('攻擊時吸血');if(t.noheal)n.push('傷口難以癒合');
+  if(MON[k].atkdt)n.push(`${DT[MON[k].atkdt]}屬性攻擊`);return n.join('、')||'沒有特別的能力';}
+ACT.research=k=>{if(S.stone<30)return;S.stone-=30;learn(k);toast(`查到了${monName(k)}的資料`);save();render();};
+ACT.buyLibEss=k=>{if(S.stone<GRADE[9].price)return;S.stone-=GRADE[9].price;const it=makeEss(k);S.bag.push(it);log(`在圖書館買下${essInfo(it).n}。`);save();render();};
+/* --- exchange --- */
+function exchangeTab(){
+  return `<p class="mute">卡梅爾比區的阿爾米納斯中央交易所。精髓、裂縫石和編號物品都能在這裡換成石幣。</p>
+    <div class="sub">精髓背包</div>
+    ${S.bag.length?`<div class="list">${S.bag.map((it,i)=>`<div class="item">${essChip(it)}<span class="row"><button class="btn sm" data-act="absorbOpen" data-arg="bag:${i}">吸收</button><button class="btn sm" data-act="sellEss" data-arg="${i}">賣 ${essPrice(it)}</button></span><small>${essSkillDesc(it)}</small></div>`).join('')}</div>`:'<p class="mute">空的。</p>'}
+    <div class="sub">物品</div>
+    ${S.items.length?`<div class="list">${S.items.map((it,i)=>itemRow(it,i)).join('')}</div>`:'<p class="mute">沒有物品。</p>'}`;
+}
+function itemRow(it,i){
+  if(it.type==='riftstone')return `<div class="item"><span>裂縫石(第 ${it.f} 層)</span><button class="btn sm" data-act="sellItem" data-arg="${i}">賣 ${300*it.f}</button></div>`;
+  if(!it.ided)return `<div class="item"><span>未鑑定的編號物品</span><span class="row"><button class="btn sm" data-act="appraise" data-arg="${i}" ${S.stone>=300?'':'disabled'}>鑑定 300</button><button class="btn sm" data-act="sellItem" data-arg="${i}">直接賣 150</button></span></div>`;
+  const d=NUM[it.id];return `<div class="item"><span>${d.n} <span class="mute">(${d.r})</span></span><span class="row"><button class="btn sm" data-act="equipOpen" data-arg="${i}">裝備</button><button class="btn sm" data-act="sellItem" data-arg="${i}">賣 ${d.price}</button></span><small>${d.d}</small></div>`;
+}
+ACT.sellEss=i=>{const it=S.bag[+i];if(!it)return;S.stone+=essPrice(it);S.bag.splice(+i,1);log(`把${essInfo(it).n}賣了 ${essPrice(it)} 石幣。`);save();render();};
+ACT.sellItem=i=>{const it=S.items[+i];if(!it)return;const v=it.type==='riftstone'?300*it.f:!it.ided?150:NUM[it.id].price;S.stone+=v;S.items.splice(+i,1);save();render();};
+ACT.appraise=i=>{const it=S.items[+i];if(!it||S.stone<300)return;S.stone-=300;it.ided=true;toast(`鑑定結果:${NUM[it.id].n}`);log(`鑑定出${NUM[it.id].n}。`);save();render();};
+ACT.equipOpen=i=>{const it=S.items[+i];if(!it)return;modal(`裝備 ${NUM[it.id].n}`,`<p class="mute">${NUM[it.id].d}</p><div class="list">${living().map(m=>`<div class="item"><span><b>${m.name}</b> <span class="mute">${m.num?'已裝備 '+NUM[m.num.id].n:''}</span></span><button class="btn sm primary" data-act="equipDo" data-arg="${i}:${m.id}">裝備</button></div>`).join('')}</div>`,[{label:'取消',act:'closeModal'}]);};
+ACT.equipDo=arg=>{const[i,id]=arg.split(':');const it=S.items[+i],m=getM(id);if(!it||!m)return;if(m.num)S.items.push(m.num);S.items.splice(+i,1);m.num=it;ACT.closeModal();save();render();};
+ACT.unequip=id=>{const m=getM(id);if(!m||!m.num)return;S.items.push(m.num);m.num=null;m.hp=Math.min(m.hp,stats(m).maxhp);save();render();};
+/* --- temple --- */
+function templeTab(){
+  const h=hero(),hc=healAllCost();
+  return `<p class="mute">三神教的大神殿。能治療傷勢、淨化心神,也是唯一能移除精髓的地方。</p>
+    ${h&&h.dead?`<p class="notice bad">${h.name} 的遺體安置在這裡。</p><button class="btn primary" data-act="revive" ${S.stone>=reviveCost()?'':'disabled'}>復活 ${h.name}(${reviveCost()?reviveCost()+' 石幣':'第一次免費'})</button>`:`<p class="mute">主角下次復活:${reviveCost()?reviveCost()+' 石幣':'免費'}</p>`}
+    <div class="row"><button class="btn sm" data-act="templeHeal" ${S.stone>=hc&&hc>0?'':'disabled'}>治療全員(${hc} 石幣)</button><button class="btn sm" data-act="purifyOpen">安定心神</button></div>
+    <div class="sub">移除精髓(本次 ${removeCost()} 石幣,每次翻倍)</div>
+    <div class="list">${living().filter(m=>m.ess.length).map(m=>`<div class="item"><span><b>${m.name}</b></span><span></span><small class="row">${m.ess.map((it,j)=>`<button class="btn sm danger" data-act="removeDo" data-arg="${m.id}:${j}" ${S.stone>=removeCost()?'':'disabled'}>移除 ${essInfo(it).short}</button>`).join('')}</small></div>`).join('')||'<p class="mute">沒有人吸收過精髓。</p>'}</div>`;
+}
+function healAllCost(){return living().reduce((a,m)=>a+Math.ceil((stats(m).maxhp-m.hp)/2),0);}
+ACT.revive=()=>{const h=hero();if(!h||!h.dead)return;const c=reviveCost();if(S.stone<c)return;S.stone-=c;S.revives++;h.dead=false;h.hp=Math.round(stats(h).maxhp*.5);h.stress=40;h.soul=stats(h).soul;
+  log(`三神教的祭司讓 ${h.name} 重新睜開了眼睛。${c?`花了 ${c} 石幣。`:'第一次的復活不收費。'}`);save();render();};
+ACT.templeHeal=()=>{const c=healAllCost();if(S.stone<c)return;S.stone-=c;living().forEach(m=>m.hp=stats(m).maxhp);toast('全員的傷都治好了');save();render();};
+ACT.purifyOpen=()=>{modal('安定心神','<p class="mute">祭司的祈禱能讓壓力歸零。</p><div class="list">'+living().map(m=>`<div class="item"><span><b>${m.name}</b> <span class="mute">壓力 ${Math.round(m.stress)}</span></span><button class="btn sm" data-act="purifyDo" data-arg="${m.id}" ${S.stone>=40&&m.stress>0?'':'disabled'}>40 石幣</button></div>`).join('')+'</div>',[{label:'關閉',act:'closeModal'}]);};
+ACT.purifyDo=id=>{const m=getM(id);if(!m||S.stone<40)return;S.stone-=40;m.stress=0;save();render();ACT.purifyOpen();};
+ACT.removeDo=arg=>{const[id,j]=arg.split(':');const m=getM(id);if(!m)return;const it=m.ess[+j];if(!it)return;const c=removeCost();if(S.stone<c)return;
+  S.stone-=c;S.removals++;m.ess.splice(+j,1);m.hp=Math.min(m.hp,stats(m).maxhp);log(`${m.name} 和${essInfo(it).short}之間的「線」被切斷了。花了 ${c} 石幣。`);save();render();};
+/* --- smith / store --- */
+function gearCost(m,t){return Math.round(80*(t+1)*(RACE[m.race].forge||1));}
+function smithTab(){
+  return `<p class="mute">強化裝備最多到 +5。也可以換一把不同類型的武器。</p><div class="list">${living().map(m=>{const cw=gearCost(m,m.wpn),ca=gearCost(m,m.arm);return `<div class="item"><span><b>${m.name}</b> <span class="mute">${WEAPON[m.weapon].n} +${m.wpn}・防具 +${m.arm}</span></span><span></span>
+    <small class="row"><button class="btn sm" data-act="gear" data-arg="${m.id}:wpn" ${m.wpn<5&&S.stone>=cw?'':'disabled'}>武器 +1(${cw})</button><button class="btn sm" data-act="gear" data-arg="${m.id}:arm" ${m.arm<5&&S.stone>=ca?'':'disabled'}>防具 +1(${ca})</button>
+    <select data-change="swapWeapon" data-arg="${m.id}" aria-label="換武器"><option value="">換武器…</option>${Object.entries(WEAPON).filter(([k])=>k!==m.weapon).map(([k,w])=>`<option value="${k}">${w.n}(${w.price})</option>`).join('')}</select></small></div>`;}).join('')}</div>`;
+}
+ACT.gear=arg=>{const[id,slot]=arg.split(':');const m=getM(id);if(!m||m[slot]>=5)return;const c=gearCost(m,m[slot]);if(S.stone<c)return;S.stone-=c;m[slot]++;if(slot==='arm')m.hp+=12;log(`${m.name} 的${slot==='wpn'?'武器':'防具'}強化到 +${m[slot]}。`);save();render();};
+ACT.swapWeapon=(id,el)=>{const m=getM(id),w=el.value;if(!m||!w)return;const p=WEAPON[w].price;if(S.stone<p){toast('石幣不夠');el.value='';return;}S.stone-=p;m.weapon=w;m.wpn=0;m.hp=Math.min(m.hp,stats(m).maxhp);log(`${m.name} 換成了${WEAPON[w].n}。`);save();render();};
+function storeTab(){
+  return `<div class="list"><div class="item"><span><b>藥水</b></span><button class="btn sm" data-act="buyPotion" ${S.stone>=POTION&&S.potions<MAXPOT?'':'disabled'}>${POTION}</button><small>戰鬥中或迷宮裡回復 40% 生命。最多帶 ${MAXPOT} 瓶(持有 ${S.potions})</small></div>
+    <div class="item"><span><b>魔法火把</b></span><button class="btn sm" data-act="buyTorch" ${S.stone>=TORCH?'':'disabled'}>${TORCH}</button><small>可以燃燒約 3 天。黑暗的樓層(第 2 層死者之地、第 3 層以後)沒有火把只看得到走過的地方(持有 ${S.torches})</small></div></div>`;
+}
+ACT.buyPotion=()=>{if(S.stone<POTION||S.potions>=MAXPOT)return;S.stone-=POTION;S.potions++;save();render();};
+ACT.buyTorch=()=>{if(S.stone<TORCH)return;S.stone-=TORCH;S.torches++;save();render();};
+ACT.dorm=()=>{const c=150*S.dorm;if(S.dorm>=4||S.stone<c)return;S.stone-=c;S.dorm++;log('住處擴建了。');save();render();};
+
+ACT.help=()=>modal('玩法',`<ul>
+  <li><b>月曆</b>:迷宮每月 1 日開啟。其他日子在城裡休息、打工、整備。每天要付生活費,每月 1 日繳稅(人類減半、龍人族免稅,欠稅進不了迷宮)。</li>
+  <li><b>迷宮</b>:進去之後要等那一層關閉才會被傳回城(1 層 7 天、2 層 10 天、3 層 15 天、4 層 23 天、5 層 30 天,從開啟日算起),回城時是隔天中午。往下走可以待更久。安全區(大賢者紀念碑、魔女小屋、大魔境起始點)可以安心等待關閉。</li>
+  <li><b>樓層</b>:第 1 層四個方向的傳送門分別通往第 2 層的四塊區域。第 3 層的傳送門在魔女森林中心。第 4 層天空之塔要爬到第 100 階。第 5 層是三條峽谷。</li>
+  <li><b>經驗</b>:只有第一次打倒某種怪物(9 級 1 點、8 級 2 點…)、打倒守護者(額外 3 點)、第一次開啟傳送門(2 點)才有經驗。每升一級多一個精髓槽。</li>
+  <li><b>精髓</b>:給能力值、一個主動技能和被動;顏色決定主動技能。技能重複的精髓不能吸收。掉落率很低,可以在圖書館(9 級)和公會(8 級以上)買。移除要到大神殿,每次費用翻倍。守護者精髓是彩虹色,能力值 1.5 倍並包含全部主動技能,可以覆蓋同一種怪物的普通精髓。</li>
+  <li><b>戰鬥</b>:依速度輪流行動。普攻回魂力,技能花魂力。打中弱點削體勢,體勢崩潰的怪物行動延後、受到更多傷害。靈體幾乎不受物理傷害。沒查過的怪物看不到弱點。</li>
+  <li><b>狀態</b>:中毒、流血、燃燒每回合扣血;束縛要被打一下才會解開;恐懼降低攻擊;怨念讓人無法回復。</li>
+  <li><b>死亡</b>:倒下的同伴戰後有 30% 機率死亡。主角死亡要到大神殿復活,第一次免費。</li>
+  <li>數字鍵可以快速選戰鬥指令。進度自動存在這個瀏覽器裡。</li></ul>`,[{label:'重新開始',act:'resetAsk',cls:'danger'},{label:'知道了',act:'closeModal',cls:'primary'}]);
+ACT.resetAsk=()=>modal('確定要重新開始?','<p class="mute">目前的進度和所有同伴都會消失,無法復原。</p>',[{label:'取消',act:'closeModal'},{label:'刪除存檔並重來',act:'resetDo',cls:'danger'}]);
+ACT.resetDo=()=>{try{localStorage.removeItem(SAVE_KEY);}catch(e){}SAVED=null;ACT.closeModal();if(B)B.token=null;B=null;S=newState();render();};
+ACT.toggleSel=(id,el)=>{id=+id;if(el.checked){if(S.sel.length>=4){el.checked=false;toast('隊伍最多 4 人');return;}S.sel.push(id);}else S.sel=S.sel.filter(x=>x!==id);save();render();};
+ACT.setJob=(id,el)=>{const m=getM(id);if(m){m.job=el.value;save();}};
+ACT.setFloor=(a,el)=>{S.startFloor=+el.value;save();};
+ACT.passDay=()=>{processDays(1);save();render();checkGameOver();};
+ACT.skipToOpen=()=>{const n=DAYS_IN_MONTH-S.day+1;processDays(n);toast(`過了 ${n} 天,今天迷宮開啟`);save();render();checkGameOver();};
+function processDays(n,away=new Set()){
+  for(let d=0;d<n;d++){
+    let earn=0;
+    for(const m of living()){
+      if(away.has(m.id))continue;const st=stats(m);
+      if(m.job==='work'){const k=hasT(m,'diligent')?1.5:hasT(m,'lazy')?.5:1;earn+=Math.round(8*k);m.hp=Math.min(st.maxhp,m.hp+st.maxhp*.15);m.stress=Math.max(0,m.stress-3);}
+      else{m.hp=Math.min(st.maxhp,m.hp+st.maxhp*.35);m.stress=Math.max(0,m.stress-(15+S.dorm*6)*(hasT(m,'insomniac')?.5:1));}
+      m.soul=st.soul;
+    }
+    S.stone+=earn;
+    const cost=living().reduce((a,m)=>a+livingCost(m),0);
+    if(S.stone>=cost)S.stone-=cost;else{S.stone=0;living().forEach(m=>{addStress(m,10);m.hp=Math.max(1,m.hp-stats(m).maxhp*.1);});log('付不出生活費,大家餓著肚子過了一天。');}
+    S.day++;
+    if(S.day>DAYS_IN_MONTH){S.day=1;S.month++;
+      const tax=living().reduce((a,m)=>a+taxOf(m),0)+S.debt;
+      if(S.stone>=tax){S.stone-=tax;S.debt=0;if(tax)log(`第 ${S.month} 月開始,繳了 ${tax} 石幣的稅。`);}
+      else{S.debt=tax-S.stone;S.stone=0;log(`稅金不夠繳,還欠 ${S.debt} 石幣。欠稅的人進不了次元廣場。`);}
+      genRequests();refreshShop();
+    }
+    if(S.day===1||S.day===15)refreshGuild();
+  }
+}
+function payDebt(){if(S.debt&&S.stone>=S.debt){S.stone-=S.debt;log(`補繳了 ${S.debt} 石幣的稅。`);S.debt=0;}}
+function checkGameOver(){const h=hero();if(!living().length&&(!h||S.stone<reviveCost())){S.screen='over';save();render();}}
+function overHTML(){
+  return `<section class="intro"><h1>你的冒險結束了</h1><p class="lede">第 ${S.month} 月 ${S.day} 日。拉夫多尼亞的探險者名冊上又多了一個劃掉的名字。沒有人活著,也付不出復活的費用。</p>
+  ${S.fallen.length?`<div class="panel"><h2>倒在迷宮裡的人</h2><div class="log">${S.fallen.map(f=>`<div><span class="d">${f.d}</span>${f.name}(Lv${f.lv})</div>`).join('')}</div></div>`:''}
+  <div class="row"><button class="btn primary" data-act="resetDo">重新開始</button></div></section>`;
+}
+/* --- absorb --- */
+ACT.absorbOpen=arg=>{
+  const[src,i]=arg.split(':');const list=src==='bag'?S.bag:S.run.loot.ess;const it=list[+i];if(!it)return;
+  const who=src==='bag'?living():partyMembers();
+  const rows=who.map(m=>{const c=absorbCheck(m,it);
+    return `<div class="item"><span><b>${m.name}</b> <span class="mute">Lv${m.lv} · 槽 ${m.ess.length}/${essSlots(m)}</span></span>${c.ok?`<button class="btn sm primary" data-act="absorbDo" data-arg="${src}:${i}:${m.id}">${c.upgrade!==undefined?'升級為守護者精髓':'吸收'}</button>`:`<span class="mute" style="font-size:12px">${c.why}</span>`}</div>`;}).join('');
+  modal(`吸收 ${essInfo(it).n}`,`<p class="mute" style="margin-bottom:8px">${essDesc(it)}</p><p style="font-size:13px;margin-bottom:8px">${essSkillDesc(it)}</p><div class="list">${rows}</div><p class="mute" style="font-size:12px;margin-top:6px">槽滿或技能重複的人,要先到大神殿移除舊精髓。</p>`,[{label:'取消',act:'closeModal'}]);
+};
+ACT.absorbDo=arg=>{
+  const[src,i,id]=arg.split(':');const list=src==='bag'?S.bag:S.run.loot.ess;const it=list[+i];const m=getM(id);if(!it||!m)return;
+  const c=absorbCheck(m,it);if(!c.ok)return;const before=stats(m);
+  if(c.upgrade!==undefined)m.ess.splice(c.upgrade,1,it);else m.ess.push(it);
+  list.splice(+i,1);const after=stats(m);
+  m.hp=Math.min(after.maxhp,m.hp+Math.max(0,after.maxhp-before.maxhp));m.soul=Math.min(after.soul,m.soul+Math.max(0,after.soul-before.soul));
+  log(`${m.name} 吸收了${essInfo(it).n},學會「${essInfo(it).acts.map(a=>SK[a].n).join('」「')}」。`);ACT.closeModal();save();render();
+};
+
+/* ================= LABYRINTH ================= */
+const partyMembers=()=>S.run?S.run.party.map(getM).filter(m=>m&&!m.dead):[];
+const runHas=eff=>partyMembers().some(m=>m.num&&NUM[m.num.id].eff[eff]);
+function genEnemies(field,kind){
+  const fd=FIELDS[field],pool=fd.pool.length?fd.pool:['goblin'];
+  if(kind==='elite'){const el=fd.elite||[pick(pool)];const e=Math.random()<.75?el[0]:pick(el);return[e,pick(pool),pick(pool)];}
+  if(kind==='bandit')return Array.from({length:ri(2,3)},()=>pick(['bandit','bandit','bandit_archer']));
+  const f=fieldFloor(field)||1;let n=clamp(2+ri(0,Math.ceil(f/2))+(fd.dense?1:0),2,5);
+  return Array.from({length:n},()=>pick(pool));
+}
+function abyssEnemies(){const e=['abyss_goblin','abyss_ghoul','abyss_gnome','abyss_bladewolf'];return[pick(e),'abyss_watcher','abyss_watcher'];}
+function makeGrid(W,H,s0){
+  const N=W*H,rooms=[...Array(N)].map((_,i)=>({x:i%W,y:Math.floor(i/W),type:'empty',visited:false,cleared:false,links:[]}));
+  const link=(a,b)=>{if(a!==b&&!rooms[a].links.includes(b)){rooms[a].links.push(b);rooms[b].links.push(a);}};
+  const nb=i=>{const x=i%W,y=Math.floor(i/W),o=[];if(x>0)o.push(i-1);if(x<W-1)o.push(i+1);if(y>0)o.push(i-W);if(y<H-1)o.push(i+W);return o;};
+  const seen=new Set([s0]),stack=[s0];
+  while(stack.length){const c=stack[stack.length-1];const opts=nb(c).filter(n=>!seen.has(n));if(!opts.length){stack.pop();continue;}const n=pick(opts);link(c,n);seen.add(n);stack.push(n);}
+  for(let k=0;k<Math.ceil(N/4);k++){const a=ri(0,N-1);link(a,pick(nb(a)));}
+  return rooms;
+}
+function bfs(rooms,s){const d=Array(rooms.length).fill(-1);d[s]=0;const q=[s];while(q.length){const c=q.shift();for(const n of rooms[c].links)if(d[n]<0){d[n]=d[c]+1;q.push(n);}}return d;}
+function fillRooms(rooms,ids,f){
+  const bag=['combat','combat','combat','combat','combat','resource','resource','chest','trap','spring','empty'];
+  ids=shuffle(ids.slice());let k=0;
+  if(f>=2&&ids.length>k&&Math.random()<.7)rooms[ids[k++]].type='elite';
+  if(ids.length>k&&Math.random()<.45){const opts=Object.entries(RIFTS).filter(([rk,r])=>r.f===f&&(S.riftCD[rk]||0)<=S.month);if(opts.length){const r=rooms[ids[k++]];r.type='altar';r.rift=pick(opts)[0];}}
+  if(ids.length>k&&Math.random()<.3)rooms[ids[k++]].type='merchant';
+  for(;k<ids.length;k++){let t=pick(bag);const fd=FIELDS[rooms[ids[k]].field];if(t==='trap'&&fd&&fd.traps===0)t='combat';if(fd&&fd.traps>=3&&Math.random()<.25)t='trap';rooms[ids[k]].type=t;}
+  for(const r of rooms){
+    if(r.type==='combat'||r.type==='elite')r.enemies=genEnemies(r.field,r.type);
+    if(r.type==='chest'&&Math.random()<.12){r.mimic=true;r.enemies=genEnemies(r.field,'combat');}
+  }
+}
+function genFloor(f,opt={}){
+  let W,H,rooms,start;
+  if(f===1){
+    W=5;H=5;const c=12;rooms=makeGrid(W,H,c);
+    rooms.forEach((r,i)=>{const dx=r.x-2,dy=r.y-2;r.field=!dx&&!dy?'ccC':Math.abs(dx)>Math.abs(dy)?(dx>0?'ccE':'ccW'):Math.abs(dy)>Math.abs(dx)?(dy>0?'ccS':'ccN'):pick([dx>0?'ccE':'ccW',dy>0?'ccS':'ccN']);});
+    rooms[c].type='sage';rooms[c].cleared=true;
+    const tips={2:'gforest',22:'dead',14:'beast',10:'desert'};
+    for(const[i,to]of Object.entries(tips)){rooms[i].type='portal';rooms[i].to=to;}
+    const cand=rooms.map((_,i)=>i).filter(i=>i!==c&&!tips[i]);
+    start=pick(cand);rooms[start].type='entry';
+    fillRooms(rooms,cand.filter(i=>i!==start),1);
+    if(opt.abyss)rooms.forEach(r=>{if((r.type==='combat'||r.type==='elite')&&(Math.abs(r.x-2)===2||Math.abs(r.y-2)===2))r.enemies=abyssEnemies();});
+  }else if(f===2){
+    W=4;H=3;start=ri(0,W*H-1);rooms=makeGrid(W,H,start);rooms.forEach(r=>r.field=opt.field||'dead');
+    rooms[start].type='entry';const d=bfs(rooms,start);let far=0;d.forEach((v,i)=>{if(v>d[far])far=i;});rooms[far].type='stairs';
+    fillRooms(rooms,rooms.map((_,i)=>i).filter(i=>i!==start&&i!==far),2);
+  }else if(f===3){
+    W=5;H=4;rooms=null;
+    const fieldOf=(x,y)=>x>=1&&x<=3&&y>=1&&y<=2?'witch':x<=1&&y<=1?'steelhill':x>=3&&y<=1?'orc':x<=1?'marsh':x>=3?'estuary':y===0?pick(['steelhill','orc']):pick(['marsh','estuary']);
+    const outer=[];for(let i=0;i<W*H;i++){const x=i%W,y=Math.floor(i/W);if(!(x>=1&&x<=3&&y>=1&&y<=2))outer.push(i);}
+    start=pick(outer);rooms=makeGrid(W,H,start);rooms.forEach(r=>r.field=fieldOf(r.x,r.y));
+    rooms[start].type='entry';
+    const witchIdx=rooms.map((r,i)=>i).filter(i=>rooms[i].field==='witch');const d=bfs(rooms,start);
+    const portal=witchIdx.reduce((a,b)=>d[b]>d[a]?b:a,witchIdx[0]);rooms[portal].type='stairs';
+    const hut=pick(witchIdx.filter(i=>i!==portal));rooms[hut].type='hut';rooms[hut].cleared=true;
+    fillRooms(rooms,rooms.map((_,i)=>i).filter(i=>i!==start&&i!==portal&&i!==hut),3);
+  }else if(f===5){
+    W=5;H=3;start=7;rooms=makeGrid(W,H,start);
+    rooms.forEach(r=>r.field=r.x<2?'hellfire':r.x>2?'frost':'specter');rooms[start].field='redstart';rooms[start].type='redstart';rooms[start].cleared=true;rooms[start].visited=true;
+    const g=pick([2,12]);rooms[g].type='f6gate';
+    fillRooms(rooms,rooms.map((_,i)=>i).filter(i=>i!==start&&i!==g),5);
+  }
+  rooms[start].visited=true;rooms[start].cleared=true;
+  return{f,W,H,rooms,start,cur:start};
+}
+const stayLimit=run=>FLOORS[run.floor].stay*24;
+const curField=run=>run.tower?'tower':run.map.rooms[run.map.cur].field;
+ACT.enterLab=()=>{
+  payDebt();
+  const party=S.sel.map(getM).filter(m=>m&&!m.dead);if(!party.length||S.day!==1||S.debt)return;
+  const f=clamp(S.startFloor,1,S.maxFloor);party.forEach(m=>{m.soul=stats(m).soul;});
+  S.run={party:party.map(m=>m.id),floor:f,h:0,loot:{stone:0,ess:[],items:[]},prev:null,torchH:0,curse:false,witchH:0,abyss:false,collapse:null,tower:null,orb:false};
+  if(f===1&&Math.random()<.04)S.run.abyss=true;
+  setupFloor(f,f===2?pick(['beast','dead','desert','gforest']):null);
+  if(Math.random()<.015)S.run.collapsePending=true;
+  S.screen='dungeon';
+  log(`${party.map(m=>m.name).join('、')} 穿過次元廣場的傳送門,來到第 ${f} 層${FLOORS[f].n}。`);
+  save();render();
+  const msgs=portalXp(party,f);
+  if(S.run.abyss)modal('深淵之主',`<p>水晶洞窟外圍的黑暗裡傳來不屬於這一層的氣息。深淵之主貝爾札克來了,外圍的怪物變成了 5 級的深淵變種。</p><p class="mute" style="margin-top:6px">中心部附近還算安全。</p>${msgs.join('')}`);
+  else if(msgs.length)modal('開啟新的傳送門',msgs.join(''));
+};
+function setupFloor(f,field){
+  const run=S.run;run.floor=f;
+  if(f===4){run.tower={stage:0,choices:towerChoices()};run.map=null;run.prev=null;}
+  else{run.tower=null;run.map=genFloor(f,{field,abyss:run.abyss&&f===1});run.prev=run.map.start;run.field2=field;}
+  S.maxFloor=Math.max(S.maxFloor,f);
+  autoTorch();
+}
+function portalXp(party,f){const out=[];for(const m of party){if(!m.floors.includes(f)){m.floors.push(f);let extra='';
+  if(f===5){m.bonusSoul=(m.bonusSoul||0)+20;extra=',首次踏入大魔境的成就讓魂力永久 +20';}
+  const ups=gainXp(m,2);out.push(`<p>${m.name} 第一次開啟第 ${f} 層的傳送門,經驗 +2${extra}${ups.length?`,<span style="color:var(--torch-hi)">升到 Lv${m.lv}!多了 ${ups.length} 個精髓槽</span>`:''}</p>`);}}
+  if(out.length&&f>1)S.fame+=3;return out;}
+function fieldDark(field){const fd=FIELDS[field];return fd&&fd.dark;}
+function autoTorch(){const run=S.run;if(!run||run.tower)return;if(fieldDark(curField(run))&&run.torchH<=0&&S.torches>0){S.torches--;run.torchH=72;toast('點起了一支魔法火把');}}
+const roomHasFoes=r=>!r.cleared&&(r.type==='combat'||r.type==='elite'||r.type==='rift');
+function visible(map,i){
+  const r=map.rooms[i];if(r.visited||r.seen)return true;
+  const run=S.run,lit=!fieldDark(r.field)||run.torchH>0;
+  const adj=r.links.some(j=>map.rooms[j].visited);
+  if(adj&&lit)return true;
+  if(runHas('sight')&&r.links.some(j=>map.rooms[j].links.some(k=>map.rooms[k].visited))&&lit)return true;
+  return false;
+}
+const reachable=(map,i)=>map.rooms[i].visited||map.rooms[i].links.some(j=>map.rooms[j].visited);
+function fmtH(h){const d=Math.floor(h/24),hh=Math.floor(h%24);return d?`${d} 天 ${hh} 小時`:`${hh} 小時`;}
+function dungeonHTML(){
+  const run=S.run,left=stayLimit(run)-run.h;
+  const head=`<div class="panel-h"><h2>第 ${run.floor} 層 · ${run.tower?'天空之塔':FIELDS[curField(run)].n}</h2><span class="mute" style="font-size:12.5px">關閉倒數 <span class="num" style="color:${left<24?'var(--blood)':'var(--ink)'}">${fmtH(Math.max(0,left))}</span></span></div>${meter(left,stayLimit(run),'tm')}`;
+  const notes=fieldNotes(run);
+  const main=run.collapse?collapseHTML():run.tower?towerHTML():mapHTML();
+  return `<div class="dun"><div class="dmain"><section class="panel">${head}${notes}${main.map||''}</section><section class="panel event">${main.event}</section></div>
+  <aside class="side">
+    <section class="panel"><h2>隊伍</h2><div>${partyMembers().map(m=>{const st=stats(m);return `<div class="mini"><img class="spr" src="${heroImg(m)}" alt=""><div class="mname"><b>${m.name} <em class="lv">Lv${m.lv}</em></b><span>${WEAPON[m.weapon].n} · 精髓 ${m.ess.length}/${essSlots(m)}</span>${mrow('生命',m.hp,st.maxhp,'hp')}${mrow('魂力',m.soul,st.soul,'sl')}${mrow('壓力',m.stress,100,m.stress>=70?'st hi':'st')}</div></div>`;}).join('')}</div>
+      <div class="row"><button class="btn sm" data-act="usePotion" ${S.potions?'':'disabled'}>用藥水(${S.potions})</button>${run.torchH>0?`<span class="mute" style="font-size:12px">火把剩 ${Math.ceil(run.torchH)} 小時</span>`:`<button class="btn sm" data-act="lightTorch" ${S.torches?'':'disabled'}>點火把(${S.torches})</button>`}</div></section>
+    <section class="panel"><h2>身上的戰利品</h2><div class="loot"><span>魔石(換算石幣)<b>${run.loot.stone}</b></span><span>物品<b>${run.loot.items.length}</b></span></div>
+      ${run.loot.ess.length?`<div class="list">${run.loot.ess.map((it,i)=>`<div class="item">${essChip(it)}<button class="btn sm" data-act="absorbOpen" data-arg="run:${i}">吸收</button></div>`).join('')}</div>`:''}
+      <p class="mute" style="font-size:12px">只能帶出魔石、精髓和物品。全滅會全部失去${runHas('keepLoot')?'(擴充型背包能保住一半)':''}。</p></section>
+  </aside></div>`;
+}
+function fieldNotes(run){
+  const out=[],fx=FIELDS[curField(run)]?.fx;
+  if(run.abyss&&run.floor===1)out.push('<p class="notice bad">深淵之主出現中:外圍是 5 級的深淵變種。</p>');
+  if(run.curse)out.push('<p class="notice bad">怨恨之印:女妖的詛咒跟著你們,每走一步壓力多增加。</p>');
+  if(fx==='witch')out.push('<p class="notice bad">魔女森林:方向感錯亂、幻聽、痛覺加劇。每走一步壓力 +50%。待太久「魔女之眼」會引來卡納巴洛。</p>');
+  if(fx==='ember')out.push('<p class="notice bad">餘燼烙印:技能魂力消耗 1.5 倍,戰鬥中每回合受到灼燒。</p>');
+  if(fx==='frost')out.push('<p class="notice bad">嚴寒:隊員速度 -15%(保溫石可免疫)。</p>');
+  if(fx==='specter')out.push('<p class="notice bad">地縛靈:物理與暗屬性抗性大減,受到的傷害 +25%。</p>');
+  if(!run.tower&&fieldDark(curField(run))&&run.torchH<=0)out.push('<p class="notice">這裡吞噬光線,沒有火把只看得到走過的地方。</p>');
+  return out.join('');
+}
+function mapHTML(){
+  const run=S.run,map=run.map,cur=map.rooms[map.cur],vet=partyMembers().some(m=>hasT(m,'bg_hunter'));const blocked=roomHasFoes(cur);
+  let cells='';
+  for(let gy=0;gy<map.H*2-1;gy++)for(let gx=0;gx<map.W*2-1;gx++){
+    if(gx%2===0&&gy%2===0){
+      const i=(gy/2)*map.W+gx/2,r=map.rooms[i],vis=visible(map,i),isCur=i===map.cur;
+      const can=!isCur&&cur.links.includes(i)&&(!blocked||i===run.prev);
+      let g='?',cls='room';
+      if(r.visited){g=RT[r.type].g;cls+=' visited';if(r.cleared&&['combat','elite','chest','resource','trap','spring','altar','rift','empty'].includes(r.type))cls+=' cleared';}
+      else if(vis){g=r.type==='trap'?'空':RT[r.type].g;cls+=' known';}
+      if(vis&&roomHasFoes(r))cls+=' threat';if(vis&&SAFE_ROOMS.includes(r.type))cls+=' safe';if(isCur)cls+=' cur';if(can)cls+=' can';
+      const fz=FIELDS[r.field]?.c,cnt=vis&&vet&&roomHasFoes(r)&&!r.visited&&r.enemies?`<span class="cnt">×${r.enemies.length}</span>`:'';
+      cells+=`<button class="${cls}" ${can?`data-act="move" data-arg="${i}"`:'tabindex="-1"'} aria-label="${vis?RT[r.type].n:'未知'}">${fz&&vis&&map.f!==2?`<span class="fz" style="--fz:${fz}"></span>`:''}${g}${cnt}</button>`;
+    }else if(gy%2===0){const a=(gy/2)*map.W+(gx-1)/2,b=a+1;cells+=map.rooms[a].links.includes(b)&&(visible(map,a)||visible(map,b))&&(reachable(map,a)||reachable(map,b))?'<div class="corr-h"></div>':'<div></div>';}
+    else if(gx%2===0){const a=((gy-1)/2)*map.W+gx/2,b=a+map.W;cells+=map.rooms[a].links.includes(b)&&(visible(map,a)||visible(map,b))&&(reachable(map,a)||reachable(map,b))?'<div class="corr-v"></div>':'<div></div>';}
+    else cells+='<div></div>';
+  }
+  const cols=Array(map.W).fill('var(--cell)').join(' var(--gap) ');
+  return{map:`<div class="mapbox"><div class="map ${map.W>=5?'w5':''}" style="grid-template-columns:${cols}">${cells}</div></div>
+    <div class="legend"><span><b>入</b>降落點</span><span><b>門</b>傳送門</span><span><b>戰</b>怪物</span><span><b>精</b>精英</span><span><b>壇</b>祭壇</span><span><b>寶</b>寶箱</span><span><b>晶</b>魔石</span><span><b>碑屋安</b>安全區</span></div>`,event:eventHTML(cur)};
+}
+function foesHTML(list){return `<div class="foes">${list.map(k=>`<div class="foe ${MON[k].elite||MON[k].boss?'elite':''}"><img src="${monImg(k,3)}" alt="">${MON[k].n}<span class="num" style="font-size:10px;color:var(--gold)">${MON[k].g}級</span><span class="wk">${isKnown(k)?(MON[k].weak||[]).map(x=>`<span>${DT[x]}</span>`).join(''):'<span class="uk">弱點?</span>'}</span></div>`).join('')}</div>`;}
+function floorMasterBlock(f){const fm=FLOORMASTER[f];if(!fm)return'';
+  return `<p class="desc" style="margin-top:10px">這一層的層主「${fm.n}」潛伏在安全區之外的黑暗深處。</p>${foesHTML([fm.key,...fm.minions])}<div class="row"><button class="btn primary" data-act="fmaster" data-arg="${f}">挑戰${fm.n}</button></div>`;}
+function eventHTML(r){
+  const run=S.run,f=run.floor,act=(label,a,arg='',cls='',dis=false)=>`<button class="btn ${cls}" data-act="${a}" data-arg="${arg}" ${dis?'disabled':''}>${label}</button>`;
+  const back=act('退回上一間','move',run.prev);
+  const camp=act('紮營休息(8 小時)','camp');
+  const wait=act(`在這裡等到迷宮關閉(${fmtH(Math.max(0,stayLimit(run)-run.h))})`,'waitClose','','primary');
+  switch(r.type){
+    case'entry':return `<h3>降落點</h3><p class="desc">傳送門把你們丟在這裡。迷宮關閉前沒有辦法回城。</p><div class="row">${camp}</div>`;
+    case'sage':return `<h3>大賢者紀念碑</h3><p class="desc">水晶洞窟的中心部。古老的石碑旁很少有怪物靠近,是這一層的安全區。可以安心休息,也可以在這裡等到迷宮關閉。</p><div class="row">${act('休息(8 小時,不會被偷襲)','campSafe','','')}${wait}</div>${floorMasterBlock(f)}`;
+    case'hut':return `<h3>魔女小屋</h3><p class="desc">從樹皮的縫隙鑽進去,是魔女森林裡唯一的安全處。小屋每次只能維持 8 小時。</p><div class="row">${act('休息(8 小時,不會被偷襲)','campSafe')}${wait}</div>${floorMasterBlock(f)}`;
+    case'redstart':return `<h3>大魔境・起始點</h3><p class="desc">紅色的光照著這片安全區。數十條像溜滑梯一樣的峽谷從這裡向外延伸。</p><div class="row">${act('休息(8 小時,不會被偷襲)','campSafe')}${wait}</div>${floorMasterBlock(f)}`;
+    case'portal':return `<h3>傳送門石碑・往${FIELDS[r.to].n}</h3><p class="desc">第 1 層四個方向各有一座傳送門,這一座通往第 2 層的「${FIELDS[r.to].n}」。第 2 層會在第 10 天關閉。</p><div class="row">${act(`前往${FIELDS[r.to].n}`,'descend',r.to,'primary')}${camp}</div>`;
+    case'stairs':return f===2?`<h3>傳送門石碑・往朝聖者之路</h3><p class="desc">往下是第 3 層朝聖者之路,會在第 15 天關閉。</p><div class="row">${act('前往第 3 層','descend','','primary')}${camp}</div>`
+      :`<h3>傳送門石碑・往天空之塔</h3><p class="desc">魔女森林中心的傳送門。第 4 層天空之塔是獨立的樓層,一進去就會遭遇成群的怪物。</p><div class="row">${act('前往第 4 層','descend','','primary')}${camp}</div>`;
+    case'f6gate':return `<h3>亡靈峽谷的盡頭</h3><p class="desc">再往下是需要船才能渡過的第 6 層大海。原型的迷宮到這裡為止。</p><div class="row">${camp}${wait}</div>`;
+    case'combat':case'elite':
+      if(r.cleared)return `<h3>${RT[r.type].n}</h3><p class="desc">只剩下怪物的殘骸。屍體和素材沒辦法帶出迷宮。</p><div class="row">${camp}</div>`;
+      return `<h3>${r.type==='elite'?'強敵擋住去路':'遭遇怪物'}</h3><p class="desc">${r.enemies.every(k=>(MON[k].tags||{}).passive)?'牠們似乎沒有攻擊的意思。可以繞過去,也可以先出手。':'不打倒牠們就無法往其他方向前進。'}</p>${foesHTML(r.enemies)}
+        <div class="row">${act('迎戰','fight','','primary')}${back}${r.enemies.every(k=>(MON[k].tags||{}).passive)?act('悄悄通過','sneak'):''}</div>`;
+    case'altar':{const rf=RIFTS[r.rift];if(r.cleared)return `<h3>熄滅的祭壇</h3><p class="desc">裂縫已經關閉了。</p><div class="row">${camp}</div>`;
+      return `<h3>裂縫祭壇・${rf.n}</h3><p class="desc">獻上 ${rf.cost} 石幣價值的魔石(從身上扣),就能打開通往「${rf.n}」的裂縫。守護者「${monName(rf.boss)}」${MON[rf.boss].g}級。進去之後不打倒守護者就出不來。</p>${foesHTML([rf.boss,...rf.minions])}
+        <div class="row">${act(`獻上魔石(身上 ${run.loot.stone})`,'offer','','primary',run.loot.stone<rf.cost)}${camp}</div>`;}
+    case'rift':{const rf=RIFTS[r.rift];if(r.cleared)return `<h3>${rf.n}</h3><p class="desc">守護者倒下後,裂縫闔上了。</p><div class="row">${camp}</div>`;
+      return `<h3>裂縫:${rf.n}</h3><p class="desc">空間被撕開了一道口子。進去之後無法逃跑。</p>${foesHTML(r.enemies)}<div class="row">${act('進入裂縫','fight','','primary')}${back}</div>`;}
+    case'chest':if(r.cleared)return `<h3>空寶箱</h3><p class="desc">已經被翻過了。</p><div class="row">${camp}</div>`;
+      return `<h3>寶箱</h3><p class="desc">一個生鏽的寶箱。</p><div class="row">${act('打開','openChest','','primary')}</div>`;
+    case'resource':if(r.cleared)return `<h3>魔石礦脈</h3><p class="desc">已經採光了。</p><div class="row">${camp}</div>`;
+      return `<h3>魔石礦脈</h3><p class="desc">採集要花 4 小時,壓力會增加,可能被怪物撞見。</p><div class="row">${act('採集','gather','','primary')}</div>`;
+    case'trap':return `<h3>陷阱</h3><p class="desc">${r.note||'機關已經觸發過了。'}</p><div class="row">${camp}</div>`;
+    case'spring':if(r.cleared)return `<h3>乾涸的泉水</h3><p class="desc">泉水已經被喝光了。</p><div class="row">${camp}</div>`;
+      return `<h3>治癒泉水</h3><p class="desc">全隊回復 40% 生命和魂力,壓力 -12。</p><div class="row">${act('飲用泉水','drink','','primary')}</div>`;
+    case'merchant':return `<h3>流浪商人</h3><p class="desc">在迷宮裡做生意的探險者,收你身上的魔石(${run.loot.stone})。</p>
+      <div class="row">${act('藥水 · 45','buy','potion','',run.loot.stone<45||S.potions>=MAXPOT)}${act('火把 · 80','buy','torch','',run.loot.stone<80)}${act('鎮定香 全隊壓力 -20 · 40','buy','calm','',run.loot.stone<40)}${act('魂力藥劑 · 60','buy','soul','',run.loot.stone<60)}</div>`;
+    default:return `<h3>空地</h3><p class="desc">${r.note||'寂靜得令人不安。'}</p><div class="row">${camp}</div>`;
+  }
+}
+/* --- tower (F4) --- */
+const STAIRS={courage:{n:'勇氣之階',d:'遭遇隨機的怪物群,勝利後上 1 階。花 4 小時。'},wisdom:{n:'智慧之階',d:'跳過 5 階的捷徑,有陷阱和少量怪物。花 3 小時。'},patience:{n:'忍耐之階',d:'幻覺的試煉:全隊壓力 +15,上 1 階,中心的寶箱有特別獎勵。花 6 小時。'},fate:{n:'命運之階',d:'很少出現,變數極大。'}};
+function towerChoices(){const c=['courage','wisdom','patience'];if(Math.random()<.08)c[ri(0,2)]='fate';return c;}
+function towerHTML(){
+  const t=S.run.tower;
+  if(t.stage>=100&&!t.guardDone)return{map:`<p class="mute">第 100 階。中心部的傳送門石碑前,站著必定出現的 5 級守衛。</p>`,event:`<h3>天空之塔・第 100 階</h3>${foesHTML(['sky_sentinel','tower_guardian'])}<div class="row"><button class="btn primary" data-act="towerBoss">迎戰</button><button class="btn" data-act="camp">紮營休息(8 小時)</button></div>`};
+  if(t.guardDone)return{map:'<p class="mute">守衛倒下了。傳送門石碑的門要照正確的順序打開。</p>',event:`<h3>往大魔境的傳送門</h3><p class="desc">第 5 層大魔境會在第 30 天關閉。</p><div class="row"><button class="btn primary" data-act="descend">前往第 5 層</button><button class="btn" data-act="camp">紮營休息(8 小時)</button></div>`};
+  return{map:`<div class="mrow" style="grid-template-columns:60px 1fr 70px"><span>攀登</span>${meter(t.stage,100,'xp')}<span class="num">${t.stage}/100</span></div><p class="mute" style="font-size:12.5px">天空之塔也叫修練之塔。選一道階梯往上爬,到第 100 階就能找到通往第 5 層的傳送門。</p>`,
+    event:`<h3>選擇階梯</h3><div class="stairs">${t.choices.map((c,i)=>`<button class="stair ${c==='fate'?'fate':''}" data-act="stair" data-arg="${i}"><b>${STAIRS[c].n}</b><small>${STAIRS[c].d}</small></button>`).join('')}</div><div class="row"><button class="btn" data-act="camp">在平台紮營(8 小時)</button></div>`};
+}
+function towerEnemies(n){const t=S.run.tower,pool=FIELDS.tower.pool.filter(k=>k!=='tower_guardian');const out=Array.from({length:n},()=>pick(pool));if(t.stage>40&&Math.random()<t.stage/150)out[0]='tower_guardian';return out;}
+ACT.stair=i=>{const run=S.run,t=run.tower,c=t.choices[+i];if(!c)return;
+  if(c==='courage'){t.pending=1;if(advanceTime(4))return;save();startBattle(towerEnemies(ri(2,4)),{tower:1});return;}
+  if(c==='wisdom'){if(advanceTime(3))return;if(Math.random()<.35){const v=pick(partyMembers()),d=Math.round(stats(v).maxhp*.2);v.hp=Math.max(1,v.hp-d);toast(`智慧之階的陷阱!${v.name} 受到 ${d} 點傷害`);}
+    t.pending=5;save();startBattle(towerEnemies(2),{tower:1});return;}
+  if(c==='patience'){if(advanceTime(6))return;partyMembers().forEach(m=>addStress(m,15));t.stage=Math.min(100,t.stage+1);const msg=towerChest();t.choices=towerChoices();toast('撐過了幻覺的試煉。'+msg);save();render();return;}
+  if(c==='fate'){const r=Math.random();if(r<.4){const msg=towerChest(true);t.stage=Math.min(100,t.stage+1);t.choices=towerChoices();toast('命運眷顧了你們。'+msg);save();render();}
+    else if(r<.7){t.pending=1;save();startBattle(['orc_hero','tower_guardian'],{tower:1});}
+    else{t.stage=Math.min(100,t.stage+10);t.choices=towerChoices();toast('命運之階把你們送上了 10 階!');save();render();}return;}
+};
+function towerChest(big){const L=S.run.loot;if(Math.random()<(big?.4:.12)){L.items.push(randomNum());return '寶箱裡有一件編號物品!';}if(Math.random()<(big?.3:.08)){const it=makeEss(pick(['orc_warrior','orc_archer','iron_falcon','owlbear','lizardman','homunculus']));L.ess.push(it);return `寶箱裡有一顆${essInfo(it).n}!`;}const v=ri(80,160);L.stone+=v;return `寶箱裡有 ${v} 石幣的魔石。`;}
+ACT.towerBoss=()=>{S.run.tower.pending=0;startBattle(['sky_sentinel','tower_guardian','tower_guardian'],{tower:1,boss:1});};
+/* --- dimension collapse --- */
+function collapseHTML(){const c=S.run.collapse;return{map:`<p class="notice bad">次元崩壞!迷宮提前封閉,地板變成隨機的傳送門,人和怪物被丟到各處。撐過所有波次才回得去。</p>`,
+  event:`<h3>第 ${c.wave+1} / ${c.total} 波</h3><p class="desc">${c.wave?'下一波就要來了。':'空間扭曲了。'}兩波之間有一點喘息的時間。</p><div class="row"><button class="btn primary" data-act="collapseFight">迎戰</button>${c.wave?'<button class="btn" data-act="collapseRest">喘口氣(回復 15% 生命)</button>':''}</div>`};}
+ACT.collapseFight=()=>{const c=S.run.collapse,f=S.run.floor;const pools=Object.keys(FIELDS).filter(k=>{const fl=fieldFloor(k);return fl&&fl<=Math.min(5,f+1)&&FIELDS[k].pool.length;});
+  startBattle(genEnemies(pick(pools),'combat').concat(Math.random()<.4?[pick(FIELDS[pick(pools)].pool)]:[]).slice(0,5),{collapse:1});};
+ACT.collapseRest=()=>{if(S.run.collapse.rested===S.run.collapse.wave)return;S.run.collapse.rested=S.run.collapse.wave;partyMembers().forEach(m=>{const st=stats(m);m.hp=Math.min(st.maxhp,m.hp+st.maxhp*.15);});toast('稍微喘了口氣');save();render();};
+/* --- moves & room actions --- */
+function advanceTime(h){
+  const run=S.run;const before=run.h;run.h+=h;
+  if(run.torchH>0)run.torchH=Math.max(0,run.torchH-h);
+  partyMembers().forEach(m=>{const st=stats(m);m.soul=Math.min(st.soul,m.soul+st.soul*.03*h);});
+  if(!run.tower&&FIELDS[curField(run)]?.fx==='witch')run.witchH+=h;
+  if(run.floor===3&&!run.orb&&run.h>=72&&!run.tower){run.orb=true;run.map.rooms.forEach(r=>r.seen=true);toast('第 3 天,鋼岩丘陵的地面升起銀色光球,迷宮短暫地亮了起來!');}
+  if(run.h>=stayLimit(run)){eject();return true;}
+  return false;
+}
+ACT.move=i=>{
+  i=+i;const run=S.run,map=run.map,cur=map.rooms[map.cur];
+  if(!cur.links.includes(i))return;if(roomHasFoes(cur)&&i!==run.prev){toast('怪物擋住了去路');return;}
+  run.prev=map.cur;map.cur=i;
+  const fx=FIELDS[map.rooms[i].field]?.fx,k=(fx==='witch'?1.5:1)+(run.curse?.6:0);partyMembers().forEach(m=>addStress(m,2.5*k));
+  if(advanceTime(5))return;
+  autoTorch();
+  const r=map.rooms[i];if(!r.visited){r.visited=true;onEnter(r);}
+  if(run.collapsePending&&run.h>=24){run.collapsePending=false;run.collapse={wave:0,total:3+run.floor};log('次元崩壞發生了!');save();render();modal('次元崩壞','<p>沒有任何預兆,迷宮在關閉日之前封閉了,回城的傳送失敗。地板一片片變成隨機的傳送門。</p><p class="mute" style="margin-top:6px">撐過所有波次才能回去。聽說運氣好的話,能在這裡得到別處拿不到的東西。</p>');return;}
+  save();render();
+};
+function onEnter(r){
+  const party=partyMembers(),run=S.run;
+  if(r.type==='trap'){
+    const spotter=party.find(m=>RACE[m.race].trap&&Math.random()<.6);
+    if(spotter)r.note=`${spotter.name} 發現了地上的機關,大家繞了過去。`;
+    else{const v=pick(party),d=Math.round(stats(v).maxhp*.2);v.hp=Math.max(1,v.hp-d);addStress(v,8);r.note=`${FIELDS[r.field]?.traps>=3?'哥布林設下的':''}陷阱啟動了,${v.name} 受到 ${d} 點傷害。`;}
+    toast(r.note);r.cleared=true;
+  }
+  if(r.type==='empty'){party.forEach(m=>addStress(m,2));r.cleared=true;}
+  if((r.type==='combat')&&FIELDS[r.field]?.fx==='witch'&&run.witchH>=48&&!r.enemies.includes('carnivaro')&&Math.random()<.5){r.enemies=['carnivaro',...r.enemies].slice(0,4);toast('魔女之眼注視著你們……卡納巴洛出現了!');}
+}
+ACT.fight=()=>{const r=S.run.map.rooms[S.run.map.cur];if(roomHasFoes(r))startBattle(r.enemies,{rift:r.type==='rift',riftKey:r.rift});};
+ACT.sneak=()=>{const r=S.run.map.rooms[S.run.map.cur];if(!roomHasFoes(r))return;r.cleared=true;r.sneaked=true;toast('你們屏住呼吸,從牠們身邊走了過去');save();render();};
+ACT.offer=()=>{const run=S.run,r=run.map.rooms[run.map.cur],rf=RIFTS[r.rift];if(run.loot.stone<rf.cost)return;
+  run.loot.stone-=rf.cost;r.type='rift';r.enemies=[rf.boss,...rf.minions];toast('魔石化成光,空間裂開了!');save();render();};
+ACT.fmaster=f=>{f=+f;const fm=FLOORMASTER[f];if(!fm)return;startBattle([fm.key,...fm.minions],{fmaster:f});};
+function randomNum(){const ids=Object.keys(NUM);const w=ids.map(id=>NUM[id].r==='三'?1:NUM[id].r==='雙'?4:8);let s=Math.random()*w.reduce((a,b)=>a+b,0);for(let i=0;i<ids.length;i++){s-=w[i];if(s<=0)return{type:'num',id:ids[i],ided:false};}return{type:'num',id:ids[0],ided:false};}
+ACT.openChest=()=>{
+  const run=S.run,r=run.map.rooms[run.map.cur];if(r.cleared)return;
+  if(r.mimic){r.type='combat';r.mimic=false;toast('寶箱是陷阱,怪物衝了出來!');save();startBattle(r.enemies,{});return;}
+  const f=run.floor,st=ri(10,25)*f+f*8;run.loot.stone+=st;let msg=`魔石 +${st}`;
+  if(Math.random()<.06){run.loot.items.push(randomNum());msg+=',還有一件未鑑定的編號物品!';}
+  else if(Math.random()<.04){const pool=FIELDS[r.field].pool.filter(k=>ESS[k]);if(pool.length){const it=makeEss(pick(pool));run.loot.ess.push(it);msg+=`,還有一顆${essInfo(it).n}!`;}}
+  if(Math.random()<.25&&S.potions<MAXPOT){S.potions++;msg+=',以及一瓶藥水';}
+  r.cleared=true;toast(msg);save();render();
+};
+ACT.gather=()=>{
+  const run=S.run,r=run.map.rooms[run.map.cur];if(r.cleared)return;const f=run.floor;const v=ri(20,35)*f;run.loot.stone+=v;
+  partyMembers().forEach(m=>addStress(m,5));r.cleared=true;
+  if(advanceTime(4))return;
+  if(FIELDS[r.field].pool.length&&Math.random()<.25){toast(`魔石 +${v}。採集的聲音引來了怪物!`);r.type='combat';r.cleared=false;r.enemies=genEnemies(r.field,'combat');save();startBattle(r.enemies,{});return;}
+  toast(`魔石 +${v}`);save();render();
+};
+ACT.drink=()=>{const r=S.run.map.rooms[S.run.map.cur];if(r.cleared)return;partyMembers().forEach(m=>{const st=stats(m);m.hp=Math.min(st.maxhp,m.hp+st.maxhp*.4);m.soul=Math.min(st.soul,m.soul+st.soul*.4);addStress(m,-12);});r.cleared=true;toast('全隊恢復了精神');save();render();};
+ACT.buy=k=>{const run=S.run,price={potion:45,torch:80,calm:40,soul:60}[k];if(run.loot.stone<price)return;
+  if(k==='potion'){if(S.potions>=MAXPOT)return;S.potions++;}if(k==='torch')S.torches++;
+  if(k==='calm')partyMembers().forEach(m=>addStress(m,-20));if(k==='soul')partyMembers().forEach(m=>m.soul=stats(m).soul);
+  run.loot.stone-=price;autoTorch();save();render();};
+ACT.usePotion=()=>{if(!S.potions)return;const p=partyMembers();if(!p.length)return;const m=p.reduce((a,b)=>a.hp/stats(a).maxhp<b.hp/stats(b).maxhp?a:b);const st=stats(m);m.hp=Math.min(st.maxhp,m.hp+st.maxhp*.4);S.potions--;toast(`${m.name} 喝下藥水`);save();render();};
+ACT.lightTorch=()=>{if(!S.torches||S.run.torchH>0)return;S.torches--;S.run.torchH=72;save();render();};
+function restParty(pct,stress){partyMembers().forEach(m=>{const st=stats(m);m.hp=Math.min(st.maxhp,m.hp+st.maxhp*pct);addStress(m,-stress);});}
+ACT.camp=()=>{
+  const run=S.run;restParty(.25,6);
+  if(advanceTime(8))return;
+  const fieldK=curField(run),pool=FIELDS[fieldK]?.pool||[];
+  if(Math.random()<(run.curse?.35:.2)&&(pool.length||run.floor>=2)){const bandit=run.floor>=2&&(Math.random()<.4||!pool.length);
+    toast(bandit?'夜裡,其他探險者摸了過來!':'睡到一半,怪物找上門了!');save();startBattle(bandit?genEnemies(fieldK,'bandit'):genEnemies(fieldK,'combat'),{ambush:1});return;}
+  toast('大家輪流守夜,稍微休息了一下');save();render();
+};
+ACT.campSafe=()=>{restParty(.35,10);if(advanceTime(8))return;toast('在安全區好好睡了一覺');save();render();};
+ACT.waitClose=()=>{const run=S.run;const h=stayLimit(run)-run.h;restParty(1,30);advanceTime(Math.max(1,h));};
+ACT.descend=to=>{
+  const run=S.run;if(run.collapse)return;const nf=run.floor+1;if(nf>5)return;
+  setupFloor(nf,nf===2?(to||pick(['beast','dead','desert','gforest'])):null);
+  const msgs=portalXp(partyMembers(),nf);
+  log(`隊伍來到第 ${nf} 層「${run.tower?'天空之塔':FIELDS[curField(run)].n}」。`);save();render();
+  modal(`第 ${nf} 層 · ${run.tower?'天空之塔':FIELDS[curField(run)].n}`,`<p class="mute">這一層會在第 ${FLOORS[nf].stay} 天關閉,還剩 ${fmtH(stayLimit(run)-run.h)}。</p>${nf===4?'<p style="margin-top:6px">一踏進塔裡,第 3 層的怪物就成群撲了過來!</p>':''}${msgs.join('')}`);
+  if(nf===4){run.tower.pending=0;startBattle(towerEnemies(3),{tower:1});}
+};
+function returnToCity(title,lead,bonus){
+  const run=S.run,L=run.loot;
+  if(bonus){L.stone=Math.round(L.stone*1.5);L.ess.push(makeEss(pick(Object.keys(ESS).filter(k=>ESS[k].g===8&&!ESS[k].guard))));}
+  S.stone+=L.stone;S.bag.push(...L.ess);S.items.push(...L.items);
+  const days=Math.floor(run.h/24)+1,names=partyMembers().map(m=>m.name).join('、');
+  S.run=null;S.screen='base';processDays(days,new Set(run.party));
+  log(`${names||'隊伍'} 回到拉夫多尼亞,帶回 ${L.stone} 石幣的魔石${L.ess.length?`、精髓 ${L.ess.length} 顆`:''}${L.items.length?`、物品 ${L.items.length} 件`:''}。`);
+  save();render();
+  modal(title,`<p class="mute">${lead} 這趟一共 ${days} 天。</p><div class="loot" style="margin-top:8px"><span>石幣<b>${L.stone}</b></span><span>物品<b>${L.items.length}</b></span></div>${L.ess.length?`<p style="margin-top:8px">精髓:${L.ess.map(it=>essInfo(it).n).join('、')}(已放進交易所的背包)</p>`:''}`);
+}
+function eject(){returnToCity('迷宮關閉了','關閉的時間到了。一陣暈眩之後,你們在隔天中午出現在次元廣場。');}
+
+/* ================= TURN-BASED BATTLE ================= */
+function heroUnit(m){const st=stats(m),w=WEAPON[m.weapon],pas=memberPas(m);
+  return{side:'p',m,name:m.name,hp:Math.max(1,m.hp),maxhp:st.maxhp,atk:st.atk,def:st.def,spd:st.spd,mres:st.mres,soul:Math.min(st.soul,m.soul),soulMax:st.soul,crit:st.crit,ls:st.ls,regen:st.regen,
+    dt:w.dt,w,line:w.line,skills:memberActs(m),pas,num:m.num?NUM[m.num.id].eff:{},buffs:[],momentum:0,face:faceImg(m),icon:faceImg(m)};}
+let eid=1;
+function monUnit(k){const d=MON[k],t=d.tags||{};
+  const u={side:'e',key:k,uid:eid++,name:d.n,g:d.g,hp:d.hp,maxhp:d.hp,atk:d.atk,def:d.def,spd:d.spd,mres:d.mres??(10-d.g)*3,weak:d.weak||[],resist:d.resist||[],tough:d.tough,toughMax:d.tough,broken:false,
+    boss:!!d.boss,elite:!!d.elite,atkdt:d.atkdt||null,tags:t,summoned:false,buffs:[],intent:t.passive?'watch':'atk',pat:0,provoked:!t.passive,img:monImg(k,d.boss?Math.min((d.spr.sc||5),5):d.elite?Math.min(d.spr.sc||4,4):Math.min(d.spr.sc||3,4)),icon:monImg(k,2)};
+  if(t.stealth)u.buffs.push({label:'隱身',untarget:1,t:1});
+  return u;}
+function labelDupes(){const cnt={};B.units.filter(u=>u.side==='e').forEach(u=>{cnt[u.key]=(cnt[u.key]||0)+1;});const seen={};
+  B.units.filter(u=>u.side==='e').forEach(u=>{seen[u.key]=(seen[u.key]||0)+1;if(cnt[u.key]>1)u.name=MON[u.key].n+' '+'ABCDEFGH'[seen[u.key]-1];});}
+const aliveU=u=>u&&!u.dead&&!u.down;
+const buffSum=(u,k)=>u.buffs.reduce((a,b)=>a+(typeof b[k]==='number'?b[k]:0),0);
+const hasBuff=(u,k)=>u.buffs.some(b=>b[k]);
+function startBattle(enemies,opt={}){
+  const run=S.run;
+  const pm=opt.exam?S.sel.map(getM).filter(m=>m&&!m.dead):partyMembers().filter(m=>m.hp>0);
+  const units=pm.map(heroUnit).concat(enemies.map(monUnit));
+  const fx=run&&!opt.exam?FIELDS[curField(run)]?.fx:null;
+  units.forEach(u=>{if(u.side==='p'&&fx==='frost'&&!u.num.warm)u.buffs.push({label:'嚴寒',spd:-.15,t:99});if(u.side==='p'&&fx==='specter')u.buffs.push({label:'地縛靈',vuln:.25,t:99});});
+  if(run&&!opt.ambush&&!opt.exam&&!run.curse&&enemies.some(k=>(MON[k].tags||{}).curse)){run.curse=true;toast('你們先對女妖出手,被下了「怨恨之印」。詛咒會跟著你們直到離開迷宮。');}
+  units.forEach(u=>u.av=10000/effSpd(u)*(u.side==='e'&&opt.ambush?.6:1));
+  B={units,over:false,win:false,target:null,token:{},opt,f:run?run.floor:0,loot:{stone:0,ess:[],items:[]},kills:new Set(),waiting:null,actor:null,turn:0,fx};
+  labelDupes();
+  S.screen='battle';$('#top').innerHTML=topHTML();
+  const bg=run&&!opt.exam?FLOORS[run.floor].bg:'linear-gradient(#2a2620,#14110d)';
+  const title=opt.exam?'公會晉級考試':opt.rift?`裂縫・${RIFTS[opt.riftKey]?.n||''}`:opt.fmaster?`層主・${FLOORMASTER[opt.fmaster].n}`:opt.collapse?`次元崩壞・第 ${run.collapse.wave+1} 波`:`戰鬥 · 第 ${run.floor} 層`;
+  $('#screen').innerHTML=`<section class="bt" id="bt"><div class="bt-top"><h2>${title}</h2><div class="row">
+    <button class="btn sm" id="bAuto" data-act="bAuto">自動:${S.auto?'開':'關'}</button><button class="btn sm" id="bFast" data-act="bFast">速度:${S.fast?'快':'普通'}</button></div></div>
+    <div class="order" id="bOrder"></div><div class="stage" id="bStage" style="--stagebg:${bg}"></div><div class="team" id="bTeam"></div><div class="cmd" id="bCmd"></div><div class="fxl" id="bFx" aria-hidden="true"></div><div class="sr" id="bLive" aria-live="polite"></div></section>`;
+  renderBattle();battleLoop(B.token,opt);
+}
+function delay(ms){return sleep(ms??(S.fast?200:460));}
+function unitEl(u){const i=B.units.indexOf(u);return u.side==='e'?document.querySelector(`#bStage [data-arg="${i}"]`):document.querySelector(`#bTeam [data-u="${i}"]`);}
+function pop(u,text,cls=''){const fx=$('#bFx'),bt=$('#bt');if(!fx||!bt||!B)return;const el=unitEl(u);if(!el)return;
+  const R=bt.getBoundingClientRect(),q=el.getBoundingClientRect(),off=(u._pops=(u._pops||0)+1)%3;
+  const n=document.createElement('span');n.className='pop '+cls;n.textContent=text;
+  n.style.left=(q.left-R.left+q.width/2)+'px';n.style.top=(q.top-R.top+q.height*(u.side==='e'?.32:.22)-off*16)+'px';
+  fx.appendChild(n);setTimeout(()=>n.remove(),1000);}
+function live(t){const l=$('#bLive');if(l)l.textContent=t;}
+async function say(t,cls='',u=null){if(!B)return;renderStage();renderTeam();if(u)pop(u,t,cls);live((u?u.name+' ':'')+t);await delay();}
+async function banner(t,cls=''){if(!B)return;const fx=$('#bFx');if(fx){const n=document.createElement('div');n.className='banner '+cls;n.textContent=t;fx.appendChild(n);setTimeout(()=>n.remove(),1200);}live(t);await delay(S.fast?450:900);}
+const effSpd=u=>u.spd*Math.max(.3,1+buffSum(u,'spd')+(u.momentum||0)*.05);
+function upcoming(n){const live=B.units.filter(aliveU).map(u=>({u,av:u.av}));const out=[];if(!live.length)return out;
+  for(let i=0;i<n;i++){let a=live[0];for(const x of live)if(x.av<a.av)a=x;const t=a.av;live.forEach(x=>x.av-=t);out.push(a.u);a.av=10000/effSpd(a.u);}return out;}
+function renderOrder(){const el=$('#bOrder');if(!el||!B)return;const now=B.actor&&aliveU(B.actor)&&!B.actorDone;const list=now?[B.actor,...upcoming(7)]:upcoming(8);
+  el.innerHTML=`<span class="lbl">順序</span>`+list.map((u,i)=>`<div class="oi ${u.side} ${i===0&&now?'now':''}" title="${u.name}"><img src="${u.icon}" alt="${u.name}"></div>`).join('');}
+const INTENT={atk:['攻擊',0],aoe:['範圍攻擊',1],charge:['準備蓄力',0],smash:['重擊!',1],summon:['召喚',1],bind:['束縛',1],fear:['恐嚇',1],heal:['治療',0],buff:['強化同伴',0],watch:['觀望',0]};
+function statusLabels(u){return u.buffs.filter(b=>b.label&&b.label!=='嚴寒'&&b.label!=='地縛靈').map(b=>b.label);}
+function renderStage(){const el=$('#bStage');if(!el||!B)return;const tgt=B.target&&aliveU(B.target)?B.target:null;
+  el.innerHTML=B.units.filter(u=>u.side==='e').map(u=>{const it=INTENT[u.intent]||INTENT.atk,kn=isKnown(u.key);
+    return `<button class="foeU ${u.dead?'dead':''} ${u.broken?'broken':''} ${hasBuff(u,'untarget')?'hid':''} ${tgt===u?'sel':''} ${B.actor===u&&!B.actorDone?'act':''}" data-act="bTarget" data-arg="${B.units.indexOf(u)}" aria-label="${u.name}">
+      ${u.dead?'':`<span class="intent ${it[1]&&!u.broken?'':'calm'}">${u.broken?'體勢崩潰':it[0]}</span>`}
+      <img src="${u.img}" alt="">
+      <span class="fn">${u.name}</span><span class="fg">${u.g}級 · ${Math.max(0,Math.round(u.hp))}/${u.maxhp}</span>
+      <div class="bars">${meter(u.hp,u.maxhp,'hp')}${meter(u.tough,u.toughMax,'tg')}</div>
+      <div class="wk">${kn?u.weak.map(d=>`<span title="弱點">${DT[d]}</span>`).join('')+u.resist.map(d=>`<span class="rs" title="抗性">${DT[d]}</span>`).join('')+(u.tags.spirit?'<span class="sp">靈體</span>':''):'<span class="uk" title="到中央圖書館查詢,或打完這場就會記錄">弱點?</span>'}</div>
+      <div class="sts">${statusLabels(u).map(s=>`<span>${s}</span>`).join('')}</div>
+    </button>`;}).join('');}
+function renderTeam(){const el=$('#bTeam');if(!el||!B)return;
+  el.innerHTML=B.units.filter(u=>u.side==='p').map(u=>`<div class="pt ${u.down?'down':''} ${B.actor===u?'now':''}" data-u="${B.units.indexOf(u)}"><div class="face"><img src="${u.face}" alt=""></div><div class="pn">${u.name}</div>
+    ${meter(u.hp,u.maxhp,'hp')}<div class="pv">${Math.max(0,Math.round(u.hp))}/${u.maxhp}</div>${meter(u.soul,u.soulMax,'sl')}<div class="pv">魂 ${Math.round(u.soul)}</div><div class="sts">${u.defend?'<span>防禦</span>':''}${statusLabels(u).map(s=>`<span>${s}</span>`).join('')}</div></div>`).join('');}
+function skillCost(a,k){let c=SK[k].cost*(1-Math.min(.5,buffSum(a,'costdown')));if(B.fx==='ember')c*=1.5;return Math.round(c);}
+function renderCmd(){const el=$('#bCmd');if(!el||!B)return;const a=B.actor;
+  if(!B.waiting||!a||a.side!=='p'){el.innerHTML=`<div class="wait">${B.over?'':'……'}</div>`;return;}
+  const t=curTarget(a);
+  const btn=(arg,title,sub,cost,cls='',dis=false)=>`<button class="cmdb ${cls}" data-act="bCmd" data-arg="${arg}" ${dis?'disabled':''}><b>${title}</b>${cost?`<span class="c">魂力 ${cost}</span>`:''}<small>${sub}</small></button>`;
+  let h=`<div class="who">${a.name} 的回合 <span class="mute" style="font-size:12.5px;font-family:var(--f-body)">目標:${t?t.name:'—'}(點怪物切換)</span></div><div class="cmdg">`;
+  h+=btn('atk','普通攻擊',`${DT[a.dt]}擊,魂力 +12${t&&isKnown(t.key)&&t.weak.includes(a.dt)?',<span style="color:var(--good)">打中弱點</span>':''}`,0);
+  for(const k of a.skills){const s=SK[k],c=skillCost(a,k);h+=btn('sk:'+k,s.n,s.d,c,'sk',a.soul<c);}
+  h+=btn('def','防禦','受到的傷害減半,魂力 +15',0);
+  h+=btn('pot',`藥水(${S.potions})`,'生命最低的隊友回復 40%',0,'',!S.potions||B.opt.exam);
+  if(!B.opt.rift&&!B.opt.exam&&!B.opt.collapse&&!B.opt.boss&&!B.opt.fmaster)h+=btn('flee','逃跑','70% 機率成功,退回上一個房間',0);
+  el.innerHTML=h+'</div>';
+}
+function renderBattle(){renderOrder();renderStage();renderTeam();renderCmd();}
+function targetable(side,viewer){const foes=B.units.filter(u=>u.side===side&&aliveU(u));const vis=foes.filter(u=>!hasBuff(u,'untarget')||(viewer&&viewer.pas&&viewer.pas.includes('scent')));return vis.length?vis:foes;}
+function curTarget(a){const foes=targetable('e',a);if(!foes.length)return null;if(B.target&&foes.includes(B.target))return B.target;return foes.find(u=>isKnown(u.key)&&u.weak.includes(a.dt))||foes[0];}
+ACT.bTarget=i=>{if(!B)return;const u=B.units[+i];if(aliveU(u)){if(hasBuff(u,'untarget')&&!(B.actor&&B.actor.pas&&B.actor.pas.includes('scent'))){toast('牠藏起來了,選不到');return;}B.target=u;renderStage();renderCmd();}};
+ACT.bAuto=()=>{S.auto=!S.auto;const b=$('#bAuto');if(b)b.textContent=`自動:${S.auto?'開':'關'}`;if(S.auto&&B&&B.waiting){const r=B.waiting;B.waiting=null;renderCmd();r(autoChoose(B.actor));}};
+ACT.bFast=()=>{S.fast=!S.fast;const b=$('#bFast');if(b)b.textContent=`速度:${S.fast?'快':'普通'}`;};
+ACT.bCmd=arg=>{if(!B||!B.waiting)return;const a=B.actor;let act;
+  if(arg==='atk')act={type:'atk',t:curTarget(a)};else if(arg==='def')act={type:'def'};
+  else if(arg==='pot'){if(!S.potions)return;act={type:'pot'};}else if(arg==='flee')act={type:'flee'};
+  else if(arg.startsWith('sk:')){const k=arg.slice(3);if(a.soul<skillCost(a,k))return;act={type:'sk',k,t:curTarget(a)};}
+  if(!act)return;const r=B.waiting;B.waiting=null;renderCmd();r(act);};
+function nextActor(){const live=B.units.filter(aliveU);let a=live[0];for(const u of live)if(u.av<a.av)a=u;const t=a.av;live.forEach(u=>u.av-=t);return a;}
+async function battleLoop(tok,opt){
+  await banner(opt.exam?'晉級考試開始':opt.rift?'裂縫守護者出現了':opt.ambush?'遭到偷襲!':opt.collapse?`第 ${S.run.collapse.wave+1} 波`:'戰鬥開始',opt.ambush||opt.rift||opt.collapse?'bad':'');
+  if(B&&B.units.some(u=>u.side==='e'&&u.tags.passive)&&opt.provoke!==false)B.units.forEach(u=>{if(u.side==='e'&&u.tags.passive){u.provoked=true;u.intent=decideIntent(u);}});
+  while(B&&B.token===tok&&!B.over){
+    const a=nextActor();B.actor=a;B.actorDone=false;B.turn++;renderOrder();renderTeam();renderStage();
+    await takeTurn(a,tok);
+    if(!B||B.token!==tok)return;
+    a.av=10000/effSpd(a);B.actorDone=true;checkEnd();
+  }
+  if(B&&B.token===tok)await endBattle(tok);
+}
+function checkEnd(){const pa=B.units.some(u=>u.side==='p'&&aliveU(u)),ea=B.units.some(u=>u.side==='e'&&aliveU(u));if(!pa||!ea){B.over=true;B.win=!ea&&pa;}}
+function tickBuffs(u){u.buffs.forEach(b=>{if(b.fresh){b.fresh=false;return;}if(!b.bind)b.t--;});u.buffs=u.buffs.filter(b=>b.t>0);}
+function canHeal(u){return !hasBuff(u,'noheal');}
+function healU(u,amt){if(!canHeal(u))return 0;const b=u.hp;u.hp=Math.min(u.maxhp,u.hp+amt);return Math.round(u.hp-b);}
+async function dots(a){for(const b of a.buffs.filter(x=>x.dot)){const d=Math.max(1,Math.round(b.dot));a.hp-=d;await say(`${b.label} ${d}`,'st',a);if(a.hp<=0){await fall(a,null);return true;}}return false;}
+async function takeTurn(a,tok){
+  if(await dots(a))return;
+  const bind=a.buffs.find(b=>b.bind);if(bind){a.buffs=a.buffs.filter(b=>b!==bind);await say('被束縛,無法行動','st',a);return;}
+  if(a.side==='e'){
+    if(a.broken){a.broken=false;a.tough=a.toughMax;a.intent=decideIntent(a);await say('恢復體勢','dim',a);tickBuffs(a);return;}
+    if(a.tags.regen&&a.hp<a.maxhp){const h=healU(a,a.maxhp*a.tags.regen);if(h)await say('+'+h,'good',a);}
+    if(!a.provoked){await say('觀望','dim',a);tickBuffs(a);return;}
+    await perform(a,enemyAct(a),tok);if(B&&B.token===tok)tickBuffs(a);return;
+  }
+  a.defend=false;
+  if(B.fx==='ember'){const d=Math.round(a.maxhp*.04);a.hp-=d;await say('灼燒 '+d,'bad',a);if(a.hp<=0){await fall(a);return;}}
+  if(a.regen)healU(a,a.maxhp*a.regen);
+  a.soul=Math.min(a.soulMax,a.soul+a.soulMax*.08);
+  if(a.m.stress>=100&&Math.random()<.2){await say('發抖……','bad',a);tickBuffs(a);return;}
+  renderTeam();renderOrder();
+  let act;if(S.auto)act=autoChoose(a);else act=await new Promise(res=>{B.waiting=res;renderCmd();});
+  if(!B||B.token!==tok)return;renderCmd();
+  await perform(a,act,tok);
+  if(B&&B.token===tok){tickBuffs(a);if(a.pas.includes('momentum'))a.momentum=Math.min(3,a.momentum+1);}
+}
+function autoChoose(a){
+  const foes=targetable('e',a),allies=B.units.filter(u=>u.side==='p'&&aliveU(u));
+  const can=k=>a.soul>=skillCost(a,k);const low=allies.filter(u=>u.hp/u.maxhp<.5).length;
+  for(const k of a.skills){const s=SK[k];if(!can(k))continue;
+    if(s.kind==='heal'&&low>=1)return{type:'sk',k};
+    if(s.kind==='aoe'&&foes.length>=2)return{type:'sk',k};
+    if(k==='roar'&&B.units.some(f=>f.side==='e'&&aliveU(f)&&f.intent==='smash'))return{type:'sk',k};
+    if(s.kind==='team'&&!a.buffs.some(b=>b.label===s.label)&&Math.random()<.5)return{type:'sk',k};
+  }
+  const t=foes.find(f=>isKnown(f.key)&&f.weak.includes(a.dt)&&!f.broken)||foes.reduce((x,y)=>y.hp<x.hp?y:x,foes[0]);
+  for(const k of a.skills){const s=SK[k];if(can(k)&&['single','multi','debuff'].includes(s.kind)&&a.soul>=skillCost(a,k)+10)return{type:'sk',k,t};}
+  if(a.hp/a.maxhp<.3&&S.potions&&!B.opt.exam&&Math.random()<.5)return{type:'pot'};
+  return{type:'atk',t};
+}
+function partyTarget(){
+  const p=targetable('p');if(!p.length)return null;const tz=p.filter(u=>hasBuff(u,'taunt'));if(tz.length)return pick(tz);
+  const tot=p.reduce((a,u)=>a+u.line,0);let r=Math.random()*tot;for(const u of p){r-=u.line;if(r<=0)return u;}return p[0];
+}
+function decideIntent(a){
+  const t=a.tags;if(a.intent==='charge')return'smash';
+  if(a.boss){const pat=['atk',t.aoe?'aoe':'atk',t.bind?'bind':t.fear?'fear':'atk',t.heavy?'charge':'atk'];const it=pat[a.pat%pat.length];a.pat++;return it;}
+  const r=Math.random();
+  if(t.heal&&B&&B.units.some(u=>u.side==='e'&&aliveU(u)&&u.hp/u.maxhp<.6)&&r<.5)return'heal';
+  if(t.buff&&r<.2)return'buff';
+  if(t.bind&&r<.22)return'bind';
+  if(t.fear&&r<.2)return'fear';
+  if(t.heavy&&r<.25)return'charge';
+  if(t.aoe&&r<.3)return'aoe';
+  return'atk';
+}
+function enemyAct(a){if(a.tags.summon&&!a.summoned&&a.hp<a.maxhp*.5&&B.units.filter(u=>u.side==='e'&&aliveU(u)).length<5)return{type:'summon'};return{type:a.intent};}
+function applyStatus(t,kind,src){
+  if(!aliveU(t))return;
+  if(kind==='poison'){t.buffs=t.buffs.filter(b=>b.label!=='中毒');t.buffs.push({label:'中毒',dot:Math.max(2,src.atk*.3),t:3});pop(t,'中毒','st');}
+  if(kind==='bleed'){t.buffs=t.buffs.filter(b=>b.label!=='流血');t.buffs.push({label:'流血',dot:t.maxhp*.05,t:3});pop(t,'流血','st');}
+  if(kind==='burn'){t.buffs=t.buffs.filter(b=>b.label!=='燃燒');t.buffs.push({label:'燃燒',dot:Math.max(2,src.atk*.35),t:3});pop(t,'燃燒','st');}
+}
+function addBuff(u,b,label){u.buffs=u.buffs.filter(x=>x.label!==label);u.buffs.push({...b,label,fresh:!!(B&&B.actor===u)});}
+async function perform(a,act,tok){
+  const foesOf=u=>targetable(u.side==='p'?'e':'p',u),allyOf=u=>B.units.filter(x=>x.side===u.side&&aliveU(x));
+  if(a.side==='e'){
+    switch(act.type){
+      case'summon':{a.summoned=true;await say('召喚!','bad',a);for(let i=0;i<2;i++){const s=monUnit(a.tags.summon);s.av=10000/s.spd;B.units.push(s);}labelDupes();renderStage();renderOrder();break;}
+      case'charge':await say('蓄力中……','bad',a);break;
+      case'smash':{const t=partyTarget();if(!t)break;await say('重擊!','bad',a);await hit(a,t,2.3,a.atkdt,0,{});break;}
+      case'aoe':{await say('範圍攻擊!','bad',a);for(const t of foesOf(a))await hit(a,t,.75,a.atkdt,0,{multi:1});await delay();break;}
+      case'bind':{const t=partyTarget();if(!t)break;await say('束縛!','bad',a);addBuff(t,{bind:1,t:3},'束縛');pop(t,'束縛','st');await delay();break;}
+      case'fear':{await say('恐嚇!','bad',a);foesOf(a).forEach(t=>{addBuff(t,{atk:-.25,t:2},'恐懼');pop(t,'恐懼','st');});await delay();break;}
+      case'heal':{const al=allyOf(a);const t=al.reduce((x,y)=>y.hp/y.maxhp<x.hp/x.maxhp?y:x,al[0]);const h=healU(t,t.maxhp*.25);await say('治療','good',a);if(h)pop(t,'+'+h,'good');await delay();break;}
+      case'buff':{await say('強化同伴','bad',a);allyOf(a).forEach(t=>addBuff(t,{def:.5,t:2},'狂熱'));await delay();break;}
+      default:{const t=partyTarget();if(!t)break;await hit(a,t,1,a.atkdt,0,{});}
+    }
+    if(act.type!=='summon'&&!a.dead)a.intent=decideIntent(a);renderStage();return;
+  }
+  switch(act.type){
+    case'atk':{const t=act.t&&aliveU(act.t)?act.t:curTarget(a);if(!t)return;a.soul=Math.min(a.soulMax,a.soul+12);await hit(a,t,1,a.dt,10,{});break;}
+    case'def':a.defend=true;a.soul=Math.min(a.soulMax,a.soul+15);await say('防禦','dim',a);break;
+    case'pot':{if(!S.potions)return;S.potions--;const al=allyOf(a);const t=al.reduce((x,y)=>y.hp/y.maxhp<x.hp/x.maxhp?y:x,al[0]);const h=healU(t,t.maxhp*.4);await say(h?'+'+h:'無法回復',h?'good':'st',t);break;}
+    case'flee':{if(Math.random()<.7){await banner('逃跑成功');B.fled=true;B.over=true;}else await banner('逃跑失敗','bad');break;}
+    case'sk':{const s=SK[act.k];a.soul-=skillCost(a,act.k);await say(s.n,'gold',a);const dt=s.dt||a.dt;
+      const st=act.t&&aliveU(act.t)?act.t:curTarget(a);
+      if(s.kind==='single'){if(st)await hit(a,st,s.mult,dt,s.brk,{ignore:s.ignore,drain:s.drain,status:s.status,delay:s.delay});}
+      else if(s.kind==='multi'){for(let i=0;i<s.hits;i++){const fs=foesOf(a);if(!fs.length)break;await hit(a,pick(fs),s.mult,dt,s.brk,{status:s.status});}}
+      else if(s.kind==='aoe'){for(const t of foesOf(a)){await hit(a,t,s.mult,dt,s.brk,{multi:1});if(s.debuff&&aliveU(t)){addBuff(t,s.debuff,s.label);}}await delay();}
+      else if(s.kind==='debuff'){if(st){if(s.mult)await hit(a,st,s.mult,dt,10,{status:s.status});if(aliveU(st)){addBuff(st,s.debuff,s.label);await say(s.label,'st',st);}}}
+      else if(s.kind==='debuffAll'){for(const t of foesOf(a)){addBuff(t,s.debuff,s.label);pop(t,s.label,'st');if(s.status)applyStatus(t,s.status,a);}await delay();}
+      else if(s.kind==='self'){addBuff(a,s.buff,s.label||s.n);if(s.heal){const h=healU(a,a.maxhp*s.heal);if(h)pop(a,'+'+h,'good');}await say(s.label||s.n,'good',a);}
+      else if(s.kind==='team'){allyOf(a).forEach(u=>{addBuff(u,s.buff,s.label);pop(u,s.label,'good');});renderTeam();await delay();}
+      else if(s.kind==='ally'){const al=allyOf(a);const t=al.reduce((x,y)=>y.hp/y.maxhp<x.hp/x.maxhp?y:x,al[0]);addBuff(t,s.buff,s.label);await say(s.label,'good',t);}
+      else if(s.kind==='heal'){renderTeam();for(const u of allyOf(a)){const h=healU(u,u.maxhp*s.heal);if(s.buff)addBuff(u,s.buff,s.label);pop(u,h?'+'+h:'無法回復',h?'good':'st');}renderTeam();await delay();}
+      else if(s.kind==='random'){if(st){const r=ri(0,3);if(r===0)await hit(a,st,2.0,'dark',20,{});else if(r===1){addBuff(st,{bind:1,t:3},'束縛');await say('束縛','st',st);}else if(r===2){applyStatus(st,'poison',a);applyStatus(st,'bleed',a);await delay();}else{addBuff(st,{atk:-.3,def:-.3,t:3},'詛咒');await say('詛咒','st',st);}}}
+      break;}
+  }
+}
+function effAtk(u){let a=u.atk*(1+buffSum(u,'atk'));if(hasBuff(u,'madness'))a+=u.def*2;if(u.side==='p'){const s=u.m.stress;if(s>=100)a*=.7;else if(s>=70)a*=.9;if(u.num.rage&&u.hp<u.maxhp*.3)a*=1+u.num.rage;}return a;}
+function effDef(u,magic){if(!magic&&hasBuff(u,'madness'))return 0;let base=magic?u.mres:u.def;let k=1+buffSum(u,magic?'mres':'def')*(magic?0:1);let v=base*k+(magic?buffSum(u,'mres'):0);
+  if(u.side==='p'&&u.pas.includes('herosPath')&&u.hp<u.maxhp*.5)v*=1.5;return Math.max(0,v);}
+async function hit(src,t,mult,dt,brk,opt){
+  if(!aliveU(t))return;
+  const phys=!dt||PHYS.includes(dt);
+  const dodge=buffSum(t,'dodge')+(t.side==='p'&&phys&&t.pas.includes('rottenSlime')?.15:0);
+  if(dodge>0&&Math.random()<dodge){await say('閃避','good',t);return;}
+  const counter=t.buffs.find(b=>b.counter);
+  let atk=effAtk(src);const nm=src.buffs.find(b=>b.nextMul);if(nm){atk*=nm.nextMul;src.buffs=src.buffs.filter(b=>b!==nm);}
+  let ignore=opt.ignore;if(src.side==='p'&&src.pas.includes('ambush')&&!src.ambushed){src.ambushed=true;ignore=true;}
+  let def=ignore?0:effDef(t,!phys);if(src.side==='p'&&src.w.pen)def*=1-src.w.pen;
+  let dmg=atk*mult*rnd(.9,1.1)*(phys?1-def/(def+40):1-def/(def+60)),tag='';
+  if(t.side==='e'&&dt){if(t.weak.includes(dt)){dmg*=1.4;tag='weak';}else if(t.resist.includes(dt)){dmg*=.6;tag='resist';}if(t.tags.spirit&&phys){dmg*=.35;tag='resist';}}
+  if(t.broken)dmg*=1.25;
+  dmg*=1+buffSum(t,'vuln');
+  const crit=Math.random()<(src.crit||.05)+buffSum(src,'crit');if(crit)dmg*=1.5;
+  let note='';if(t.defend)dmg*=.5;
+  if(t.side==='p'&&t.w.block&&Math.random()<t.w.block){dmg*=.4;note='格擋';}
+  dmg=Math.max(1,Math.round(dmg));
+  if(t.side==='p'&&t.pas.includes('chivalry')&&!t.chiv&&t.hp-dmg<=0){t.chiv=true;dmg=Math.max(0,t.hp-1);note='騎士道';}
+  t.hp-=dmg;
+  const bind=t.buffs.find(b=>b.bind);if(bind&&dmg>0)t.buffs=t.buffs.filter(b=>b!==bind);
+  if(t.side==='e'&&!t.provoked){t.provoked=true;t.intent=decideIntent(t);if(t.tags.curse&&S.run&&!S.run.curse){S.run.curse=true;pop(src,'怨恨之印','st');}}
+  if(t.side==='e')learn(t.key);
+  let label=String(dmg),cls=t.side==='p'?'bad':'';
+  if(tag==='weak'){label='弱點 '+dmg;cls='weak';}if(tag==='resist'){label='抵抗 '+dmg;cls='dim';}if(crit){label='爆擊 '+label;cls='crit';}if(note)label=note+' '+label;
+  renderStage();renderTeam();pop(t,label,cls);live(`${t.name} -${dmg}`);if(!opt.multi)await delay();
+  if(t.side==='p')addStress(t.m,1.5);
+  if(t.side==='e'&&tag==='weak'&&!t.broken&&brk&&t.hp>0){t.tough-=brk*((src.w&&src.w.brk)||1);
+    if(t.tough<=0){t.tough=0;t.broken=true;t.av+=5000/t.spd;const ex=Math.round(src.atk*.5);t.hp-=ex;await say('體勢崩潰 '+ex,'gold',t);renderOrder();}}
+  if(t.hp>0){
+    if(opt.delay){t.av+=opt.delay*10000/t.spd;pop(t,'行動延後','dim');}
+    if(src.side==='p'&&src.w.stun&&Math.random()<src.w.stun){t.av+=3500/t.spd;await say('踉蹌','dim',t);renderOrder();}
+    if(src.side==='p'&&src.pas.includes('paralyzeHit')&&Math.random()<.2){t.av+=3000/t.spd;pop(t,'麻痺','st');}
+    if(opt.status)applyStatus(t,opt.status,src);
+    if(src.side==='p'&&(hasBuff(src,'poisonHit')||(src.pas.includes('poisonArrow')&&Math.random()<.3)))applyStatus(t,'poison',src);
+    if(src.side==='e'&&src.tags.poison&&Math.random()<src.tags.poison)applyStatus(t,'poison',src);
+    if(src.side==='e'&&src.tags.noheal)addBuff(t,{noheal:1,t:2},'怨念');
+  }
+  const drain=(src.ls||0)+(opt.drain||0)+(src.side==='e'?src.tags.drain||0:0);if(drain&&aliveU(src)){const h=healU(src,dmg*drain);if(h>0&&(opt.drain||src.side==='e'))pop(src,'+'+h,'good');}
+  const th=buffSum(t,'thorns');if(th&&aliveU(src)){const r=Math.max(1,Math.round(dmg*th));src.hp-=r;pop(src,'反彈 '+r,'bad');if(src.hp<=0)await fall(src,t);}
+  if(counter&&aliveU(src)&&t.hp>0){t.buffs=t.buffs.filter(b=>b!==counter);const r=Math.round(effAtk(t)*counter.counter);src.hp-=r;src.av+=3000/src.spd;await say('陷阱反擊 '+r,'gold',src);if(src.hp<=0)await fall(src,t);}
+  if(t.hp<=0)await fall(t,src);
+}
+async function fall(t,src){
+  if(t.side==='p'){if(t.down)return;t.down=true;t.hp=0;await say('倒下','bad',t);B.units.filter(u=>u.side==='p'&&aliveU(u)).forEach(u=>addStress(u.m,8));return;}
+  if(t.dead)return;t.dead=true;t.hp=0;if(B.target===t)B.target=null;
+  const G=GRADE[t.g],greedy=1+B.units.filter(u=>u.side==='p'&&hasT(u.m,'greedy')).length*.1;
+  if(!B.opt.exam){B.loot.stone+=Math.round(G.stone*greedy);B.kills.add(t.key);S.kc[t.key]=(S.kc[t.key]||0)+1;}
+  renderStage();
+  if(B.opt.exam||MON[t.key].noEss)return;
+  if(t.boss&&(B.opt.rift||B.opt.fmaster)){const r=Math.random();if(r<.34){const it=makeEss(t.key,true);B.loot.ess.push(it);await say('守護者精髓!','gold',t);}else if(r<.67){B.loot.items.push(randomNum());await say('編號物品!','gold',t);}else if(B.opt.rift){B.loot.items.push({type:'riftstone',f:B.f});await say('裂縫石','gold',t);}else{B.loot.stone+=400;await say('大量魔石!','gold',t);}return;}
+  const pu=B.units.filter(u=>u.side==='p');
+  const luck=pu.reduce((a,u)=>a+(hasT(u.m,'lucky')?.01:0)+(hasT(u.m,'bg_hunter')?.01:0)+(u.pas.includes('greed')?.02:0)+(u.num.luck||0),0);
+  const drop=(t.boss?.5:t.elite?.12:t.g<=5?.06:.02)+luck;
+  if(ESS[t.key]&&Math.random()<drop){const it=makeEss(t.key);B.loot.ess.push(it);await say('精髓!','gold',t);}
+  if(src&&src.side==='p'&&hasT(src.m,'bloodlust')&&aliveU(src))healU(src,src.maxhp*.1);
+}
+async function endBattle(tok){
+  const run=S.run,opt=B.opt,pu=B.units.filter(u=>u.side==='p');
+  if(B.fled){
+    const lost=[];for(const u of pu){const m=u.m;m.soul=u.soul;if(u.down){if(Math.random()<.15&&!m.hero){lost.push(m.name);killMember(m);continue;}m.hp=Math.max(1,Math.round(u.maxhp*.1));}else m.hp=Math.max(1,Math.round(u.hp));addStress(m,12);}
+    B.units.filter(u=>u.side==='e').forEach(u=>learn(u.key));
+    run.party=run.party.filter(id=>{const m=getM(id);return m&&!m.dead;});B=null;
+    if(run.map&&!opt.ambush&&!opt.tower)run.map.cur=run.prev;S.screen='dungeon';
+    if(!run.party.length){wipeOut([]);return;}
+    save();render();toast(lost.length?`逃跑時 ${lost.join('、')} 沒能跟上……`:'你們狼狽地逃了出來');return;
+  }
+  await banner(B.win?(opt.exam?'考試合格':'勝利'):(opt.exam?'考試落榜':'全隊倒下'),B.win?'':'bad');
+  if(!B||B.token!==tok)return;
+  B.units.filter(u=>u.side==='e').forEach(u=>learn(u.key));
+  if(opt.exam){const win=B.win;pu.forEach(u=>{u.m.hp=Math.max(1,Math.round(u.down?u.maxhp*.2:u.hp));u.m.soul=u.soul;});B=null;S.screen='base';
+    if(win){S.examPassed=true;S.fame+=10;log('通過了 5 級晉級考試!公會的認證上限提高到 4 級。');refreshShop();}else log('晉級考試沒有通過。下次再來。');
+    save();render();modal(win?'考試合格':'考試落榜',win?'<p>考官收起劍,點了點頭。你們的實力得到了公會的承認。</p>':'<p class="mute">考官手下留情,沒有人受重傷。</p>');return;}
+  const win=B.win,loot=B.loot,kills=[...B.kills],deaths=[],downed=[],xpLines=[];
+  if(win){
+    for(const u of pu){const m=u.m;m.soul=u.soul;
+      if(u.down){if(Math.random()<.3){deaths.push(m.name);killMember(m);continue;}m.hp=Math.max(1,Math.round(u.maxhp*.1));addStress(m,20);downed.push(m.name);}
+      else m.hp=Math.max(1,Math.round(u.hp));
+      addStress(m,3+run.floor);
+      let xp=0;const fresh=[];for(const k of kills){if(!m.kills.includes(k)){m.kills.push(k);xp+=GRADE[MON[k].g].xp;fresh.push(MON[k].n);}}
+      if(opt.rift)xp+=3;
+      if(opt.fmaster)xp+=5;
+      if(xp){const ups=gainXp(m,xp);xpLines.push(`${m.name}:${fresh.length?`第一次打倒${fresh.join('、')}`:''}${opt.rift?(fresh.length?',':'')+'打倒守護者 +3':''}${opt.fmaster?(fresh.length?',':'')+'打倒層主 +5':''},經驗 +${xp}${ups.length?`,<span style="color:var(--torch-hi)">升到 Lv${m.lv}!</span>`:''}`);}
+    }
+    run.party=run.party.filter(id=>{const m=getM(id);return m&&!m.dead;});
+    run.loot.stone+=loot.stone;run.loot.ess.push(...loot.ess);run.loot.items.push(...loot.items);
+    if(run.map&&!opt.tower&&!opt.collapse){const room=run.map.rooms[run.map.cur];if(room&&roomHasFoes(room))room.cleared=true;}
+    if(opt.rift){S.riftCD[opt.riftKey]=S.month+2;S.riftsCleared++;S.fame+=5;log(`打倒了裂縫「${RIFTS[opt.riftKey].n}」的守護者。`);}
+    if(opt.tower&&run.tower){if(opt.boss)run.tower.guardDone=true;else{run.tower.stage=Math.min(100,run.tower.stage+(run.tower.pending||0));run.tower.choices=towerChoices();}}
+    if(opt.collapse&&run.collapse){run.collapse.wave++;}
+    if(opt.fmaster){S.floorBoss=S.floorBoss||{};if(!S.floorBoss[opt.fmaster]){S.floorBoss[opt.fmaster]=true;S.fame+=8;}log(`打倒了第 ${opt.fmaster} 層的層主「${FLOORMASTER[opt.fmaster].n}」!`);}
+  }else{for(const u of pu){deaths.push(u.m.name);killMember(u.m);}run.party=[];}
+  B=null;
+  if(!run.party.length){wipeOut(deaths);return;}
+  S.screen='dungeon';
+  if(opt.collapse&&run.collapse&&run.collapse.wave>=run.collapse.total){save();returnToCity('撐過了次元崩壞','最後一波結束,扭曲的空間把你們吐回了次元廣場。混亂中撿到的東西都還在身上。',true);return;}
+  if(advanceTime(2))return;
+  save();render();
+  const parts=[`<p>魔石 +${loot.stone}</p>`];
+  if(loot.ess.length)parts.push(`<p style="color:var(--torch-hi)">取得:${loot.ess.map(it=>essInfo(it).n).join('、')}</p>`);
+  if(loot.items.length)parts.push(`<p style="color:var(--torch-hi)">取得:${loot.items.map(it=>it.type==='riftstone'?'裂縫石':'未鑑定的編號物品').join('、')}</p>`);
+  parts.push(xpLines.length?`<div style="margin-top:6px">${xpLines.map(l=>`<p>${l}</p>`).join('')}</div>`:'<p class="mute">都是打過的怪物,沒有獲得經驗。</p>');
+  if(downed.length)parts.push(`<p class="mute">${downed.join('、')} 重傷撿回一命,壓力大增。</p>`);
+  if(deaths.length)parts.push(`<p style="color:var(--blood)">${deaths.join('、')} 傷得太重,沒能撐下去。</p>`);
+  if(opt.tower&&!opt.boss&&run.tower)parts.push(`<p class="mute">天空之塔:第 ${run.tower.stage} 階</p>`);
+  modal(opt.rift?'守護者倒下了':opt.fmaster?'層主倒下了':'勝利',parts.join(''));
+}
+function wipeOut(deaths){
+  const run=S.run,keep=runHas('keepLoot')||false;
+  const kept=keep?{stone:Math.round(run.loot.stone/2),ess:run.loot.ess.slice(0,Math.ceil(run.loot.ess.length/2)),items:run.loot.items.slice(0,Math.ceil(run.loot.items.length/2))}:null;
+  if(kept){S.stone+=kept.stone;S.bag.push(...kept.ess);S.items.push(...kept.items);}
+  const days=Math.max(1,Math.floor(stayLimit(run)/24))+1;S.run=null;S.screen='base';processDays(days);
+  log(`隊伍在第 ${run.floor} 層全滅${kept?',擴充型背包保住了一部分戰利品':',身上的戰利品全部遺失'}。`);save();render();
+  const h=hero();
+  modal('全隊覆滅',`<p>${deaths.filter(n=>!h||n!==h.name).join('、')||'同伴們'}再也沒有回來。</p>${h&&h.dead?`<p class="mute" style="margin-top:6px">${h.name} 的遺體在迷宮關閉時被送回城,安置在大神殿。</p>`:''}<p class="mute" style="margin-top:6px">${kept?'擴充型背包保住了一半的戰利品。':'身上的戰利品全部遺失。'}</p>`,[{label:'回到住處',act:'afterWipe',cls:'primary'}]);
+}
+ACT.afterWipe=()=>{ACT.closeModal();checkGameOver();};
+document.addEventListener('keydown',e=>{if(!B||!B.waiting||!$('#modal').hidden)return;const n=parseInt(e.key,10);const btns=[...document.querySelectorAll('#bCmd .cmdb')];if(n>=1&&n<=btns.length){const b=btns[n-1];if(!b.disabled){e.preventDefault();b.click();}}});
+
+/* ================= BOOT ================= */
+SAVED=loadSave();S=newState();render();
+</script>
+</body>
+</html>
