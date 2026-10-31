@@ -481,7 +481,10 @@ const ESS={
   doppelganger:{g:5,st:{spd:8,atk:5},acts:['mirror','copystrike'],guard:1},
   sky_lord:{g:4,st:{def:12,hp:60,atk:8},acts:['collapsestrike','falseheaven'],guard:1},
   soul_keeper:{g:4,st:{soul:40,atk:8},acts:['soulreap','soulshield'],guard:1},
-  silence_lord:{g:4,st:{soul:35,atk:10,mres:8},acts:['betrayalgrasp'],guard:1}
+  silence_lord:{g:4,st:{soul:35,atk:10,mres:8},acts:['betrayalgrasp'],guard:1},
+  sea_horn_beast:{g:6,st:{hp:40,atk:4},acts:['maul']},
+  ranemut_warrior:{g:7,st:{atk:5,def:2},acts:['charge']},
+  shipwreck_wraith:{g:8,st:{soul:15,mres:4},acts:['corpseflame']}
 };
 /* ---------- 怪物 ---------- */
 const Hs=(o,p,sc)=>({t:'h',o,p,sc}),Gs=(g,p,sc)=>({t:'g',g,p,sc});
@@ -575,7 +578,10 @@ const MON={
   doppelganger:{n:'分身魔',g:5,hp:2200,atk:36,def:14,spd:118,weak:['holy','magic'],resist:['slash'],tough:180,tags:{heavy:1,summon:'bandit'},boss:1,spr:Hs({weapon:'daggers'},{s:'#2a2a3a',h:'#1a1a2a',b:'#3a3050',e:'#ffffff',x:'#8a8aa0'},5)},
   sky_lord:{n:'天空之主',g:4,hp:3000,atk:44,def:21,spd:115,weak:['dark'],resist:['holy'],tough:225,atkdt:'holy',tags:{aoe:1,heavy:1,bind:1,summon:'tower_guardian'},boss:1,spr:Gs('boss',{n:'#f0e0a0',m:'#1a2030',r:'#80d0ff',k:'#060a12',a:'#243048',c:'#344060',s:'#44527a',x:'#cfe8ff',y:'#1a2436',d:'#0e131e'},5)},
   soul_keeper:{n:'靈魂守護者浩希耶爾',g:4,hp:3600,atk:46,def:20,spd:108,weak:['holy'],resist:['slash','pierce'],tough:240,atkdt:'dark',tags:{aoe:1,heavy:1,fear:1,summon:'blood_wraith'},boss:1,spr:Gs('boss',{n:'#c0a0ff',m:'#3a2a5a',r:'#e0a0ff',k:'#0a0614',a:'#4a3470',c:'#6a4a9a',s:'#8a7ab0',x:'#c0b0e0',y:'#3a2a4a',d:'#2a1e3a'},5)},
-  silence_lord:{n:'寂靜之主希利亞特',g:4,hp:3800,atk:48,def:23,spd:118,weak:['holy'],resist:['slash','pierce'],tough:255,atkdt:'dark',tags:{aoe:1,heavy:1,silence:1,summon:'blood_wraith'},boss:1,spr:Gs('boss',{n:'#707070',m:'#0a0a0c',r:'#e8e8f0',k:'#020203',a:'#15151a',c:'#1f1f26',s:'#2a2a33',x:'#e8e8f0',y:'#0e0e12',d:'#060608'},5)}
+  silence_lord:{n:'寂靜之主希利亞特',g:4,hp:3800,atk:48,def:23,spd:118,weak:['holy'],resist:['slash','pierce'],tough:255,atkdt:'dark',tags:{aoe:1,heavy:1,silence:1,summon:'blood_wraith'},boss:1,spr:Gs('boss',{n:'#707070',m:'#0a0a0c',r:'#e8e8f0',k:'#020203',a:'#15151a',c:'#1f1f26',s:'#2a2a33',x:'#e8e8f0',y:'#0e0e12',d:'#060608'},5)},
+  sea_horn_beast:{n:'海角獸',g:6,hp:260,atk:18,def:9,spd:84,weak:['fire','thunder'],tough:65,spr:Gs('bear',{b:'#3a6a8a',k:'#102838',n:'#8ad0e8'},4)},
+  ranemut_warrior:{n:'拉涅姆特戰士',g:7,hp:170,atk:16,def:7,spd:98,weak:['fire'],tough:52,spr:Hs({weapon:'spear'},{s:'#5a8aa0',h:'#1a3a4a',b:'#1a2a30',e:'#d0f0ff'},4)},
+  shipwreck_wraith:{n:'海難亡靈',g:8,hp:120,atk:13,def:2,spd:100,weak:['holy','fire'],tough:35,atkdt:'dark',tags:{spirit:1},spr:Hs({robe:1,hood:1},{s:'#2a4a4a',h:'#1a3030',b:'#0e2020',e:'#60e0c0'})}
 };
 /* ---------- 區域 ---------- */
 const FIELDS={
@@ -597,9 +603,13 @@ const FIELDS={
   redstart:{n:'大魔境・起始點',pool:[],safe:1,light:1},
   hellfire:{n:'地獄火峽谷',pool:['fire_dead','redmud','stoneburn','hellflame'],elite:['ifrit'],dark:1,fx:'ember',c:'#e05a2a'},
   frost:{n:'冰霜峽谷',pool:['frost_wolf','ice_orc_shaman','redmud'],elite:['ice_orc_shaman'],dark:1,fx:'frost',c:'#80c0e0'},
-  specter:{n:'亡靈峽谷',pool:['fallen_creation','cursestone','blood_wraith','souleater'],elite:['souleater'],dark:1,fx:'specter',c:'#8a5ac0'}
+  specter:{n:'亡靈峽谷',pool:['fallen_creation','cursestone','blood_wraith','souleater'],elite:['souleater'],dark:1,fx:'specter',c:'#8a5ac0'},
+  seaport:{n:'大海・錨地',pool:[],safe:1,light:1},
+  calmsea:{n:'平靜海域',pool:['sea_horn_beast','ranemut_warrior'],light:1,c:'#3a7a9a'},
+  doldrums:{n:'無風帶',pool:['sea_horn_beast','shipwreck_wraith','ranemut_warrior'],elite:['ranemut_warrior'],traps:1,dark:1,c:'#4a5a5a'},
+  icesea:{n:'冰海',pool:['ranemut_warrior','shipwreck_wraith'],elite:['shipwreck_wraith'],dark:1,fx:'frost',c:'#9adcf0'}
 };
-const FLOORS={1:{n:'水晶洞窟',stay:7,bg:'linear-gradient(#14303a,#0a1418)'},2:{n:'第 2 層',stay:10,bg:'linear-gradient(#262028,#100c0e)'},3:{n:'朝聖者之路',stay:15,bg:'linear-gradient(#1c2a1a,#0b120a)'},4:{n:'天空之塔',stay:23,bg:'linear-gradient(#2a3446,#12161e)'},5:{n:'大魔境',stay:30,bg:'linear-gradient(#3a1612,#140806)'}};
+const FLOORS={1:{n:'水晶洞窟',stay:7,bg:'linear-gradient(#14303a,#0a1418)'},2:{n:'第 2 層',stay:10,bg:'linear-gradient(#262028,#100c0e)'},3:{n:'朝聖者之路',stay:15,bg:'linear-gradient(#1c2a1a,#0b120a)'},4:{n:'天空之塔',stay:23,bg:'linear-gradient(#2a3446,#12161e)'},5:{n:'大魔境',stay:30,bg:'linear-gradient(#3a1612,#140806)'},6:{n:'大海',stay:60,bg:'linear-gradient(#0a2838,#041018)'}};
 const RIFTS={
   blood_fortress:{n:'血色城塞',f:1,boss:'vampire',minions:['bloody_bladewolf','ghoul'],cost:150},
   glacier_cave:{n:'冰河洞窟',f:1,boss:'yeti',minions:['frost_wolf'],cost:120},
@@ -652,9 +662,9 @@ const RT={
   entry:{g:'入',n:'降落點'},combat:{g:'戰',n:'怪物'},elite:{g:'精',n:'精英怪物'},chest:{g:'寶',n:'寶箱'},resource:{g:'晶',n:'魔石礦脈'},
   trap:{g:'陷',n:'陷阱'},spring:{g:'泉',n:'治癒泉水'},merchant:{g:'商',n:'流浪商人'},empty:{g:'空',n:'空地'},stairs:{g:'門',n:'傳送門石碑'},
   portal:{g:'門',n:'傳送門石碑'},altar:{g:'壇',n:'裂縫祭壇'},rift:{g:'裂',n:'裂縫'},sage:{g:'碑',n:'大賢者紀念碑'},hut:{g:'屋',n:'魔女小屋'},
-  redstart:{g:'安',n:'起始點'},f6gate:{g:'海',n:'通往第 6 層'}
+  redstart:{g:'安',n:'起始點'},f6gate:{g:'海',n:'通往第 6 層'},seaport:{g:'錨',n:'錨地'}
 };
-const SAFE_ROOMS=['sage','hut','redstart'];
+const SAFE_ROOMS=['sage','hut','redstart','seaport'];
 const NAMES=['艾登','莉娜','葛雷','薇拉','托倫','米拉','卡爾','希爾達','羅文','伊莎','貝恩','諾拉','達瑞克','芙蕾雅','歐林','塞拉','雷克','艾薇','古斯','妮雅','哈根','露絲','布蘭','凱特','瑟琳','杜蘭','安柏','洛克','梅芙','提歐'];
 const BARB_NAMES=['阿克森','烏爾格','卡拉克','莫拉德','希庫','瓦爾加','托格','布蘭卡','約根','哈爾德'];
 const DAYS_IN_MONTH=30,LIVING=2,TAX=20,POTION=30,TORCH=60,MAXPOT=5;
@@ -662,7 +672,7 @@ const DAYS_IN_MONTH=30,LIVING=2,TAX=20,POTION=30,TORCH=60,MAXPOT=5;
 /* ================= STATE ================= */
 let S=null,B=null,SAVED=null;
 function newState(){return{v:5,uid:1,month:1,day:1,stone:450,potions:2,torches:1,debt:0,dorm:1,members:[],bag:[],items:[],tavern:[],shop:[],reqs:[],active:[],contrib:0,fame:0,examPassed:false,
-  known:[],kc:{},riftsCleared:0,removals:0,revives:0,riftCD:{},floorBoss:{},dreadKills:0,maxFloor:1,log:[],auto:false,fast:false,sel:[],startFloor:1,tab:'home',run:null,screen:'intro',fallen:[],draft:null};}
+  known:[],kc:{},riftsCleared:0,removals:0,revives:0,riftCD:{},floorBoss:{},dreadKills:0,ship:0,navigator:false,maxFloor:1,log:[],auto:false,fast:false,sel:[],startFloor:1,tab:'home',run:null,screen:'intro',fallen:[],draft:null};}
 const getM=id=>S.members.find(m=>m.id===+id);
 const hero=()=>S.members.find(m=>m.hero);
 const hasT=(m,t)=>m.traits.includes(t);
@@ -990,15 +1000,15 @@ const REQ_DESC=r=>r.type==='kill'?`討伐 ${monName(r.k)} ×${r.n}`:r.type==='re
 function reqProgress(r){if(r.type==='kill')return Math.min(r.n,(S.kc[r.k]||0)-r.base);if(r.type==='reach')return S.maxFloor>=r.f?1:0;if(r.type==='rift')return S.riftsCleared>r.base?1:0;if(r.type==='deliver')return S.bag.some(it=>it.k===r.k)?1:0;return 0;}
 function reqDone(r){return reqProgress(r)>=(r.type==='kill'?r.n:1);}
 function genRequests(){
-  const f=Math.min(5,S.maxFloor),pools=[];for(const[k,fd]of Object.entries(FIELDS)){const fl=fieldFloor(k);if(fl&&fl<=Math.min(5,f+1))pools.push(...fd.pool);}
+  const f=Math.min(6,S.maxFloor),pools=[];for(const[k,fd]of Object.entries(FIELDS)){const fl=fieldFloor(k);if(fl&&fl<=Math.min(6,f+1))pools.push(...fd.pool);}
   const out=[];const mk=()=>{const t=pick(['kill','kill','kill','deliver','reach','rift']);
     if(t==='kill'){const k=pick(pools.length?pools:['goblin']);const g=MON[k].g;const n=g>=9?ri(3,6):ri(1,3);return{type:'kill',k,n,stone:GRADE[g].stone*n*3+60,contrib:g>=9?3:6,fame:1};}
     if(t==='deliver'){const k=pick(Object.keys(ESS).filter(e=>ESS[e].g===9));return{type:'deliver',k,stone:550,contrib:6,fame:2};}
-    if(t==='reach'&&f<5)return{type:'reach',f:f+1,stone:250*f,contrib:10,fame:3};
+    if(t==='reach'&&f<6)return{type:'reach',f:f+1,stone:250*f,contrib:10,fame:3};
     return{type:'rift',stone:600,contrib:12,fame:5};};
   for(let i=0;i<3;i++){const r=mk();r.id=S.uid++;out.push(r);}S.reqs=out;
 }
-function fieldFloor(k){return({ccN:1,ccS:1,ccE:1,ccW:1,beast:2,dead:2,desert:2,gforest:2,steelhill:3,orc:3,marsh:3,estuary:3,witch:3,tower:4,hellfire:5,frost:5,specter:5})[k];}
+function fieldFloor(k){return({ccN:1,ccS:1,ccE:1,ccW:1,beast:2,dead:2,desert:2,gforest:2,steelhill:3,orc:3,marsh:3,estuary:3,witch:3,tower:4,hellfire:5,frost:5,specter:5,calmsea:6,doldrums:6,icesea:6})[k];}
 function refreshShop(){const cap=rankCap(),gmax=cap<=4?6:cap<=6?7:8;const pool=Object.keys(ESS).filter(k=>!ESS[k].guard&&ESS[k].g<=8&&ESS[k].g>=gmax&&!k.startsWith('abyss'));
   S.shop=shuffle(pool).slice(0,3).map(k=>makeEss(k));}
 function guildTab(){
@@ -1023,7 +1033,7 @@ ACT.exam=()=>{const party=S.sel.map(getM).filter(m=>m&&!m.dead);if(!party.length
 /* --- library --- */
 const LIB_ESS=['goblin','ghoul','gnome','bladewolf','kobold','kobold_shield','goblin_archer','goblin_sword','skel_archer','skel_warrior','banshee','wall_mole'];
 function libraryTab(){
-  const seen=new Set();for(const[k,fd]of Object.entries(FIELDS)){const fl=fieldFloor(k);if(fl&&fl<=Math.min(5,S.maxFloor+1))fd.pool.forEach(x=>seen.add(x));}
+  const seen=new Set();for(const[k,fd]of Object.entries(FIELDS)){const fl=fieldFloor(k);if(fl&&fl<=Math.min(6,S.maxFloor+1))fd.pool.forEach(x=>seen.add(x));}
   const unknown=[...seen].filter(k=>!isKnown(k));
   return `<p class="mute">拉維吉恩中央圖書館。不外借,只能在館內查閱。9 級精髓在這裡販售。</p>
     <div class="sub">怪物資料(查詢費 30 石幣)</div>
@@ -1077,11 +1087,17 @@ ACT.removeDo=arg=>{const[id,j]=arg.split(':');const m=getM(id);if(!m)return;cons
   S.stone-=c;S.removals++;m.ess.splice(+j,1);m.hp=Math.min(m.hp,stats(m).maxhp);log(`${m.name} 和${essInfo(it).short}之間的「線」被切斷了。花了 ${c} 石幣。`);save();render();};
 /* --- smith / store --- */
 function gearCost(m,t){return Math.round(80*(t+1)*(RACE[m.race].forge||1));}
+function shipCost(t){return t===1?4000:t===2?9000:16000;}
 function smithTab(){
   return `<p class="mute">強化裝備最多到 +5。也可以換一把不同類型的武器。</p><div class="list">${living().map(m=>{const cw=gearCost(m,m.wpn),ca=gearCost(m,m.arm);return `<div class="item"><span><b>${m.name}</b> <span class="mute">${WEAPON[m.weapon].n} +${m.wpn}・防具 +${m.arm}</span></span><span></span>
     <small class="row"><button class="btn sm" data-act="gear" data-arg="${m.id}:wpn" ${m.wpn<5&&S.stone>=cw?'':'disabled'}>武器 +1(${cw})</button><button class="btn sm" data-act="gear" data-arg="${m.id}:arm" ${m.arm<5&&S.stone>=ca?'':'disabled'}>防具 +1(${ca})</button>
-    <select data-change="swapWeapon" data-arg="${m.id}" aria-label="換武器"><option value="">換武器…</option>${Object.entries(WEAPON).filter(([k])=>k!==m.weapon).map(([k,w])=>`<option value="${k}">${w.n}(${w.price})</option>`).join('')}</select></small></div>`;}).join('')}</div>`;
+    <select data-change="swapWeapon" data-arg="${m.id}" aria-label="換武器"><option value="">換武器…</option>${Object.entries(WEAPON).filter(([k])=>k!==m.weapon).map(([k,w])=>`<option value="${k}">${w.n}(${w.price})</option>`).join('')}</select></small></div>`;}).join('')}</div>
+    <div class="sub">造船廠(要去第 6 層大海必須兩樣都準備好)</div>
+    <div class="kv"><span>航海士</span><b>${S.navigator?'已雇用':'未雇用'}</b><span>船隻</span><b>${S.ship?`${S.ship} 級`:'還沒有船'}</b></div>
+    <div class="row">${!S.navigator?`<button class="btn sm" data-act="hireNav" ${S.stone>=3000?'':'disabled'}>雇用航海士・3000</button>`:''}${S.ship<3?`<button class="btn sm" data-act="buyShip" ${S.stone>=shipCost(S.ship+1)?'':'disabled'}>${S.ship?'升級船隻':'建造船隻'}・${S.ship+1} 級・${shipCost(S.ship+1)}</button>`:''}</div>`;
 }
+ACT.hireNav=()=>{if(S.navigator||S.stone<3000)return;S.stone-=3000;S.navigator=true;log('雇用了一位航海士,準備好航向大海了。');save();render();};
+ACT.buyShip=()=>{const c=shipCost(S.ship+1);if(S.ship>=3||S.stone<c)return;S.stone-=c;S.ship++;log(`船隻建造/升級到 ${S.ship} 級。`);save();render();};
 ACT.gear=arg=>{const[id,slot]=arg.split(':');const m=getM(id);if(!m||m[slot]>=5)return;const c=gearCost(m,m[slot]);if(S.stone<c)return;S.stone-=c;m[slot]++;if(slot==='arm')m.hp+=12;log(`${m.name} 的${slot==='wpn'?'武器':'防具'}強化到 +${m[slot]}。`);save();render();};
 ACT.swapWeapon=(id,el)=>{const m=getM(id),w=el.value;if(!m||!w)return;const p=WEAPON[w].price;if(S.stone<p){toast('石幣不夠');el.value='';return;}S.stone-=p;m.weapon=w;m.wpn=0;m.hp=Math.min(m.hp,stats(m).maxhp);log(`${m.name} 換成了${WEAPON[w].n}。`);save();render();};
 function storeTab(){
@@ -1094,8 +1110,8 @@ ACT.dorm=()=>{const c=150*S.dorm;if(S.dorm>=4||S.stone<c)return;S.stone-=c;S.dor
 
 ACT.help=()=>modal('玩法',`<ul>
   <li><b>月曆</b>:迷宮每月 1 日開啟。其他日子在城裡休息、打工、整備。每天要付生活費,每月 1 日繳稅(人類減半、龍人族免稅,欠稅進不了迷宮)。</li>
-  <li><b>迷宮</b>:進去之後要等那一層關閉才會被傳回城(1 層 7 天、2 層 10 天、3 層 15 天、4 層 23 天、5 層 30 天,從開啟日算起),回城時是隔天中午。往下走可以待更久。安全區(大賢者紀念碑、魔女小屋、大魔境起始點)可以安心等待關閉。</li>
-  <li><b>樓層</b>:第 1 層四個方向的傳送門分別通往第 2 層的四塊區域。第 3 層的傳送門在魔女森林中心。第 4 層天空之塔要爬到第 100 階。第 5 層是三條峽谷。</li>
+  <li><b>迷宮</b>:進去之後要等那一層關閉才會被傳回城(1 層 7 天、2 層 10 天、3 層 15 天、4 層 23 天、5 層 30 天、6 層 60 天,從開啟日算起),回城時是隔天中午。往下走可以待更久。安全區(大賢者紀念碑、魔女小屋、大魔境起始點、大海錨地)可以安心等待關閉。</li>
+  <li><b>樓層</b>:第 1 層四個方向的傳送門分別通往第 2 層的四塊區域。第 3 層的傳送門在魔女森林中心。第 4 層天空之塔要爬到第 100 階。第 5 層是三條峽谷。第 6 層是大海,要先在鐵匠鋪雇用航海士、建造船隻才能從第 5 層亡靈峽谷盡頭出發。</li>
   <li><b>經驗</b>:只有第一次打倒某種怪物(9 級 1 點、8 級 2 點…)、打倒守護者(額外 3 點)、第一次開啟傳送門(2 點)才有經驗。每升一級多一個精髓槽。</li>
   <li><b>精髓</b>:給能力值、一個主動技能和被動;顏色決定主動技能。技能重複的精髓不能吸收。掉落率很低,可以在圖書館(9 級)和公會(8 級以上)買。移除要到大神殿,每次費用翻倍。守護者精髓是彩虹色,能力值 1.5 倍並包含全部主動技能,可以覆蓋同一種怪物的普通精髓。</li>
   <li><b>戰鬥</b>:依速度輪流行動。普攻回魂力,技能花魂力。打中弱點削體勢,體勢崩潰的怪物行動延後、受到更多傷害。靈體幾乎不受物理傷害。沒查過的怪物看不到弱點。</li>
@@ -1219,6 +1235,10 @@ function genFloor(f,opt={}){
     rooms.forEach(r=>r.field=r.x<2?'hellfire':r.x>2?'frost':'specter');rooms[start].field='redstart';rooms[start].type='redstart';rooms[start].cleared=true;rooms[start].visited=true;
     const g=pick([2,12]);rooms[g].type='f6gate';
     fillRooms(rooms,rooms.map((_,i)=>i).filter(i=>i!==start&&i!==g),5);
+  }else if(f===6){
+    W=5;H=3;start=7;rooms=makeGrid(W,H,start);
+    rooms.forEach(r=>r.field=r.x<2?'calmsea':r.x>2?'icesea':'doldrums');rooms[start].field='seaport';rooms[start].type='seaport';rooms[start].cleared=true;rooms[start].visited=true;
+    fillRooms(rooms,rooms.map((_,i)=>i).filter(i=>i!==start),6);
   }
   rooms[start].visited=true;rooms[start].cleared=true;
   return{f,W,H,rooms,start,cur:start};
@@ -1323,10 +1343,13 @@ function eventHTML(r){
     case'sage':return `<h3>大賢者紀念碑</h3><p class="desc">水晶洞窟的中心部。古老的石碑旁很少有怪物靠近,是這一層的安全區。可以安心休息,也可以在這裡等到迷宮關閉。</p><div class="row">${act('休息(8 小時,不會被偷襲)','campSafe','','')}${wait}</div>${floorMasterBlock(f)}${run.abyss?floorMasterBlock('abyss'):''}`;
     case'hut':return `<h3>魔女小屋</h3><p class="desc">從樹皮的縫隙鑽進去,是魔女森林裡唯一的安全處。小屋每次只能維持 8 小時。</p><div class="row">${act('休息(8 小時,不會被偷襲)','campSafe')}${wait}</div>${floorMasterBlock(f)}`;
     case'redstart':return `<h3>大魔境・起始點</h3><p class="desc">紅色的光照著這片安全區。數十條像溜滑梯一樣的峽谷從這裡向外延伸。</p><div class="row">${act('休息(8 小時,不會被偷襲)','campSafe')}${wait}</div>${floorMasterBlock(f)}`;
+    case'seaport':return `<h3>大海・錨地</h3><p class="desc">船停在這裡的淺灘上,算是第 6 層唯一的安全區。往外是一望無際的大海,風平浪靜的海域、令人窒息的無風帶、結冰的海域各佔一方。</p><div class="row">${act('休息(8 小時,不會被偷襲)','campSafe')}${wait}</div>${floorMasterBlock(f)}`;
     case'portal':return `<h3>傳送門石碑・往${FIELDS[r.to].n}</h3><p class="desc">第 1 層四個方向各有一座傳送門,這一座通往第 2 層的「${FIELDS[r.to].n}」。第 2 層會在第 10 天關閉。</p><div class="row">${act(`前往${FIELDS[r.to].n}`,'descend',r.to,'primary')}${camp}</div>`;
     case'stairs':return f===2?`<h3>傳送門石碑・往朝聖者之路</h3><p class="desc">往下是第 3 層朝聖者之路,會在第 15 天關閉。</p><div class="row">${act('前往第 3 層','descend','','primary')}${camp}</div>${floorMasterBlock(2)}`
       :`<h3>傳送門石碑・往天空之塔</h3><p class="desc">魔女森林中心的傳送門。第 4 層天空之塔是獨立的樓層,一進去就會遭遇成群的怪物。</p><div class="row">${act('前往第 4 層','descend','','primary')}${camp}</div>`;
-    case'f6gate':return `<h3>亡靈峽谷的盡頭</h3><p class="desc">再往下是需要船才能渡過的第 6 層大海。原型的迷宮到這裡為止。</p><div class="row">${camp}${wait}</div>`;
+    case'f6gate':{const ready=S.ship>=1&&S.navigator;
+      if(ready)return `<h3>通往大海的港口</h3><p class="desc">船隻已經備妥,航海士也準備好了。往下是第 6 層大海,要花 60 天才會關閉。</p><div class="row">${act('揚帆出海','descend','','primary')}${camp}</div>`;
+      return `<h3>亡靈峽谷的盡頭</h3><p class="desc">再往下是第 6 層大海,但現在過不去。${!S.navigator?'回城裡的鐵匠鋪雇用航海士。':''}${S.ship<1?'回城裡的鐵匠鋪建造船隻。':''}</p><div class="row">${camp}${wait}</div>`;}
     case'combat':case'elite':
       if(r.cleared)return `<h3>${RT[r.type].n}</h3><p class="desc">只剩下怪物的殘骸。屍體和素材沒辦法帶出迷宮。</p><div class="row">${camp}</div>`;
       return `<h3>${r.type==='elite'?'強敵擋住去路':'遭遇怪物'}</h3><p class="desc">${r.enemies.every(k=>(MON[k].tags||{}).passive)?'牠們似乎沒有攻擊的意思。可以繞過去,也可以先出手。':'不打倒牠們就無法往其他方向前進。'}</p>${foesHTML(r.enemies)}
@@ -1373,7 +1396,7 @@ ACT.towerBoss=()=>{S.run.tower.pending=0;startBattle(['sky_sentinel','tower_guar
 /* --- dimension collapse --- */
 function collapseHTML(){const c=S.run.collapse;return{map:`<p class="notice bad">次元崩壞!迷宮提前封閉,地板變成隨機的傳送門,人和怪物被丟到各處。撐過所有波次才回得去。</p>`,
   event:`<h3>第 ${c.wave+1} / ${c.total} 波</h3><p class="desc">${c.wave?'下一波就要來了。':'空間扭曲了。'}兩波之間有一點喘息的時間。</p><div class="row"><button class="btn primary" data-act="collapseFight">迎戰</button>${c.wave?'<button class="btn" data-act="collapseRest">喘口氣(回復 15% 生命)</button>':''}</div>`};}
-ACT.collapseFight=()=>{const c=S.run.collapse,f=S.run.floor;const pools=Object.keys(FIELDS).filter(k=>{const fl=fieldFloor(k);return fl&&fl<=Math.min(5,f+1)&&FIELDS[k].pool.length;});
+ACT.collapseFight=()=>{const c=S.run.collapse,f=S.run.floor;const pools=Object.keys(FIELDS).filter(k=>{const fl=fieldFloor(k);return fl&&fl<=Math.min(6,f+1)&&FIELDS[k].pool.length;});
   startBattle(genEnemies(pick(pools),'combat').concat(Math.random()<.4?[pick(FIELDS[pick(pools)].pool)]:[]).slice(0,5),{collapse:1});};
 ACT.collapseRest=()=>{if(S.run.collapse.rested===S.run.collapse.wave)return;S.run.collapse.rested=S.run.collapse.wave;partyMembers().forEach(m=>{const st=stats(m);m.hp=Math.min(st.maxhp,m.hp+st.maxhp*.15);});toast('稍微喘了口氣');save();render();};
 /* --- moves & room actions --- */
@@ -1449,7 +1472,7 @@ ACT.camp=()=>{
 ACT.campSafe=()=>{restParty(.35,10);if(advanceTime(8))return;toast('在安全區好好睡了一覺');save();render();};
 ACT.waitClose=()=>{const run=S.run;const h=stayLimit(run)-run.h;restParty(1,30);advanceTime(Math.max(1,h));};
 ACT.descend=to=>{
-  const run=S.run;if(run.collapse)return;const nf=run.floor+1;if(nf>5)return;
+  const run=S.run;if(run.collapse)return;const nf=run.floor+1;if(nf>6)return;if(nf===6&&!(S.ship>=1&&S.navigator))return;
   setupFloor(nf,nf===2?(to||pick(['beast','dead','desert','gforest'])):null);
   const msgs=portalXp(partyMembers(),nf);
   log(`隊伍來到第 ${nf} 層「${run.tower?'天空之塔':FIELDS[curField(run)].n}」。`);save();render();
