@@ -275,7 +275,7 @@ const WEAPON={
 };
 const RACE={
   human:{n:'人類',d:'稅金減半,魂力 +10',tax:.5,soul:10},
-  barb:{n:'蠻族',d:'巨大強壯:生命 +25%、攻擊 +2,但生活開銷較大',hp:1.25,atk:2,live:1.5},
+  barb:{n:'蠻族',d:'巨大強壯:生命 +25%、攻擊 +2,但生活開銷較大。真正的強項其實是精神力:累積壓力的速度 -15%',hp:1.25,atk:2,live:1.5},
   dwarf:{n:'矮人',d:'防禦 +3,鍛造費用 -25%,速度 -5',def:3,spd:-5,forge:.75},
   elf:{n:'精靈',d:'速度 +4、魂力 +10、魔抗 +5,能察覺陷阱',spd:4,soul:10,mres:5,trap:1},
   beast:{n:'獸人',d:'速度 +8,嗅覺敏銳能察覺陷阱',spd:8,trap:1},
@@ -672,7 +672,7 @@ const DAYS_IN_MONTH=30,LIVING=2,TAX=20,POTION=30,TORCH=60,MAXPOT=5;
 /* ================= STATE ================= */
 let S=null,B=null,SAVED=null;
 function newState(){return{v:5,uid:1,month:1,day:1,stone:450,potions:2,torches:1,debt:0,dorm:1,members:[],bag:[],items:[],tavern:[],shop:[],reqs:[],active:[],contrib:0,fame:0,examPassed:false,
-  known:[],kc:{},riftsCleared:0,removals:0,revives:0,riftCD:{},floorBoss:{},dreadKills:0,ship:0,navigator:false,maxFloor:1,log:[],auto:false,fast:false,sel:[],startFloor:1,tab:'home',run:null,screen:'intro',fallen:[],draft:null};}
+  known:[],kc:{},riftsCleared:0,removals:0,revives:0,riftCD:{},floorBoss:{},dreadKills:0,ship:0,navigator:false,carnon:false,maxFloor:1,log:[],auto:false,fast:false,sel:[],startFloor:1,tab:'home',run:null,screen:'intro',fallen:[],draft:null};}
 const getM=id=>S.members.find(m=>m.id===+id);
 const hero=()=>S.members.find(m=>m.hero);
 const hasT=(m,t)=>m.traits.includes(t);
@@ -737,7 +737,7 @@ function essValue(m){return m.ess.reduce((a,it)=>a+GRADE[ESS[it.k].g].ev*(it.gd?
 function essGrade(m){const v=essValue(m);return v<4?9:v<12?8:v<35?7:v<90?6:v<220?5:4;}
 const rankCap=()=>S.examPassed?4:S.contrib>=30?6:7;
 function expGrade(m){return Math.max(essGrade(m),rankCap());}
-function stressMult(m){let k=1;if(hasT(m,'brave'))k*=.7;if(hasT(m,'coward'))k*=1.4;if(hasT(m,'bg_drifter'))k*=.7;return k;}
+function stressMult(m){let k=1;if(hasT(m,'brave'))k*=.7;if(hasT(m,'coward'))k*=1.4;if(hasT(m,'bg_drifter'))k*=.7;if(m.race==='barb')k*=.85;return k;}
 function addStress(m,v){m.stress=clamp(m.stress+(v>0?v*stressMult(m):v),0,100);}
 function gainXp(m,xp){m.xp+=xp;const ups=[];while(m.lv<MAXLV&&m.xp>=LV_XP[m.lv+1]){const r=m.hp/stats(m).maxhp;m.lv++;m.hp=Math.round(r*stats(m).maxhp);ups.push(m.lv);}return ups;}
 function killMember(m){
@@ -748,7 +748,7 @@ function killMember(m){
 function reviveCost(){const h=hero();return S.revives===0?0:150*(h?h.lv:1)*S.revives;}
 const removeCost=()=>500*Math.pow(2,S.removals);
 function taxOf(m){return Math.round(TAX*(RACE[m.race].tax??1));}
-function livingCost(m){return Math.round(LIVING*(RACE[m.race].live||1)*(hasT(m,'glutton')?2:1));}
+function livingCost(m){return Math.round(LIVING*(RACE[m.race].live||1)*(hasT(m,'glutton')?2:1)*(S.carnon?.85:1));}
 
 /* ================= SPRITES ================= */
 const OUT='#140f0b',SPR={},URL_CACHE={};
@@ -961,8 +961,9 @@ function memberCard(m){
 }
 function homeTab(){
   const c=150*S.dorm,max=S.dorm>=4;
-  return `<div class="kv"><span>住處</span><b>拉維吉恩區的舊倉庫</b><span>可住</span><b>${capacity()} 人(目前 ${living().length})</b><span>每日開銷</span><b>${living().reduce((a,m)=>a+livingCost(m),0)} 石幣</b><span>每月稅金</span><b>${living().reduce((a,m)=>a+taxOf(m),0)} 石幣(1 日繳)</b></div>
+  return `<div class="kv"><span>住處</span><b>拉維吉恩區的舊倉庫</b><span>可住</span><b>${capacity()} 人(目前 ${living().length})</b><span>每日開銷</span><b>${living().reduce((a,m)=>a+livingCost(m),0)} 石幣</b><span>每月稅金</span><b>${living().reduce((a,m)=>a+taxOf(m),0)} 石幣(1 日繳)</b>${S.carnon?'<span>第 1 區特權</span><b style="color:var(--torch-hi)">已取得(生活開銷 -15%)</b>':''}</div>
     <div class="row"><button class="btn sm" data-act="dorm" ${!max&&S.stone>=c?'':'disabled'}>${max?'住處已擴建到最大':`擴建住處(${c} 石幣)`}</button><span class="mute" style="font-size:12px">多住 2 人,休息時壓力多降 6</span></div>
+    ${!S.carnon?`<p class="mute" style="font-size:12px">名聲達到 150 能讓第 1 區卡隆的守衛放行,受認可的探險者生活開銷會降低(目前名聲 ${S.fame})。</p>`:''}
     <div class="sub">日誌</div><div class="log">${S.log.map(l=>`<div><span class="d">${l.d}</span>${l.m}</div>`).join('')}</div>`;
 }
 /* --- tavern(招募,等級越高的人越需要名聲/貢獻點/樓層進度) --- */
@@ -1135,6 +1136,7 @@ function processDays(n,away=new Set()){
       m.soul=st.soul;
     }
     S.stone+=earn;
+    if(!S.carnon&&S.fame>=150){S.carnon=true;log('名聲傳到了拉夫多尼亞第 1 區,卡隆的守衛不再攔你——身為受認可的探險者,每天的生活開銷降了一些。');}
     const cost=living().reduce((a,m)=>a+livingCost(m),0);
     if(S.stone>=cost)S.stone-=cost;else{S.stone=0;living().forEach(m=>{addStress(m,10);m.hp=Math.max(1,m.hp-stats(m).maxhp*.1);});log('付不出生活費,大家餓著肚子過了一天。');}
     S.day++;
