@@ -1051,12 +1051,10 @@ function baseHTML(){
       </section>`;
   if(mobile){
     const bldg=`<div class="row bback"><button class="btn sm" data-act="backToMap">← 返回地圖</button></div>
-        <div class="tabpanel">
-          <div class="tabs" role="tablist">${TABS.map(([k,n,ic])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-arg="${k}"><span class="ic">${ic}</span><span class="tl">${n}</span></button>`).join('')}</div>
-          <div class="tabbody">${tabHTML()}</div>
-        </div>`;
+        <div class="tabs" role="tablist">${TABS.map(([k,n,ic])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-arg="${k}"><span class="ic">${ic}</span><span class="tl">${n}</span></button>`).join('')}</div>
+        ${tabHTML()}`;
     const body=mobileView==='team'?teamScreenHTML():mobileView==='bag'?bagScreenHTML():mobileView==='bldg'?bldg:cityMapHTML();
-    return `<div class="camp"><section class="panel">${body}</section></div>${mobileTabBarHTML(open,until)}`;
+    return `<div class="camp"><section class="panel tabpanel"><div class="tabbody">${body}</div></section></div>${mobileTabBarHTML(open,until)}`;
   }
   return `<div class="camp">
     <section class="panel">
@@ -1092,10 +1090,8 @@ function teamScreenHTML(){
   const body=!fm?'<p class="mute">還沒有任何人</p>':teamSubTab==='ess'?essSlotsHTML(fm):memberCard(fm,true);
   return `<div class="teamhead"><h2>隊伍 ${S.sel.length}/5</h2><button class="btn sm primary" data-act="backToMap">確定</button></div>
   <div class="teamslots">${slots.join('')}</div>
-  <div class="tabpanel">
-    ${subtabs}
-    <div class="tabbody">${body}</div>
-  </div>`;
+  ${subtabs}
+  ${body}`;
 }
 function essSlotsHTML(m){
   const n=essSlots(m);
@@ -1125,7 +1121,7 @@ function bagScreenHTML(){
       return `<button class="gcard" data-act="itemOpen" data-arg="${i}"><span class="gbadge">${badge}</span><span class="gicon">${it.ided||it.type==='riftstone'?'晶':'?'}</span><span class="gname">${label}</span></button>`;
     }).join('')}</div>`:'<p class="mute">沒有物品。</p>';
   }
-  return `<h2 style="margin-bottom:4px">背包</h2><div class="tabpanel">${tabs}<div class="tabbody">${grid}</div></div>`;
+  return `<h2 style="margin-bottom:4px">背包</h2>${tabs}${grid}`;
 }
 function cityMapHTML(){
   return `<h2 style="margin-bottom:4px">拉夫多尼亞</h2><p class="mute" style="font-size:12.5px;margin-bottom:4px">點建築物進去</p>
