@@ -392,12 +392,17 @@ const WEAPON={
 };
 const RACE={
   human:{n:'人類',d:'稅金減半,魂力 +10',tax:.5,soul:10},
-  barb:{n:'蠻族',d:'巨大強壯:生命 +25%、攻擊 +2,但生活開銷較大。真正的強項其實是精神力:累積壓力的速度 -15%',hp:1.25,atk:2,live:1.5},
-  dwarf:{n:'矮人',d:'防禦 +3,鍛造費用 -25%,速度 -5',def:3,spd:-5,forge:.75},
+  barb:{n:'蠻族',d:'巨大強壯:生命 +25%、攻擊 +2,但生活開銷較大。真正的強項其實是精神力:累積壓力的速度 -15%,幾乎不受恐懼效果影響',hp:1.25,atk:2,live:1.5},
+  dwarf:{n:'矮人',d:'防禦 +3,鍛造費用 -25%,速度 -5,裝備編號物品的效果 ×1.5',def:3,spd:-5,forge:.75},
   elf:{n:'精靈',d:'速度 +4、魂力 +10、魔抗 +5,能察覺陷阱',spd:4,soul:10,mres:5,trap:1},
   beast:{n:'獸人',d:'速度 +8,嗅覺敏銳能察覺陷阱',spd:8,trap:1},
   fairy:{n:'妖精',d:'魂力 +25、魔抗 +8、速度 +6,生命 -20%',hp:.8,soul:25,mres:8,spd:6},
   dragon:{n:'龍人族',d:'因祖先的功績免繳稅金,防禦 +2',tax:0,def:2}
+};
+const BEASTPACT={
+  summon:{n:'召喚·靈魂獸追擊',d:'普通攻擊有 25% 機率讓靈魂獸追加一擊(40% 攻擊力)'},
+  enhance:{n:'強化·猛獸之力',d:'攻擊 +15%、速度 +10%'},
+  ability:{n:'異能·野性直覺',d:'爆擊率 +12%、吸血 +8%'}
 };
 const TRAIT={
   bg_merc:{n:'傭兵出身',d:'攻擊 +3',good:1,bg:1},
@@ -838,6 +843,7 @@ function makeMember(o={}){
   const m={id:S.uid++,name:o.name||genName(race),race,weapon,lv:o.lv||1,xp:LV_XP[o.lv||1]||0,hp:1,soul:0,stress:0,wpn:0,arm:0,traits,ess:o.ess||[],kills:[],floors:[],job:'rest',look:o.look??ri(0,5),num:null,bonusSoul:0};
   const st=stats(m);m.hp=st.maxhp;m.soul=st.soul;return m;
 }
+function numEff(m){if(!m.num)return{};const f=NUM[m.num.id].eff;if(m.race!=='dwarf')return f;const k={};for(const key in f)k[key]=typeof f[key]==='number'?f[key]*1.5:f[key];return k;}
 function stats(m){
   const w=WEAPON[m.weapon],r=RACE[m.race];
   let hp=w.hp*(r.hp||1),atk=w.atk+(r.atk||0),def=w.def+(r.def||0),spd=w.spd+(r.spd||0),soul=40+(w.soul||0)+(r.soul||0)+(m.bonusSoul||0),mres=r.mres||0,crit=.05+(w.crit||0),ls=0,regen=0;
@@ -846,8 +852,10 @@ function stats(m){
   for(const it of m.ess){const e=essInfo(it).st;hp+=e.hp||0;atk+=e.atk||0;def+=e.def||0;spd+=e.spd||0;soul+=e.soul||0;mres+=e.mres||0;ls+=e.ls||0;regen+=e.regen||0;}
   if(memberPas(m).includes('preserve'))regen+=.03;
   if(memberPas(m).includes('scent'))crit+=.06;
-  if(m.num){const f=NUM[m.num.id].eff;atk+=f.atk||0;def+=f.def||0;spd+=f.spd||0;soul+=f.soul||0;mres+=f.mres||0;ls+=f.ls||0;regen+=f.regen||0;crit+=f.crit||0;}
+  if(m.num){const f=numEff(m);atk+=f.atk||0;def+=f.def||0;spd+=f.spd||0;soul+=f.soul||0;mres+=f.mres||0;ls+=f.ls||0;regen+=f.regen||0;crit+=f.crit||0;}
   if(hasT(m,'tough'))hp*=1.15;if(hasT(m,'quick'))spd+=6;if(hasT(m,'pacifist'))atk*=.75;if(hasT(m,'bg_merc'))atk+=3;
+  if(m.race==='beast'&&m.beastPact==='enhance'){atk*=1.15;spd*=1.10;}
+  if(m.race==='beast'&&m.beastPact==='ability'){crit+=.12;ls+=.08;}
   return{maxhp:Math.max(10,Math.round(hp)),atk:Math.max(1,Math.round(atk*10)/10),def:Math.max(0,Math.round(def*10)/10),spd:Math.max(40,Math.round(spd)),soul:Math.round(soul),mres:Math.round(mres),crit,ls,regen};
 }
 function essValue(m){return m.ess.reduce((a,it)=>a+GRADE[ESS[it.k].g].ev*(it.gd?1.5:1),0);}
@@ -1162,6 +1170,11 @@ ACT.itemOpen=i=>{const it=S.items[+i];if(!it)return;
 ACT.sellItemClose=i=>{ACT.sellItem(i);ACT.closeModal();};
 ACT.appraiseClose=i=>{ACT.appraise(i);ACT.closeModal();};
 function tabHTML(){return({home:homeTab,tavern:tavernTab,guild:guildTab,library:libraryTab,exchange:exchangeTab,temple:templeTab,smith:smithTab,store:storeTab}[S.tab]||homeTab)();}
+function beastPactHTML(m){
+  if(m.beastPact)return `<div class="notice">靈魂獸契約:<b>${BEASTPACT[m.beastPact].n}</b><br><span class="mute" style="font-size:12px">${BEASTPACT[m.beastPact].d}</span></div>`;
+  if(m.lv<2)return `<p class="mute" style="font-size:12px">獸人在 Lv2 能與靈魂獸締結契約(目前 Lv${m.lv})。</p>`;
+  return `<div class="notice">尚未締結靈魂獸契約<div class="row" style="margin-top:6px">${Object.entries(BEASTPACT).map(([k,p])=>`<button class="btn sm" data-act="setBeastPact" data-arg="${m.id}:${k}" title="${p.d}">${p.n}</button>`).join('')}</div></div>`;
+}
 function memberCard(m,mini){
   const st=stats(m),sel=S.sel.includes(m.id);
   const next=m.lv<MAXLV?LV_XP[m.lv+1]:LV_XP[MAXLV],prev=LV_XP[m.lv];
@@ -1171,6 +1184,7 @@ function memberCard(m,mini){
     ${mini?'':`<label class="go"><input type="checkbox" id="go-${m.id}" data-change="toggleSel" data-arg="${m.id}" ${sel?'checked':''}>出征</label>`}</div>
     <div>${mrow('生命',m.hp,st.maxhp,'hp')}${mrow('壓力',m.stress,100,m.stress>=70?'st hi':'st')}${mrow('經驗',m.xp-prev,Math.max(1,next-prev),'xp')}</div>
     <div class="statline"><span>攻擊<b>${st.atk}</b></span><span>防禦<b>${st.def}</b></span><span>速度<b>${st.spd}</b></span><span>魂力<b>${st.soul}</b></span><span>魔抗<b>${st.mres}</b></span><span>${DT[WEAPON[m.weapon].dt]}擊</span></div>
+    ${m.race==='beast'?beastPactHTML(m):''}
     ${mini?'':`<div class="chips">${traitChips(m)}${essChips(m)}</div>
     <div class="mact"><label for="job-${m.id}">工作</label><select id="job-${m.id}" data-change="setJob" data-arg="${m.id}"><option value="rest" ${m.job==='rest'?'selected':''}>休息</option><option value="work" ${m.job==='work'?'selected':''}>打工</option></select>
       ${m.num?`<button class="btn sm" data-act="unequip" data-arg="${m.id}">卸下編號物品</button>`:''}</div>`}
@@ -1286,6 +1300,7 @@ ACT.appraise=i=>{const it=S.items[+i];if(!it||S.stone<300)return;S.stone-=300;it
 ACT.equipOpen=i=>{const it=S.items[+i];if(!it)return;modal(`裝備 ${NUM[it.id].n}`,`<p class="mute">${NUM[it.id].d}</p><div class="list">${living().map(m=>`<div class="item"><span><b>${m.name}</b> <span class="mute">${m.num?'已裝備 '+NUM[m.num.id].n:''}</span></span><button class="btn sm primary" data-act="equipDo" data-arg="${i}:${m.id}">裝備</button></div>`).join('')}</div>`,[{label:'取消',act:'closeModal'}]);};
 ACT.equipDo=arg=>{const[i,id]=arg.split(':');const it=S.items[+i],m=getM(id);if(!it||!m)return;if(m.num)S.items.push(m.num);S.items.splice(+i,1);m.num=it;ACT.closeModal();save();render();};
 ACT.unequip=id=>{const m=getM(id);if(!m||!m.num)return;S.items.push(m.num);m.num=null;m.hp=Math.min(m.hp,stats(m).maxhp);save();render();};
+ACT.setBeastPact=arg=>{const[id,k]=arg.split(':');const m=getM(id);if(!m||m.race!=='beast'||m.beastPact||m.lv<2||!BEASTPACT[k])return;m.beastPact=k;toast(`${m.name}與靈魂獸締結了契約:${BEASTPACT[k].n}`);save();render();};
 /* --- temple --- */
 function templeTab(){
   const h=hero(),hc=healAllCost();
@@ -1713,7 +1728,7 @@ function eject(){returnToCity('迷宮關閉了','關閉的時間到了。一陣�
 /* ================= TURN-BASED BATTLE ================= */
 function heroUnit(m){const st=stats(m),w=WEAPON[m.weapon],pas=memberPas(m);
   return{side:'p',m,name:m.name,hp:Math.max(1,m.hp),maxhp:st.maxhp,atk:st.atk,def:st.def,spd:st.spd,mres:st.mres,soul:Math.min(st.soul,m.soul),soulMax:st.soul,crit:st.crit,ls:st.ls,regen:st.regen,
-    dt:w.dt,w,line:w.line,skills:memberActs(m),pas,num:m.num?NUM[m.num.id].eff:{},buffs:[],momentum:0,face:faceImg(m),icon:faceImg(m)};}
+    dt:w.dt,w,line:w.line,skills:memberActs(m),pas,num:numEff(m),buffs:[],momentum:0,face:faceImg(m),icon:faceImg(m)};}
 let eid=1;
 function monUnit(k){const d=MON[k],t=d.tags||{};
   const u={side:'e',key:k,uid:eid++,name:d.n,g:d.g,hp:d.hp,maxhp:d.hp,atk:d.atk,def:d.def,spd:d.spd,mres:d.mres??(10-d.g)*3,weak:d.weak||[],resist:d.resist||[],tough:d.tough,toughMax:d.tough,broken:false,
@@ -1886,7 +1901,7 @@ async function perform(a,act,tok){
       case'smash':{const t=partyTarget();if(!t)break;await say('重擊!','bad',a);await hit(a,t,2.3,a.atkdt,0,{});break;}
       case'aoe':{await say('範圍攻擊!','bad',a);for(const t of foesOf(a))await hit(a,t,.75,a.atkdt,0,{multi:1});await delay();break;}
       case'bind':{const t=partyTarget();if(!t)break;await say('束縛!','bad',a);addBuff(t,{bind:1,t:3},'束縛');pop(t,'束縛','st');await delay();break;}
-      case'fear':{await say('恐嚇!','bad',a);foesOf(a).forEach(t=>{addBuff(t,{atk:-.25,t:2},'恐懼');pop(t,'恐懼','st');});await delay();break;}
+      case'fear':{await say('恐嚇!','bad',a);foesOf(a).forEach(t=>{const resist=t.m&&t.m.race==='barb';addBuff(t,{atk:resist?-.1:-.25,t:2},'恐懼');pop(t,resist?'蠻族意志抵抗了恐懼':'恐懼','st');});await delay();break;}
       case'silence':{await say('沉默!','bad',a);foesOf(a).forEach(t=>{addBuff(t,{silence:1,t:2},'沉默');pop(t,'沉默','st');});await delay();break;}
       case'enrage':{a.enraged=true;await say('力量覺醒!','bad',a);addBuff(a,{atk:.3,def:.25,t:99},'覺醒');pop(a,'覺醒','bad');break;}
       case'enrage2':{a.enraged2=true;await say('徹底覺醒!','bad',a);addBuff(a,{atk:.3,def:.25,t:99},'徹底覺醒');pop(a,'徹底覺醒','bad');break;}
@@ -1959,6 +1974,7 @@ async function hit(src,t,mult,dt,brk,opt){
   const drain=(src.ls||0)+(opt.drain||0)+(src.side==='e'?src.tags.drain||0:0);if(drain&&aliveU(src)){const h=healU(src,dmg*drain);if(h>0&&(opt.drain||src.side==='e'))pop(src,'+'+h,'good');}
   const th=buffSum(t,'thorns');if(th&&aliveU(src)){const r=Math.max(1,Math.round(dmg*th));src.hp-=r;pop(src,'反彈 '+r,'bad');if(src.hp<=0)await fall(src,t);}
   if(counter&&aliveU(src)&&t.hp>0){t.buffs=t.buffs.filter(b=>b!==counter);const r=Math.round(effAtk(t)*counter.counter);src.hp-=r;src.av+=3000/src.spd;await say('陷阱反擊 '+r,'gold',src);if(src.hp<=0)await fall(src,t);}
+  if(src.side==='p'&&src.m.race==='beast'&&src.m.beastPact==='summon'&&!opt.beastProc&&aliveU(t)&&Math.random()<.25){await say('靈魂獸追擊!','gold',src);await hit(src,t,.4,null,0,{beastProc:1,multi:1});}
   if(t.hp<=0)await fall(t,src);
 }
 async function fall(t,src){
