@@ -103,7 +103,7 @@ function FairyPanel({ state, m, onSpiritStone }) {
   );
 }
 
-export default function MemberCard({ state, m, selected, onToggleSel, onDispatch, onTattooUp, onTattooPath, onSetPact, onSpiritStone }) {
+export default function MemberCard({ state, m, selected, mini, onToggleSel, onDispatch, onTattooUp, onTattooPath, onSetPact, onSpiritStone }) {
   if (m.dead) {
     return (
       <article className="mcard dead">
@@ -122,9 +122,11 @@ export default function MemberCard({ state, m, selected, onToggleSel, onDispatch
       <div className="mhead">
         <div className="spr">{RACE[m.race].n[0]}</div>
         <div className="mname"><b>{m.name}</b><span>{RACE[m.race].n} · {WEAPON[m.weapon].n}<em className="lv"> Lv{m.lv}</em></span></div>
-        <label className="go">
-          <input type="checkbox" checked={selected} disabled={!!m.dispatch} onChange={e => onToggleSel(m.id, e.target.checked)} />出征
-        </label>
+        {!mini && (
+          <label className="go">
+            <input type="checkbox" checked={selected} disabled={!!m.dispatch} onChange={e => onToggleSel(m.id, e.target.checked)} />出征
+          </label>
+        )}
       </div>
       <div>
         <MRow label="生命" v={m.hp} max={st.maxhp} cls="hp" />

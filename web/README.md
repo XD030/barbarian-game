@@ -24,7 +24,13 @@ npm run build   # 產生 out/,basePath 會是 /barbarian-game(對應 GitHub Page
   - 精髓/裂縫/層主三個系統都還沒搬(跟 FIELDS 的 elite/altar 房型一起留到戰鬥階段),`fillRooms` 的房間池先拿掉這兩種。
   - 用 Playwright 測過完整流程:建角色、進迷宮、移動探索(含被怪物房擋住只能退回的情況)、紮營、等到關閉自動回城、城市經濟接續正確,沒有 console 錯誤。
 - **階段 4(未開始)**:回合制戰鬥引擎(最複雜,排最後)。
-- **階段 5(未開始)**:手機版專屬 UI(`isMobile()` 那一整套神魔之塔風格排版)。
+- **階段 5(已完成,跳過階段 4 先做,因為排版跟戰鬥邏輯無關)**:手機版專屬 UI(`<768px` 斷點,照 `isMobile()` 那套神魔之塔風格排版搬過來)。
+  - `lib/useIsMobile.js`:`matchMedia('(max-width:767px)')` 的 React hook,取代原本的 `isMobile()`。
+  - 城市畫面在手機寬度下整個換成另一套排版(`components/CityScreen.js` 裡用 `mobile` 分支):`CityMap`(建物地圖,點建築進去)→`PlaceholderTab`/`HomeTab`/`TavernTab`/...(沿用桌面版同一套 tab 內容,只是外面包一個「返回地圖」)、`TeamScreen`(隊伍頭像槽位 + 角色詳情/精髓詳情子分頁,精髓子分頁先放文字說明)、`BagScreen`(背包,精髓/編號物品系統還沒搬所以先顯示「空的」)、底部固定主選單列 `MobileTabBar`(隊伍/背包/中央地圖圓鈕,另外兩格先停用)。
+  - `MemberCard` 加了 `mini` prop(手機版隊伍詳情用,隱藏「出征」勾選框)。
+  - 迷宮畫面的手機排版不需要另外寫元件,純粹靠 CSS 媒體查詢:地圖/隊伍面板在上方可滑動,事件面板(`section.panel.event`)在手機寬度下變成貼底固定卡片,`DungeonScreen.js` 的外層 `<div>` 補上 `className="dmain"` 讓這個斷點生效(對應 `.dmain{display:contents}`)。
+  - 開發時關掉了 Next.js 開發模式的浮動除錯徽章(`next.config.mjs` 的 `devIndicators:false`),因為它在手機版版面的左下角正好蓋住底部主選單列的「隊伍」按鈕。
+  - 用 Playwright 在 390×844(手機尺寸)視窗測過:建角色、底部選單切隊伍/背包/地圖、點建築進入酒館再返回地圖、進迷宮後事件卡片貼底顯示,全程沒有 console 錯誤。
 - 像素圖產生系統(`humanoid()`/`GRIDS`/`gridCanvas()`)目前還沒搬,角色頭像先用種族首字當佔位符(`.spr` 的文字版本)。
 
 ## 還沒做的事

@@ -2,6 +2,10 @@
 import { useState } from 'react';
 import RosterPanel from './city/RosterPanel';
 import TopBar from './city/TopBar';
+import CityMap from './city/CityMap';
+import TeamScreen from './city/TeamScreen';
+import BagScreen from './city/BagScreen';
+import MobileTabBar from './city/MobileTabBar';
 import HomeTab from './city/tabs/HomeTab';
 import TavernTab from './city/tabs/TavernTab';
 import SmithTab from './city/tabs/SmithTab';
@@ -13,14 +17,17 @@ import { getM } from '../lib/getM';
 import { stats } from '../lib/stats';
 import { gearCost, shipCost, reviveCost, healAllCost, processDays } from '../lib/city';
 import { genFloor1, portalXp, FLOORS } from '../lib/dungeon';
+import { useIsMobile } from '../lib/useIsMobile';
 
 const TABS = [
-  ['home', '住處'], ['tavern', '酒館'], ['guild', '探險者公會'], ['library', '中央圖書館'],
-  ['exchange', '中央交易所'], ['temple', '大神殿'], ['smith', '鐵匠鋪'], ['store', '雜貨店'],
+  ['home', '住處', '住'], ['tavern', '酒館', '酒'], ['guild', '探險者公會', '會'], ['library', '中央圖書館', '書'],
+  ['exchange', '中央交易所', '易'], ['temple', '大神殿', '殿'], ['smith', '鐵匠鋪', '匠'], ['store', '雜貨店', '店'],
 ];
 
 export default function CityScreen({ state, mutate, onResetSave }) {
   const [tab, setTab] = useState('home');
+  const [mobileView, setMobileView] = useState('map');
+  const mobile = useIsMobile();
   const party = state.sel.map(id => getM(state, id)).filter(m => m && !m.dead);
   const open = state.day === 1, until = 30 - state.day + 1;
 
@@ -146,6 +153,52 @@ export default function CityScreen({ state, mutate, onResetSave }) {
 
   const handlers = { onToggleSel, onDispatch, onTattooUp, onTattooPath, onSetPact, onSpiritStone };
 
+  const portalPanel = (
+    <section className="panel">
+      <h2>次元廣場</h2>
+      {open ? <p className="notice">今天迷宮開啟。錯過要等下個月。</p> : <p className="mute">迷宮每月 1 日開啟,還有 <span className="num">{until}</span> 天。</p>}
+      {state.debt > 0 && <p className="notice bad">你還欠 {state.debt} 石幣的稅。欠稅的人進不了次元廣場。</p>}
+      <p>{party.length ? party.map(m => m.name).join('、') : <span className="mute">還沒選人</span>} <span className="mute">({party.length}/5)</span></p>
+      <p className="mute" style={{ fontSize: 12 }}>目前只搬了第 1 層水晶洞窟,其他樓層跟戰鬥(遇到怪物房)還沒搬過來。</p>
+      <div className="row">
+        <button className="btn primary" disabled={!(open && party.length && !state.debt)} onClick={onEnterLab}>進入迷宮</button>
+        <button className="btn" onClick={onPassDay}>度過一天</button>
+      </div>
+    </section>
+  );
+
+  if (mobile) {
+    const body = mobileView === 'team'
+      ? <TeamScreen state={state} handlers={handlers} onDone={() => setMobileView('map')} onGoTavern={() => { setTab('tavern'); setMobileView('bldg'); }} />
+      : mobileView === 'bag'
+      ? <BagScreen state={state} />
+      : mobileView === 'bldg'
+      ? (
+        <>
+          <div className="row" style={{ marginBottom: 4 }}><button className="btn sm" onClick={() => setMobileView('map')}>← 返回地圖</button></div>
+          <div className="tabpanel"><div className="tabbody">{tabBody}</div></div>
+        </>
+      )
+      : (
+        <>
+          <CityMap tabs={TABS} onEnterBld={k => { setTab(k); setMobileView('bldg'); }} />
+          {portalPanel}
+          <section className="panel"><button className="btn sm" onClick={onResetSave}>清除存檔,回到開頭</button></section>
+        </>
+      );
+    return (
+      <>
+        <TopBar state={state} />
+        <div className="wrap">
+          <div className="camp">
+            <section className="panel">{body}</section>
+          </div>
+        </div>
+        <MobileTabBar view={mobileView} open={open} until={until} onNav={setMobileView} />
+      </>
+    );
+  }
+
   return (
     <>
       <TopBar state={state} />
@@ -153,17 +206,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
         <div className="camp">
           <RosterPanel state={state} handlers={handlers} />
           <div className="side">
-            <section className="panel">
-              <h2>次元廣場</h2>
-              {open ? <p className="notice">今天迷宮開啟。錯過要等下個月。</p> : <p className="mute">迷宮每月 1 日開啟,還有 <span className="num">{until}</span> 天。</p>}
-              {state.debt > 0 && <p className="notice bad">你還欠 {state.debt} 石幣的稅。欠稅的人進不了次元廣場。</p>}
-              <p>{party.length ? party.map(m => m.name).join('、') : <span className="mute">還沒選人</span>} <span className="mute">({party.length}/5)</span></p>
-              <p className="mute" style={{ fontSize: 12 }}>目前只搬了第 1 層水晶洞窟,其他樓層跟戰鬥(遇到怪物房)還沒搬過來。</p>
-              <div className="row">
-                <button className="btn primary" disabled={!(open && party.length && !state.debt)} onClick={onEnterLab}>進入迷宮</button>
-                <button className="btn" onClick={onPassDay}>度過一天</button>
-              </div>
-            </section>
+            {portalPanel}
             <section className="panel">
               <div className="tabs" role="tablist">
                 {TABS.map(([k, n]) => (

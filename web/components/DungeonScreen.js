@@ -35,7 +35,7 @@ export default function DungeonScreen({ state, mutate }) {
       <TopBar state={state} />
       <div className="wrap">
         <div className="dun">
-          <div>
+          <div className="dmain">
             <section className="panel">
               <div className="panel-h">
                 <h2>第 {run.floor} 層 · {FIELDS[cur.field]?.n}</h2>
