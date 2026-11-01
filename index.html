@@ -112,6 +112,12 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .booktab.sel{background:var(--panel);color:var(--torch-hi);border-color:var(--torch)}
 .bookpanel{background:var(--panel);border:1px solid var(--line);border-radius:0 8px 8px 8px;padding:10px;margin-top:-1px}
 .bookpanel b{font-family:var(--f-title);color:var(--torch-hi);font-size:14px}
+.bagGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.gcard{position:relative;font:inherit;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 2px 3px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--ink)}
+.gcard:hover{border-color:var(--torch)}
+.gcard .gicon{width:100%;aspect-ratio:1;border-radius:6px;background:var(--void);display:grid;place-items:center;font-family:var(--f-title);color:#1c1309;font-size:13px}
+.gcard .gname{font-size:9px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.gcard .gbadge{position:absolute;top:2px;left:2px;background:var(--void);color:var(--gold);font-size:8px;padding:0 3px;border-radius:3px;font-family:var(--f-num);z-index:1}
 .meter{height:6px;background:var(--void);border-radius:3px;overflow:hidden}
 .meter i{display:block;height:100%;transition:width .25s}
 .hp i{background:var(--blood)} .st i{background:var(--mind)} .xp i{background:var(--gold)} .sl i{background:var(--soul)} .tm i{background:var(--torch)} .tg i{background:#e8e0cc}
@@ -1025,7 +1031,7 @@ function baseHTML(){
     const bldg=`<div class="row bback"><button class="btn sm" data-act="backToMap">← 返回地圖</button></div>
         <div class="tabs" role="tablist">${TABS.map(([k,n,ic])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-arg="${k}"><span class="ic">${ic}</span><span class="tl">${n}</span></button>`).join('')}</div>
         ${tabHTML()}`;
-    const body=mobileView==='team'?teamScreenHTML():mobileView==='bag'?`<h2 style="margin-bottom:4px">背包</h2>${exchangeTab()}`:mobileView==='bldg'?bldg:cityMapHTML();
+    const body=mobileView==='team'?teamScreenHTML():mobileView==='bag'?bagScreenHTML():mobileView==='bldg'?bldg:cityMapHTML();
     return `<div class="camp"><section class="panel">${body}</section></div>${mobileTabBarHTML(open,until)}`;
   }
   return `<div class="camp">
@@ -1058,7 +1064,7 @@ function teamScreenHTML(){
   for(let i=S.members.length;i<5;i++)slots.push(`<button class="tslot empty" data-act="enterBld" data-arg="tavern" aria-label="空位,去酒館招募"><span class="plus">+</span><span class="lv">招募</span></button>`);
   const subtabs=`<div class="subtabs">
     <button class="stab ${teamSubTab==='detail'?'sel':''}" data-act="teamSub" data-arg="detail">角色詳情</button>
-    <button class="stab ${teamSubTab==='ess'?'sel':''}" data-act="teamSub" data-arg="ess">精髓槽</button>
+    <button class="stab ${teamSubTab==='ess'?'sel':''}" data-act="teamSub" data-arg="ess">精髓詳情</button>
   </div>`;
   const body=!fm?'<p class="mute">還沒有任何人</p>':teamSubTab==='ess'?essSlotsHTML(fm):memberCard(fm,true);
   return `<div class="teamhead"><h2>隊伍 ${S.sel.length}/5</h2><button class="btn sm primary" data-act="backToMap">確定</button></div>
@@ -1077,6 +1083,26 @@ function essSlotsHTML(m){
   const panel=it?`<div class="bookpanel"><b>${essInfo(it).n}</b><p class="mute" style="margin:4px 0">${essDesc(it)}</p><p style="font-size:12.5px">${essSkillDesc(it)}</p></div>`
     :`<div class="bookpanel"><p class="mute">空精髓槽</p></div>`;
   return `<div class="booktabs">${tabs}</div>${panel}`;
+}
+let bagSubTab='item'; // item(精髓背包) | num(編號物品)
+function bagScreenHTML(){
+  const tabs=`<div class="booktabs">
+    <button class="booktab ${bagSubTab==='item'?'sel':''}" data-act="bagSub" data-arg="item">物品</button>
+    <button class="booktab ${bagSubTab==='num'?'sel':''}" data-act="bagSub" data-arg="num">編號</button>
+  </div>`;
+  let grid;
+  if(bagSubTab==='item'){
+    grid=S.bag.length?`<div class="bagGrid">${S.bag.map((it,i)=>{const e=essInfo(it);
+      return `<button class="gcard" data-act="bagEssOpen" data-arg="${i}"><span class="gbadge">${e.g}級</span><span class="gicon" style="background:${e.color}"></span><span class="gname">${e.short}</span></button>`;
+    }).join('')}</div>`:'<p class="mute">空的。</p>';
+  }else{
+    grid=S.items.length?`<div class="bagGrid">${S.items.map((it,i)=>{
+      const label=it.type==='riftstone'?'裂縫石':!it.ided?'未鑑定':NUM[it.id].n;
+      const badge=it.type==='riftstone'?`B${it.f}`:!it.ided?'?':NUM[it.id].r;
+      return `<button class="gcard" data-act="itemOpen" data-arg="${i}"><span class="gbadge">${badge}</span><span class="gicon">${it.ided||it.type==='riftstone'?'晶':'?'}</span><span class="gname">${label}</span></button>`;
+    }).join('')}</div>`:'<p class="mute">沒有物品。</p>';
+  }
+  return `<h2 style="margin-bottom:4px">背包</h2>${tabs}${grid}`;
 }
 function cityMapHTML(){
   return `<h2 style="margin-bottom:4px">拉夫多尼亞</h2><p class="mute" style="font-size:12.5px;margin-bottom:4px">點建築物進去</p>
@@ -1101,6 +1127,18 @@ ACT.teamSlot=id=>{id=+id;const m=getM(id);if(!m)return;teamFocus=id;essFocusIdx=
   save();render();};
 ACT.teamSub=k=>{teamSubTab=k;render();};
 ACT.essFocus=i=>{essFocusIdx=+i;render();};
+ACT.bagSub=k=>{bagSubTab=k;render();};
+ACT.bagEssOpen=i=>{const it=S.bag[+i];if(!it)return;
+  modal(essInfo(it).n,`<p class="mute" style="margin-bottom:6px">${essDesc(it)}</p><p style="font-size:13px">${essSkillDesc(it)}</p>`,
+    [{label:'吸收',act:'absorbOpen',arg:'bag:'+i},{label:`賣 ${essPrice(it)}`,act:'sellEssClose',arg:i},{label:'取消',act:'closeModal'}]);};
+ACT.sellEssClose=i=>{ACT.sellEss(i);ACT.closeModal();};
+ACT.itemOpen=i=>{const it=S.items[+i];if(!it)return;
+  if(it.type==='riftstone'){modal('裂縫石',`<p class="mute">第 ${it.f} 層的裂縫石。</p>`,[{label:`賣 ${300*it.f}`,act:'sellItemClose',arg:i},{label:'取消',act:'closeModal'}]);return;}
+  if(!it.ided){modal('未鑑定的編號物品',`<p class="mute">要花錢鑑定才知道是什麼。</p>`,[{label:'鑑定(300 石幣)',act:'appraiseClose',arg:i},{label:'直接賣 150',act:'sellItemClose',arg:i},{label:'取消',act:'closeModal'}]);return;}
+  const d=NUM[it.id];
+  modal(d.n,`<p class="mute">${d.d}</p>`,[{label:'裝備',act:'equipOpen',arg:i},{label:`賣 ${d.price}`,act:'sellItemClose',arg:i},{label:'取消',act:'closeModal'}]);};
+ACT.sellItemClose=i=>{ACT.sellItem(i);ACT.closeModal();};
+ACT.appraiseClose=i=>{ACT.appraise(i);ACT.closeModal();};
 function tabHTML(){return({home:homeTab,tavern:tavernTab,guild:guildTab,library:libraryTab,exchange:exchangeTab,temple:templeTab,smith:smithTab,store:storeTab}[S.tab]||homeTab)();}
 function memberCard(m,mini){
   const st=stats(m),sel=S.sel.includes(m.id);
