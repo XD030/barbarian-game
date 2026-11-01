@@ -93,7 +93,7 @@ export const ESS = {
 import { SK } from './skills';
 import { PS } from './passives';
 import { GRADE, COLORS } from './data';
-import { monName } from './monNames';
+import { monName } from './monInfo';
 
 export function makeEss(k, gd) {
   return { k, c: Math.floor(Math.random() * ESS[k].acts.length), gd: !!(gd || ESS[k].guard) };

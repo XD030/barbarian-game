@@ -5,7 +5,7 @@ export default function IntroScreen({ saved, onContinue, onNewGame }) {
       <p className="lede">
         世界只剩下一座城市,拉夫多尼亞。每個月的第一天,拉維吉恩區次元廣場的傳送門會通往迷宮。
         進去的人要等那一層關閉才回得來,帶著魔石和精髓,或者再也沒有回來。
-        你剛在探險者公會登記了名字,接下來發生的事只屬於你。
+        你剛在公會登記了名字,接下來發生的事只屬於你。
       </p>
       <div className="strip" />
       <div className="rules">

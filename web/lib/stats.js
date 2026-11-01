@@ -1,15 +1,9 @@
 import { WEAPON, RACE } from './data';
+import { essInfo, memberPas } from './essence';
 
-/* 完整版 stats() 從 index.html 搬過來,精髓(ess)、編號物品(num)相關欄位
-   在目前搬過來的畫面(建立角色)一定是空的,先留著公式本身以後加精髓/
-   背包系統時就不用重寫。 */
 export const hasT = (m, t) => m.traits.includes(t);
+export { memberPas };
 
-// essInfo/memberPas 要到精髓系統搬過來才有真正的實作,目前先回傳安全的空值。
-function essInfo() { return { st: {} }; }
-export function memberPas(m) {
-  return [...new Set((m.ess || []).map(() => null).filter(Boolean))];
-}
 export function numEff(m) {
   if (!m.num) return {};
   return m.num.eff || {};

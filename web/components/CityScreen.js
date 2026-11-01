@@ -1,33 +1,38 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import RosterPanel from './city/RosterPanel';
 import TopBar from './city/TopBar';
 import CityMap from './city/CityMap';
 import TeamScreen from './city/TeamScreen';
 import BagScreen from './city/BagScreen';
 import MobileTabBar from './city/MobileTabBar';
+import BuildingHeader from './city/BuildingHeader';
+import { BUILDINGS } from './city/buildings';
 import HomeTab from './city/tabs/HomeTab';
 import TavernTab from './city/tabs/TavernTab';
 import SmithTab from './city/tabs/SmithTab';
 import StoreTab from './city/tabs/StoreTab';
 import TempleTab from './city/tabs/TempleTab';
+import GuildTab from './city/tabs/GuildTab';
 import PlaceholderTab from './city/tabs/PlaceholderTab';
 import { WEAPON, TATTOO_COST, TATTOO_PATH, BEASTPACT, SPIRIT, SPIRIT_STONE_COST, SPIRIT_STONE_RATE, ECON } from '../lib/data';
 import { getM } from '../lib/getM';
 import { stats } from '../lib/stats';
 import { gearCost, shipCost, reviveCost, healAllCost, processDays } from '../lib/city';
 import { genFloor1, portalXp, FLOORS } from '../lib/dungeon';
+import { tickRequests, claimReq } from '../lib/guild';
 import { useIsMobile } from '../lib/useIsMobile';
-
-const TABS = [
-  ['home', '住處', '住'], ['tavern', '酒館', '酒'], ['guild', '探險者公會', '會'], ['library', '中央圖書館', '書'],
-  ['exchange', '中央交易所', '易'], ['temple', '大神殿', '殿'], ['smith', '鐵匠鋪', '匠'], ['store', '雜貨店', '店'],
-];
 
 export default function CityScreen({ state, mutate, onResetSave }) {
   const [tab, setTab] = useState('home');
   const [mobileView, setMobileView] = useState('map');
   const mobile = useIsMobile();
+
+  // 委託每 4 小時補一個,畫面開著的時候每分鐘追一次進度(也會在下面的倒數顯示用到)。
+  useEffect(() => {
+    const id = setInterval(() => mutate(s => tickRequests(s)), 60000);
+    return () => clearInterval(id);
+  }, [mutate]);
   const party = state.sel.map(id => getM(state, id)).filter(m => m && !m.dead);
   const open = state.day === 1, until = 30 - state.day + 1;
 
@@ -125,6 +130,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
   });
 
   const onPassDay = () => mutate(s => processDays(s, 1, (msg) => log(s, msg)));
+  const onClaimReq = (id) => mutate(s => claimReq(s, id, (msg) => log(s, msg)));
 
   const onEnterLab = () => mutate(s => {
     if (s.debt && s.stone >= s.debt) { s.stone -= s.debt; s.debt = 0; }
@@ -143,7 +149,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
   const tabBody = {
     home: <HomeTab state={state} onDorm={onDorm} />,
     tavern: <TavernTab state={state} onRecruit={onRecruit} />,
-    guild: <PlaceholderTab title="探險者公會" desc="接委託、公會認證、精髓交易的地方。" />,
+    guild: <GuildTab state={state} onClaimReq={onClaimReq} />,
     library: <PlaceholderTab title="中央圖書館" desc="查詢怪物資料、購買 9 級精髓的地方。" />,
     exchange: <PlaceholderTab title="中央交易所" desc="賣精髓、裂縫石和編號物品的地方。" />,
     temple: <TempleTab state={state} onRevive={onRevive} onTempleHeal={onTempleHeal} onPurify={onPurify} />,
@@ -176,12 +182,13 @@ export default function CityScreen({ state, mutate, onResetSave }) {
       ? (
         <>
           <div className="row" style={{ marginBottom: 4 }}><button className="btn sm" onClick={() => setMobileView('map')}>← 返回地圖</button></div>
+          <BuildingHeader k={tab} />
           <div className="tabpanel"><div className="tabbody">{tabBody}</div></div>
         </>
       )
       : (
         <>
-          <CityMap tabs={TABS} onEnterBld={k => { setTab(k); setMobileView('bldg'); }} />
+          <CityMap onEnterBld={k => { setTab(k); setMobileView('bldg'); }} />
           {portalPanel}
           <section className="panel"><button className="btn sm" onClick={onResetSave}>清除存檔,回到開頭</button></section>
         </>
@@ -209,10 +216,11 @@ export default function CityScreen({ state, mutate, onResetSave }) {
             {portalPanel}
             <section className="panel">
               <div className="tabs" role="tablist">
-                {TABS.map(([k, n]) => (
-                  <button key={k} className="tab" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{n}</button>
+                {Object.entries(BUILDINGS).map(([k, b]) => (
+                  <button key={k} className="tab" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}><span className="ic">{b.ic}</span><span className="tl">{b.n}</span></button>
                 ))}
               </div>
+              <BuildingHeader k={tab} />
               <div>{tabBody}</div>
             </section>
             <section className="panel">
