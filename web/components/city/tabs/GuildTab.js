@@ -31,9 +31,9 @@ export default function GuildTab({ state, onClaimReq }) {
 
   return (
     <>
-      <div className="gbooks">
+      <div className="pillbar">
         {BOOKS.map(([k, n]) => (
-          <button key={k} className={`gbook ${book === k ? 'sel' : ''}`} onClick={() => setBook(k)}>{n}</button>
+          <button key={k} className={`pill ${book === k ? 'sel' : ''}`} onClick={() => setBook(k)}>{n}</button>
         ))}
       </div>
 

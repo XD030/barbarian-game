@@ -1,11 +1,17 @@
 import { ECON, DT } from './data';
 import { MON_INFO, monName } from './monInfo';
 
+/* 把數字無條件捨去到只剩兩位有效數字,取一個「漂亮」的整數(例如 1,749,000 → 1,700,000)。 */
+function niceDown(n) {
+  const mag = Math.pow(10, Math.floor(Math.log10(n)) - 1);
+  return Math.floor(n / mag) * mag;
+}
+
 /* 中央圖書館=付費解鎖的怪物圖鑑。原作裡圖書館唯一的館員拉格納用「書籍探測魔法」
    幫忙找資料,2 年後開始收費,一次 3000 石幣——這裡直接照原作數字(乘上 ECON 經濟
-   倍率)當每隻怪物的解鎖費,不分強弱。原作沒有提到圖書館賣精髓或查弱點這種機制,
-   這部分是把「花錢查資料」具象化成遊戲裡的圖鑑解鎖。 */
-export const RESEARCH_COST = 3000 * ECON;
+   倍率、取整數)當每隻怪物的解鎖費,不分強弱。原作沒有提到圖書館賣精髓或查弱點這種
+   機制,這部分是把「花錢查資料」具象化成遊戲裡的圖鑑解鎖。 */
+export const RESEARCH_COST = niceDown(3000 * ECON);
 
 export function monNote(k) {
   const d = MON_INFO[k], t = d.tags || {}, n = [];

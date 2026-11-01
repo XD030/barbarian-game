@@ -151,20 +151,22 @@ button{touch-action:manipulation}
 .bldicon{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-family:var(--f-title);font-size:19px;color:#1c1309;box-shadow:0 3px 0 rgba(0,0,0,.4),inset 0 -4px 0 rgba(0,0,0,.18);border:2px solid rgba(0,0,0,.3);flex:none}
 .bldhead h2{margin:0}
 
-.monGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.moncard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:5px;align-items:center;text-align:center}
-.moncard.locked{opacity:.7}
-.moncard .micon{width:40px;height:40px;border-radius:50%;background:var(--void);display:grid;place-items:center;font-family:var(--f-num);font-size:16px;color:var(--dim)}
-.moncard b{font-size:13px;font-family:var(--f-title)}
+.monrow{display:grid;grid-template-columns:45px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.monrow:last-child{border-bottom:0}
+.monrow .micon{width:45px;height:45px;border-radius:6px;background:var(--void);display:grid;place-items:center;font-family:var(--f-num);font-size:15px;color:var(--dim);flex:none}
+.monrow.locked .micon{color:var(--dim)}
+.monrow .mname{display:flex;flex-direction:column;gap:2px;min-width:0}
+.monrow .mname b{font-size:14.5px;font-family:var(--f-title)}
 
-.wk{display:flex;gap:3px;justify-content:center;flex-wrap:wrap}
+.wk{display:flex;gap:3px;flex-wrap:wrap}
 .wk span{font-size:10.5px;padding:0 4px;border-radius:3px;background:#2a3a20;color:#c8e8a8;border:1px solid #4a6a30}
 .wk span.rs{background:#2a1c1c;color:#b08880;border-color:#4a2a26}
 .wk span.sp{background:#1c2232;color:#a8c0f0;border-color:#2a3a5a}
 
-.gbooks{display:flex;gap:4px;background:var(--void);border-radius:14px;padding:5px}
-.gbook{flex:1;font:inherit;font-weight:700;font-size:14px;background:none;border:0;border-radius:10px;padding:10px 0;color:var(--mute);cursor:pointer}
-.gbook.sel{background:#2b2b2b;color:var(--gold)}
+.pillbar{display:flex;gap:4px;background:var(--void);border-radius:14px;padding:5px;overflow-x:auto;scrollbar-width:none}
+.pillbar::-webkit-scrollbar{display:none}
+.pill{flex:1;font:inherit;font-weight:700;font-size:13.5px;background:none;border:0;border-radius:10px;padding:9px 12px;color:var(--mute);cursor:pointer;white-space:nowrap}
+.pill.sel{background:#2b2b2b;color:var(--gold)}
 .qlist{display:flex;flex-direction:column;gap:10px}
 .qcard{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
 .qcard b{font-family:var(--f-title);font-size:15.5px}
