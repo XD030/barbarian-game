@@ -268,10 +268,14 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--torch);color:var(--ink);padding:8px 14px;border-radius:5px;z-index:40;font-size:13.5px;max-width:calc(100% - 32px);pointer-events:none}
 /* ---------- Mobile (phone) layout: Tower-of-Saviors-style fixed bottom nav/sheet + fullscreen battle ---------- */
 @media (max-width:720px){
-  .top{padding-block:7px}
+  .top{padding-block:6px}
+  .top-in{flex-wrap:nowrap;gap:6px;overflow-x:auto}
   .brand{display:none}
-  .res{font-size:12.5px;gap:4px}
+  .day{font-size:13px}
+  .res{font-size:11.5px;gap:4px;flex-wrap:nowrap}
+  .res .rchip{padding:2px 7px}
   .res .hideM{display:none}
+  .helpBtn{display:none}
   /* city: 次元廣場 + 建物地圖/內容在上,角色名冊在下 */
   .camp{display:flex;flex-direction:column;gap:14px}
   .camp>section.panel{order:3}
@@ -904,7 +908,7 @@ function topHTML(){
   const daily=living().reduce((a,m)=>a+livingCost(m),0),open=S.day===1&&!S.run;
   return `<span class="brand">蠻族迷宮生存</span><span class="day ${open?'open':''}">第 <span class="num">${S.month}</span> 月 <span class="num">${S.day}</span> 日${open?' · 迷宮開啟':''}</span>
   <div class="res"><span class="rchip ${S.stone<daily*5?'low':''}" title="每天生活費 ${daily}">石幣<b>${S.stone}</b></span><span class="rchip hideM">藥水<b>${S.potions}</b></span><span class="rchip hideM">火把<b>${S.torches}</b></span><span class="rchip sec">名聲<b>${S.fame}</b></span><span class="rchip sec">貢獻<b>${S.contrib}</b></span><span class="rchip sec hideM">最深<b>B${S.maxFloor}</b></span>${S.debt?`<span class="rchip low">欠稅<b>${S.debt}</b></span>`:''}</div>
-  <button class="btn sm" data-act="help">玩法</button>`;
+  <button class="btn sm helpBtn" data-act="help">玩法</button>`;
 }
 function render(){
   $('#top').innerHTML=topHTML();
