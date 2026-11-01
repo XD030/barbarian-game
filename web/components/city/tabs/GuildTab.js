@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { REQ_CAP, REQ_DESC, reqProgress, reqDone, nextReqInMs } from '../../../lib/guild';
 
-const BOOKS = [['req', '每日委託'], ['bounty', '懸賞'], ['exam', '考核']];
+const BOOKS = [['req', '委託'], ['bounty', '懸賞'], ['exam', '考核']];
 
 function fmtCountdown(ms) {
   const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
@@ -31,7 +31,7 @@ export default function GuildTab({ state, onClaimReq }) {
 
   return (
     <>
-      <h3 style={{ margin: 0 }}>每日任務</h3>
+      <h3 style={{ margin: 0 }}>每日委託</h3>
       <p className="mute" style={{ fontSize: 12.5 }}>
         每 4 小時可獲取一個新任務。最多可同時持有 {REQ_CAP} 個任務
         {nextIn != null && <> · 下一個任務:{fmtCountdown(nextIn)}後</>}
