@@ -18,7 +18,11 @@ npm run build   # 產生 out/,basePath 會是 /barbarian-game(對應 GitHub Page
   - 先空著(`PlaceholderTab`):探險者公會、中央圖書館、中央交易所——這三個需要怪物資料(`MON`/`FIELDS`)跟精髓系統(`ESS`/`SK`/`PS`/`NUM`),等迷宮/戰鬥階段把這些資料表搬過來後再補。
   - 迷宮入口(次元廣場的「進入迷宮」)也先空著,只留「度過一天」能推進時間。
   - **重要教訓**:`setState` 的 updater 函式一開始用淺拷貝(`{...prev}`)+ 直接 mutate 巢狀陣列/物件,結果在 React/Next 開發模式的 StrictMode 下,updater 會被呼叫兩次來檢查副作用,導致同一個操作套用兩次(例如酒館招募重複執行,出現重複 id)。改成 `structuredClone(prev)` 深拷貝後解決,詳見 `app/page.js` 的 `mutate` 註解。
-- **階段 3(未開始)**:迷宮探索。
+- **階段 3(已完成,只搬了第 1 層)**:迷宮探索(`lib/dungeon.js` + `components/DungeonScreen.js` + `components/dungeon/`)。
+  - 只搬了第 1 層水晶洞窟的地圖生成(`genFloor1`,十字四區+中心安全區)跟非戰鬥房型:寶箱、魔石礦脈、陷阱、治癒泉水、流浪商人、空地、安全區(大賢者紀念碑)、傳送門石碑(入口/返回)。其他 5 層的 `FIELDS`/`genFloor` 分支還沒搬,`怪物房`(combat)遇到時只能退回上一間——戰鬥引擎是下一階段才會做。
+  - 時間推進(`advanceTime`)、樓層關閉自動回城(`eject`/`returnToCity`)都照原本邏輯搬過來,城市那邊的「度過一天」(`processDays`)在回城時會接著跑,天數跟經濟會正確累加。
+  - 精髓/裂縫/層主三個系統都還沒搬(跟 FIELDS 的 elite/altar 房型一起留到戰鬥階段),`fillRooms` 的房間池先拿掉這兩種。
+  - 用 Playwright 測過完整流程:建角色、進迷宮、移動探索(含被怪物房擋住只能退回的情況)、紮營、等到關閉自動回城、城市經濟接續正確,沒有 console 錯誤。
 - **階段 4(未開始)**:回合制戰鬥引擎(最複雜,排最後)。
 - **階段 5(未開始)**:手機版專屬 UI(`isMobile()` 那一整套神魔之塔風格排版)。
 - 像素圖產生系統(`humanoid()`/`GRIDS`/`gridCanvas()`)目前還沒搬,角色頭像先用種族首字當佔位符(`.spr` 的文字版本)。

@@ -12,6 +12,7 @@ import { WEAPON, TATTOO_COST, TATTOO_PATH, BEASTPACT, SPIRIT, SPIRIT_STONE_COST,
 import { getM } from '../lib/getM';
 import { stats } from '../lib/stats';
 import { gearCost, shipCost, reviveCost, healAllCost, processDays } from '../lib/city';
+import { genFloor1, portalXp, FLOORS } from '../lib/dungeon';
 
 const TABS = [
   ['home', '住處'], ['tavern', '酒館'], ['guild', '探險者公會'], ['library', '中央圖書館'],
@@ -118,6 +119,20 @@ export default function CityScreen({ state, mutate, onResetSave }) {
 
   const onPassDay = () => mutate(s => processDays(s, 1, (msg) => log(s, msg)));
 
+  const onEnterLab = () => mutate(s => {
+    if (s.debt && s.stone >= s.debt) { s.stone -= s.debt; s.debt = 0; }
+    const party = s.sel.map(id => getM(s, id)).filter(m => m && !m.dead);
+    if (!party.length || s.day !== 1 || s.debt) return;
+    party.forEach(m => { m.soul = stats(m).soul; });
+    s.run = { party: party.map(m => m.id), floor: 1, h: 0, loot: { stone: 0, ess: [], items: [] }, prev: null };
+    s.run.map = genFloor1();
+    s.maxFloor = Math.max(s.maxFloor, 1);
+    s.screen = 'dungeon';
+    log(s, `${party.map(m => m.name).join('、')} 穿過次元廣場的傳送門,來到第 1 層${FLOORS[1].n}。`);
+    const msgs = portalXp(s, party, 1);
+    msgs.forEach(msg => log(s, msg));
+  });
+
   const tabBody = {
     home: <HomeTab state={state} onDorm={onDorm} />,
     tavern: <TavernTab state={state} onRecruit={onRecruit} />,
@@ -143,8 +158,11 @@ export default function CityScreen({ state, mutate, onResetSave }) {
               {open ? <p className="notice">今天迷宮開啟。錯過要等下個月。</p> : <p className="mute">迷宮每月 1 日開啟,還有 <span className="num">{until}</span> 天。</p>}
               {state.debt > 0 && <p className="notice bad">你還欠 {state.debt} 石幣的稅。欠稅的人進不了次元廣場。</p>}
               <p>{party.length ? party.map(m => m.name).join('、') : <span className="mute">還沒選人</span>} <span className="mute">({party.length}/5)</span></p>
-              <p className="mute" style={{ fontSize: 12 }}>迷宮探索還沒搬過來(下一階段),先能度過天數看城市經濟運作。</p>
-              <div className="row"><button className="btn" onClick={onPassDay}>度過一天</button></div>
+              <p className="mute" style={{ fontSize: 12 }}>目前只搬了第 1 層水晶洞窟,其他樓層跟戰鬥(遇到怪物房)還沒搬過來。</p>
+              <div className="row">
+                <button className="btn primary" disabled={!(open && party.length && !state.debt)} onClick={onEnterLab}>進入迷宮</button>
+                <button className="btn" onClick={onPassDay}>度過一天</button>
+              </div>
             </section>
             <section className="panel">
               <div className="tabs" role="tablist">

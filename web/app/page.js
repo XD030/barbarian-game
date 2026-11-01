@@ -6,15 +6,18 @@ import { refreshTavern } from '../lib/city';
 import IntroScreen from '../components/IntroScreen';
 import CreateScreen from '../components/CreateScreen';
 import CityScreen from '../components/CityScreen';
+import DungeonScreen from '../components/DungeonScreen';
 
 export default function Page() {
   const [state, setState] = useState(null); // null = 還在讀 localStorage,避免 SSR/水合不一致
-  const [screen, setScreen] = useState('intro'); // intro | create | base
+  // screen 只管「進遊戲前」的流程(intro/create);進遊戲後一律照 state.screen(base/dungeon)走,
+  // 不要另外用一份 local screen 追蹤,不然 mutate 改了 state.screen 畫面不會跟著換。
+  const [screen, setScreen] = useState('intro');
 
   useEffect(() => {
     const saved = loadSave();
     setState(saved || newState());
-    setScreen(saved ? (saved.screen === 'create' ? 'intro' : saved.screen) : 'intro');
+    setScreen(saved ? 'game' : 'intro');
   }, []);
 
   // 比照原本 index.html 的「S + 直接改 + save() + render()」寫法:
@@ -36,7 +39,7 @@ export default function Page() {
   if (!state) return null;
 
   const handleNewGame = () => setScreen('create');
-  const handleContinue = () => setScreen(state.screen && state.screen !== 'intro' ? state.screen : 'base');
+  const handleContinue = () => setScreen('game');
 
   const handleConfirmHero = (draft) => {
     const fresh = newState();
@@ -50,7 +53,7 @@ export default function Page() {
     fresh.log.unshift({ d: `${fresh.month}/${fresh.day}`, m: `${h.name} 在拉維吉恩區租了一間舊倉庫當住處,一個人開始冒險。` });
     writeSave(fresh);
     setState(fresh);
-    setScreen('base');
+    setScreen('game');
   };
 
   const handleResetSave = () => {
@@ -62,5 +65,6 @@ export default function Page() {
 
   if (screen === 'intro') return <div className="wrap"><IntroScreen saved={state.members.length ? state : null} onContinue={handleContinue} onNewGame={handleNewGame} /></div>;
   if (screen === 'create') return <div className="wrap"><CreateScreen onConfirm={handleConfirmHero} /></div>;
+  if (state.screen === 'dungeon' && state.run) return <DungeonScreen state={state} mutate={mutate} />;
   return <CityScreen state={state} mutate={mutate} onResetSave={handleResetSave} />;
 }
