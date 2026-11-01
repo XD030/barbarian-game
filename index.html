@@ -90,6 +90,18 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .mtab.center{transform:translateY(-16px)}
 .mtab.center .orb{width:58px;height:58px;border-radius:50%;background:linear-gradient(var(--torch-hi),var(--torch));color:#1c1309;display:grid;place-items:center;font-family:var(--f-num);font-size:15px;font-weight:700;border:3px solid var(--panel);box-shadow:0 4px 10px rgba(0,0,0,.5);line-height:1.15;text-align:center}
 .mtab.center .orb small{display:block;font-family:var(--f-body);font-size:8.5px;font-weight:400}
+/* 隊伍畫面(手機版,仿神魔之塔的隊伍編輯畫面) */
+.teamhead{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:2px}
+.teamslots{display:flex;gap:7px;overflow-x:auto;padding:2px 2px 6px}
+.tslot{flex:0 0 auto;width:52px;background:var(--panel2);border:2px solid var(--line);border-radius:8px;padding:4px 2px 3px;position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tslot img{width:38px;height:43px;image-rendering:pixelated}
+.tslot .lv{font-family:var(--f-num);font-size:9px;color:var(--gold)}
+.tslot.in{border-color:var(--torch)}
+.tslot.foc{box-shadow:0 0 0 2px var(--torch-hi)}
+.tslot.dead{opacity:.45;border-style:dashed}
+.tslot .chk{position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:var(--torch);color:#1c1309;font-size:10px;line-height:16px;text-align:center;font-weight:700}
+.teamstats{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12.5px;color:var(--mute);margin-bottom:4px}
+.teamstats b{font-family:var(--f-num);font-weight:400;color:var(--ink);margin-left:4px}
 .meter{height:6px;background:var(--void);border-radius:3px;overflow:hidden}
 .meter i{display:block;height:100%;transition:width .25s}
 .hp i{background:var(--blood)} .st i{background:var(--mind)} .xp i{background:var(--gold)} .sl i{background:var(--soul)} .tm i{background:var(--torch)} .tg i{background:#e8e0cc}
@@ -1019,8 +1031,23 @@ function baseHTML(){
     </div>
   </div>`;
 }
+let teamFocus=null;
 function teamScreenHTML(){
-  return `<div class="panel-h"><h2>隊伍</h2><span class="mute">勾選「出征」組隊,最多 4 人</span></div><div class="roster">${S.members.map(memberCard).join('')}</div>`;
+  const fid=teamFocus&&getM(teamFocus)?teamFocus:(S.sel[0]||(S.members[0]&&S.members[0].id));
+  const fm=fid&&getM(fid);
+  const party=S.sel.map(getM).filter(m=>m&&!m.dead);
+  const sum=(f)=>party.reduce((a,m)=>a+f(stats(m)),0);
+  return `<div class="teamhead"><h2>隊伍 ${S.sel.length}/4</h2><button class="btn sm primary" data-act="backToMap">確定</button></div>
+  <div class="teamslots">${S.members.map(m=>{
+    const inParty=S.sel.includes(m.id),foc=m.id===fid;
+    return `<button class="tslot ${inParty?'in':''} ${foc?'foc':''} ${m.dead?'dead':''}" data-act="teamSlot" data-arg="${m.id}" aria-label="${m.name}">
+      <img src="${heroImg(m)}" alt="">
+      <span class="lv">${m.dead?'歿':'Lv'+m.lv}</span>
+      ${inParty?'<span class="chk">✓</span>':''}
+    </button>`;
+  }).join('')}</div>
+  <div class="teamstats"><span>出征人數<b>${party.length}/4</b></span><span>總生命<b>${sum(s=>s.maxhp)}</b></span><span>總攻擊<b>${sum(s=>s.atk)}</b></span><span>總魂力<b>${sum(s=>s.soul)}</b></span></div>
+  ${fm?memberCard(fm):'<p class="mute">還沒有任何人</p>'}`;
 }
 function cityMapHTML(){
   return `<h2 style="margin-bottom:4px">拉夫多尼亞</h2><p class="mute" style="font-size:12.5px;margin-bottom:4px">點建築物進去</p>
@@ -1029,8 +1056,8 @@ function cityMapHTML(){
 function mobileTabBarHTML(open,until){
   const orb=open?'已<small>開啟</small>':`${until}<small>天後開啟</small>`;
   return `<nav class="mtabbar" aria-label="主選單">
-    <button class="mtab" data-act="mnav" data-arg="bag" aria-pressed="${mobileView==='bag'}"><span class="ic">包</span><span class="tl">背包</span></button>
     <button class="mtab" data-act="mnav" data-arg="team" aria-pressed="${mobileView==='team'}"><span class="ic">隊</span><span class="tl">隊伍</span></button>
+    <button class="mtab" data-act="mnav" data-arg="bag" aria-pressed="${mobileView==='bag'}"><span class="ic">包</span><span class="tl">背包</span></button>
     <button class="mtab center" data-act="mnav" data-arg="map" aria-label="回到城市地圖"><span class="orb">${orb}</span></button>
     <button class="mtab" disabled aria-label="之後開放"><span class="ic">—</span><span class="tl">之後</span></button>
     <button class="mtab" disabled aria-label="之後開放"><span class="ic">—</span><span class="tl">之後</span></button>
@@ -1040,6 +1067,9 @@ ACT.tab=k=>{S.tab=k;save();render();};
 ACT.enterBld=k=>{S.tab=k;mobileView='bldg';save();render();};
 ACT.backToMap=()=>{mobileView='map';render();};
 ACT.mnav=k=>{mobileView=k;render();};
+ACT.teamSlot=id=>{id=+id;const m=getM(id);if(!m)return;teamFocus=id;
+  if(!m.dead){if(S.sel.includes(id))S.sel=S.sel.filter(x=>x!==id);else{if(S.sel.length>=4){toast('隊伍最多 4 人');}else S.sel.push(id);}}
+  save();render();};
 function tabHTML(){return({home:homeTab,tavern:tavernTab,guild:guildTab,library:libraryTab,exchange:exchangeTab,temple:templeTab,smith:smithTab,store:storeTab}[S.tab]||homeTab)();}
 function memberCard(m){
   const st=stats(m),sel=S.sel.includes(m.id);
