@@ -25,9 +25,9 @@ export default function TempleTab({ state, onJoinChurch, onTempleHeal, onPray, o
   return (
     <>
       <div className="templeActions">
-        <button className="btn" disabled={state.prayedToday} onClick={onPray}>{state.prayedToday ? '今天已祈禱' : '祈禱'}</button>
+        <button className="btn" disabled={state.prayedToday} onClick={onPray}>祈禱</button>
         <button className="btn" disabled>解咒</button>
-        <button className="btn" disabled={state.stone < hc || hc <= 0} onClick={onTempleHeal}>治療({hc} 石幣)</button>
+        <button className="btn" disabled={state.stone < hc || hc <= 0} onClick={onTempleHeal}>治療</button>
       </div>
       <div className="sub">信仰</div>
       {FAITH_BUFFS.length === 0 ? (
