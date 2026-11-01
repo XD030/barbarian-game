@@ -100,6 +100,18 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .tslot.foc{box-shadow:0 0 0 2px var(--torch-hi)}
 .tslot.dead{opacity:.45;border-style:dashed}
 .tslot .chk{position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:var(--torch);color:#1c1309;font-size:10px;line-height:16px;text-align:center;font-weight:700}
+.tslot.empty{border-style:dashed;opacity:.55}
+.tslot.empty .plus{font-size:19px;color:var(--dim);line-height:43px;height:43px}
+.subtabs{display:flex;gap:4px;margin:8px 0 2px}
+.stab{flex:1;font:inherit;font-size:12.5px;padding:6px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--mute);cursor:pointer}
+.stab.sel{color:var(--torch-hi);border-color:var(--torch);background:#352a1d}
+.booktabs{display:flex;gap:3px;overflow-x:auto;padding:0 2px}
+.booktab{flex:0 0 auto;min-width:28px;padding:5px 9px 4px;border-radius:8px 8px 0 0;background:var(--panel2);border:1px solid var(--line);border-bottom:0;font-size:11.5px;color:var(--mute);cursor:pointer;font-family:var(--f-num)}
+.booktab::before{content:"";display:inline-block;width:7px;height:7px;border-radius:2px;background:var(--c,var(--dim));margin-right:4px;vertical-align:1px}
+.booktab.empty::before{background:none;border:1px dashed var(--dim)}
+.booktab.sel{background:var(--panel);color:var(--torch-hi);border-color:var(--torch)}
+.bookpanel{background:var(--panel);border:1px solid var(--line);border-radius:0 8px 8px 8px;padding:10px;margin-top:-1px}
+.bookpanel b{font-family:var(--f-title);color:var(--torch-hi);font-size:14px}
 .meter{height:6px;background:var(--void);border-radius:3px;overflow:hidden}
 .meter i{display:block;height:100%;transition:width .25s}
 .hp i{background:var(--blood)} .st i{background:var(--mind)} .xp i{background:var(--gold)} .sl i{background:var(--soul)} .tm i{background:var(--torch)} .tg i{background:#e8e0cc}
@@ -1030,19 +1042,41 @@ function baseHTML(){
   </div>`;
 }
 let teamFocus=null;
+let teamSubTab='detail'; // detail | ess
+let essFocusIdx=0;
 function teamScreenHTML(){
   const fid=teamFocus&&getM(teamFocus)?teamFocus:(S.sel[0]||(S.members[0]&&S.members[0].id));
   const fm=fid&&getM(fid);
-  return `<div class="teamhead"><h2>隊伍 ${S.sel.length}/5</h2><button class="btn sm primary" data-act="backToMap">確定</button></div>
-  <div class="teamslots">${S.members.map(m=>{
+  const slots=S.members.map(m=>{
     const inParty=S.sel.includes(m.id),foc=m.id===fid;
     return `<button class="tslot ${inParty?'in':''} ${foc?'foc':''} ${m.dead?'dead':''}" data-act="teamSlot" data-arg="${m.id}" aria-label="${m.name}">
       <img src="${heroImg(m)}" alt="">
       <span class="lv">${m.dead?'歿':'Lv'+m.lv}</span>
       ${inParty?'<span class="chk">✓</span>':''}
     </button>`;
-  }).join('')}</div>
-  ${fm?memberCard(fm,true):'<p class="mute">還沒有任何人</p>'}`;
+  });
+  for(let i=S.members.length;i<5;i++)slots.push(`<button class="tslot empty" data-act="enterBld" data-arg="tavern" aria-label="空位,去酒館招募"><span class="plus">+</span><span class="lv">招募</span></button>`);
+  const subtabs=`<div class="subtabs">
+    <button class="stab ${teamSubTab==='detail'?'sel':''}" data-act="teamSub" data-arg="detail">角色詳情</button>
+    <button class="stab ${teamSubTab==='ess'?'sel':''}" data-act="teamSub" data-arg="ess">精髓槽</button>
+  </div>`;
+  const body=!fm?'<p class="mute">還沒有任何人</p>':teamSubTab==='ess'?essSlotsHTML(fm):memberCard(fm,true);
+  return `<div class="teamhead"><h2>隊伍 ${S.sel.length}/5</h2><button class="btn sm primary" data-act="backToMap">確定</button></div>
+  <div class="teamslots">${slots.join('')}</div>
+  ${subtabs}
+  ${body}`;
+}
+function essSlotsHTML(m){
+  const n=essSlots(m);
+  if(essFocusIdx>=n)essFocusIdx=0;
+  const it=m.ess[essFocusIdx];
+  const tabs=Array.from({length:n},(_,i)=>{
+    const filled=m.ess[i];
+    return `<button class="booktab ${i===essFocusIdx?'sel':''} ${filled?'':'empty'}" data-act="essFocus" data-arg="${i}" style="${filled?`--c:${essInfo(filled).color}`:''}">${i+1}</button>`;
+  }).join('');
+  const panel=it?`<div class="bookpanel"><b>${essInfo(it).n}</b><p class="mute" style="margin:4px 0">${essDesc(it)}</p><p style="font-size:12.5px">${essSkillDesc(it)}</p></div>`
+    :`<div class="bookpanel"><p class="mute">空精髓槽</p></div>`;
+  return `<div class="booktabs">${tabs}</div>${panel}`;
 }
 function cityMapHTML(){
   return `<h2 style="margin-bottom:4px">拉夫多尼亞</h2><p class="mute" style="font-size:12.5px;margin-bottom:4px">點建築物進去</p>
@@ -1062,9 +1096,11 @@ ACT.tab=k=>{S.tab=k;save();render();};
 ACT.enterBld=k=>{S.tab=k;mobileView='bldg';save();render();};
 ACT.backToMap=()=>{mobileView='map';render();};
 ACT.mnav=k=>{mobileView=k;render();};
-ACT.teamSlot=id=>{id=+id;const m=getM(id);if(!m)return;teamFocus=id;
+ACT.teamSlot=id=>{id=+id;const m=getM(id);if(!m)return;teamFocus=id;essFocusIdx=0;
   if(!m.dead){if(S.sel.includes(id))S.sel=S.sel.filter(x=>x!==id);else{if(S.sel.length>=5){toast('隊伍最多 5 人');}else S.sel.push(id);}}
   save();render();};
+ACT.teamSub=k=>{teamSubTab=k;render();};
+ACT.essFocus=i=>{essFocusIdx=+i;render();};
 function tabHTML(){return({home:homeTab,tavern:tavernTab,guild:guildTab,library:libraryTab,exchange:exchangeTab,temple:templeTab,smith:smithTab,store:storeTab}[S.tab]||homeTab)();}
 function memberCard(m,mini){
   const st=stats(m),sel=S.sel.includes(m.id);
