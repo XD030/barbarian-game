@@ -313,6 +313,14 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--torch);color:var(--ink);padding:8px 14px;border-radius:5px;z-index:40;font-size:13.5px;max-width:calc(100% - 32px);pointer-events:none}
 /* ---------- Mobile (phone) layout: Tower-of-Saviors-style fixed bottom nav/sheet + fullscreen battle ---------- */
 @media (max-width:720px){
+  /* 外框固定(html/body 鎖死成整個視窗大小),只有 #screen 內部捲動。
+     這樣切分頁、內容變長變短都只影響 #screen 的內部捲軸,
+     不會動到整個網頁的高度,瀏覽器也就不會因為頁面高度變化重新計算
+     工具列/縮放,不會再出現「切分頁畫面跳一下」的狀況。 */
+  html,body{height:100%;overflow:hidden}
+  body{display:flex;flex-direction:column;overscroll-behavior:none}
+  .top{position:static;flex:none}
+  #screen{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
   /* iOS Safari 碰到 <16px 的表單控制項會自動放大畫面,下拉選單一律拉到 16px 避免點一下畫面就跳縮放 */
   select{font-size:16px}
   .top{padding-block:6px}
