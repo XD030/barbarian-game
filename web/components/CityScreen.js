@@ -24,6 +24,7 @@ import { genFloor1, portalXp, FLOORS } from '../lib/dungeon';
 import { tickRequests, claimReq } from '../lib/guild';
 import { research } from '../lib/library';
 import { joinChurch, pray } from '../lib/temple';
+import { donateFaith } from '../lib/faith';
 import { useIsMobile } from '../lib/useIsMobile';
 
 export default function CityScreen({ state, mutate, onResetSave }) {
@@ -123,6 +124,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
   });
   const onJoinChurch = (k) => mutate(s => joinChurch(s, k, (msg) => log(s, msg)));
   const onPray = () => mutate(s => pray(s, (msg) => log(s, msg)));
+  const onDonateFaith = (key) => mutate(s => donateFaith(s, key, 200 * ECON, (msg) => log(s, msg)));
 
   const onPassDay = () => mutate(s => processDays(s, 1, (msg) => log(s, msg)));
   const onClaimReq = (id) => mutate(s => claimReq(s, id, (msg) => log(s, msg)));
@@ -148,7 +150,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     guild: <GuildTab state={state} onClaimReq={onClaimReq} />,
     library: <LibraryTab state={state} onResearch={onResearch} />,
     exchange: <PlaceholderTab title="中央交易所" desc="賣精髓、裂縫石和編號物品的地方。" />,
-    temple: <TempleTab state={state} onJoinChurch={onJoinChurch} onTempleHeal={onTempleHeal} onPray={onPray} />,
+    temple: <TempleTab state={state} onJoinChurch={onJoinChurch} onTempleHeal={onTempleHeal} onPray={onPray} onDonateFaith={onDonateFaith} />,
     smith: <SmithTab state={state} onGear={onGear} onSwapWeapon={onSwapWeapon} onHireNav={onHireNav} onBuyShip={onBuyShip} />,
     store: <StoreTab state={state} onBuyPotion={onBuyPotion} onBuyTorch={onBuyTorch} />,
   }[tab];
