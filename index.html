@@ -375,6 +375,7 @@ const pick=a=>a[Math.floor(Math.random()*a.length)];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const ECON=583; /* 經濟規模倍率:原作生活費/物價約是這個遊戲原本數字的 583 倍(取原作一半經濟規模換算),除了 GRADE.stone 直接照原作數字外,其餘跟石幣有關的數字統一乘這個倍率 */
 
 /* =====================================================================
    DATA — 依原作《게임 속 바바리안으로 살아남기》世界觀整理,數值為遊戲用
@@ -382,13 +383,13 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const DT={slash:'斬',pierce:'刺',blunt:'鈍',magic:'魔',fire:'火',ice:'冰',thunder:'雷',holy:'聖',dark:'暗'};
 const PHYS=['slash','pierce','blunt'];
 const WEAPON={
-  shield:{n:'盾與單手錘',dt:'blunt',hp:125,atk:9,def:10,spd:92,line:3,pass:'格擋:25% 機率減免 60% 傷害',block:.25,price:150},
-  hammer:{n:'雙手戰鎚',dt:'blunt',hp:108,atk:16,def:4,spd:84,line:3,pass:'重擊:20% 機率讓目標行動延後',stun:.2,price:180},
-  sword:{n:'長劍',dt:'slash',hp:98,atk:12,def:5,spd:100,line:3,pass:'爆擊率 +10%',crit:.10,price:150},
-  spear:{n:'長槍',dt:'pierce',hp:94,atk:12,def:4,spd:97,line:2,pass:'削減體勢 +50%',brk:1.5,price:150},
-  daggers:{n:'雙短刀',dt:'slash',hp:82,atk:9,def:3,spd:118,line:3,pass:'爆擊率 +20%',crit:.20,price:150},
-  bow:{n:'弓',dt:'pierce',hp:74,atk:12,def:2,spd:103,line:1,pass:'站在後排,較少被攻擊',price:150},
-  staff:{n:'法杖',dt:'magic',hp:68,atk:13,def:1,spd:95,line:1,robe:1,pass:'魂力上限 +30,無視 40% 防禦',soul:30,pen:.4,price:200}
+  shield:{n:'盾與單手錘',dt:'blunt',hp:125,atk:9,def:10,spd:92,line:3,pass:'格擋:25% 機率減免 60% 傷害',block:.25,price:150*ECON},
+  hammer:{n:'雙手戰鎚',dt:'blunt',hp:108,atk:16,def:4,spd:84,line:3,pass:'重擊:20% 機率讓目標行動延後',stun:.2,price:180*ECON},
+  sword:{n:'長劍',dt:'slash',hp:98,atk:12,def:5,spd:100,line:3,pass:'爆擊率 +10%',crit:.10,price:150*ECON},
+  spear:{n:'長槍',dt:'pierce',hp:94,atk:12,def:4,spd:97,line:2,pass:'削減體勢 +50%',brk:1.5,price:150*ECON},
+  daggers:{n:'雙短刀',dt:'slash',hp:82,atk:9,def:3,spd:118,line:3,pass:'爆擊率 +20%',crit:.20,price:150*ECON},
+  bow:{n:'弓',dt:'pierce',hp:74,atk:12,def:2,spd:103,line:1,pass:'站在後排,較少被攻擊',price:150*ECON},
+  staff:{n:'法杖',dt:'magic',hp:68,atk:13,def:1,spd:95,line:1,robe:1,pass:'魂力上限 +30,無視 40% 防禦',soul:30,pen:.4,price:200*ECON}
 };
 const RACE={
   human:{n:'人類',d:'稅金減半,魂力 +10',tax:.5,soul:10},
@@ -431,7 +432,8 @@ const TRAIT={
 const RANDOM_TRAITS=['brave','coward','pacifist','glutton','tough','greedy','quick','lucky','insomniac','diligent','lazy','bloodlust'];
 const CLASH={brave:'coward',coward:'brave',diligent:'lazy',lazy:'diligent'};
 /* 原作:9 級怪首殺經驗 1、8 級 2;守護者額外 +3;開啟傳送門 +2 */
-const GRADE={9:{stone:10,xp:1,ev:1,price:350},8:{stone:30,xp:2,ev:3,price:1200},7:{stone:80,xp:3,ev:8,price:3500},6:{stone:200,xp:5,ev:20,price:9000},5:{stone:500,xp:8,ev:50,price:25000},4:{stone:1200,xp:12,ev:120,price:60000}};
+/* 魔石價值(stone)照原作數字:9級≈20、8級≈100(原作確認),7級以下原作沒給數字,用同一個 5 倍比例往下推算(非原作字面數字) */
+const GRADE={9:{stone:20,xp:1,ev:1,price:350*ECON},8:{stone:100,xp:2,ev:3,price:1200*ECON},7:{stone:500,xp:3,ev:8,price:3500*ECON},6:{stone:2500,xp:5,ev:20,price:9000*ECON},5:{stone:12500,xp:8,ev:50,price:25000*ECON},4:{stone:62500,xp:12,ev:120,price:60000*ECON}};
 const LV_XP=[0,0,3,7,12,18,26,36,48,62,78,96];
 const MAXLV=11;
 const COLORS=[['赤','#e05a4a'],['青','#4a9ae0'],['翠','#5ac06a'],['金','#e0b84a'],['紫','#a06ae0']];
@@ -531,7 +533,8 @@ const PS={
   momentum:{n:'疾走',d:'每次行動後速度 +5%(最多 3 層)'},
   herosPath:{n:'英雄之路',d:'生命低於 50% 時,防禦與魔抗 +50%'},
   chivalry:{n:'騎士道',d:'受到致命傷害時以 1 點生命撐住(每場戰鬥一次)'},
-  greed:{n:'貪婪',d:'精髓掉落率 +2%'}
+  greed:{n:'貪婪',d:'精髓掉落率 +2%'},
+  corrupted:{n:'不正之人',d:'精髓槽上限 -1,但全部主動技能威力 ×1.5'}
 };
 /* ---------- 精髓:能力值 + 主動(顏色決定) + 被動 ---------- */
 const ESS={
@@ -594,7 +597,7 @@ const ESS={
   stoneburn:{g:6,st:{def:8,atk:6},acts:['magma']},
   cursestone:{g:6,st:{mres:10,def:6},acts:['curse']},
   abyss_goblin:{g:5,st:{atk:8,spd:5},acts:['randomtrap'],pas:'paralyzeHit'},
-  abyss_ghoul:{g:5,st:{hp:100,ls:.1},acts:['devour']},
+  abyss_ghoul:{g:5,st:{hp:100,ls:.1},acts:['devour'],pas:'corrupted'},
   abyss_gnome:{g:5,st:{def:12,hp:60},acts:['merge','restraint']},
   abyss_bladewolf:{g:5,st:{spd:10,atk:10},acts:['madness'],pas:'scent'},
   deathworm:{g:5,st:{hp:120,def:8},acts:['swallow']},
@@ -747,14 +750,14 @@ const FIELDS={
 };
 const FLOORS={1:{n:'水晶洞窟',stay:7,bg:'linear-gradient(#14303a,#0a1418)'},2:{n:'第 2 層',stay:10,bg:'linear-gradient(#262028,#100c0e)'},3:{n:'朝聖者之路',stay:15,bg:'linear-gradient(#1c2a1a,#0b120a)'},4:{n:'天空之塔',stay:23,bg:'linear-gradient(#2a3446,#12161e)'},5:{n:'大魔境',stay:30,bg:'linear-gradient(#3a1612,#140806)'},6:{n:'大海',stay:60,bg:'linear-gradient(#0a2838,#041018)'}};
 const RIFTS={
-  blood_fortress:{n:'血色城塞',f:1,boss:'vampire',minions:['bloody_bladewolf','ghoul'],cost:150},
-  glacier_cave:{n:'冰河洞窟',f:1,boss:'yeti',minions:['frost_wolf'],cost:120},
-  green_mine:{n:'綠色礦坑',f:1,boss:'slime_king',minions:['slime','slime'],cost:100},
-  steel_tomb:{n:'鋼鐵之墓',f:1,boss:'iron_man',minions:['stone_golem'],cost:130},
-  gun_desert:{n:'槍砲沙漠',f:2,boss:'gunner_captain',minions:['bandit_archer','bandit'],cost:300},
-  white_temple:{n:'白色神殿',f:3,boss:'doomsday_knight',minions:['fallen_creation'],cost:700},
-  doppel_forest:{n:'分身魔森林',f:4,boss:'doppelganger',minions:['bandit'],cost:1500},
-  soul_fortress:{n:'靈魂要塞',f:5,boss:'soul_keeper',minions:['blood_wraith'],cost:3500}
+  blood_fortress:{n:'血色城塞',f:1,boss:'vampire',minions:['bloody_bladewolf','ghoul'],cost:150*ECON},
+  glacier_cave:{n:'冰河洞窟',f:1,boss:'yeti',minions:['frost_wolf'],cost:120*ECON},
+  green_mine:{n:'綠色礦坑',f:1,boss:'slime_king',minions:['slime','slime'],cost:100*ECON},
+  steel_tomb:{n:'鋼鐵之墓',f:1,boss:'iron_man',minions:['stone_golem'],cost:130*ECON},
+  gun_desert:{n:'槍砲沙漠',f:2,boss:'gunner_captain',minions:['bandit_archer','bandit'],cost:300*ECON},
+  white_temple:{n:'白色神殿',f:3,boss:'doomsday_knight',minions:['fallen_creation'],cost:700*ECON},
+  doppel_forest:{n:'分身魔森林',f:4,boss:'doppelganger',minions:['bandit'],cost:1500*ECON},
+  soul_fortress:{n:'靈魂要塞',f:5,boss:'soul_keeper',minions:['blood_wraith'],cost:3500*ECON}
 };
 /* 各層的層主(鍵是樓層數,打的時候在該層安全區挑戰,可重複挑戰取得戰利品)。
    根據原作設定站(나무위키)查到的各層主輪廓去客製化技能與機制,不互相套用同一招式:
@@ -781,18 +784,18 @@ const FLOORMASTER={
     desc:'接連打倒恐懼之主九次後,深淵之主貝爾札克開始在水晶洞窟裡徘徊。濃霧般的深淵之霧會封鎖精髓技能。'}
 };
 const NUM={
-  n9999:{n:'No.9999 擴充型背包',r:'單',d:'全滅時,身上的戰利品保留一半',eff:{keepLoot:1},price:400},
-  n8811:{n:'No.8811 迅捷長靴',r:'單',d:'速度 +8',eff:{spd:8},price:350},
-  n7702:{n:'No.7702 鐵壁護符',r:'單',d:'防禦 +5',eff:{def:5},price:350},
-  n6630:{n:'No.6630 魂石墜飾',r:'單',d:'魂力 +25',eff:{soul:25},price:350},
-  n0303:{n:'No.303 保溫石',r:'單',d:'不受寒冷影響(冰霜峽谷、冰河洞窟)',eff:{warm:1},price:300},
-  n5148:{n:'No.5148 吸血鬼之牙',r:'雙',d:'吸血 10%',eff:{ls:.1},price:800},
-  n4410:{n:'No.4410 再生指環',r:'雙',d:'每回合回復 4% 生命',eff:{regen:.04},price:800},
-  n3307:{n:'No.3307 先知之眼',r:'雙',d:'迷宮中能看清兩格內的房間',eff:{sight:1},price:900},
-  n2725:{n:'No.2725 幸運硬幣',r:'雙',d:'精髓掉落率 +2%',eff:{luck:.02},price:900},
-  n1964:{n:'No.1964 狂戰士之血',r:'雙',d:'生命低於 30% 時攻擊 +40%',eff:{rage:.4},price:800},
-  n0911:{n:'No.911 破魔戒指',r:'雙',d:'魔抗 +15',eff:{mres:15},price:800},
-  n0077:{n:'No.77 英雄的護手',r:'三',d:'攻擊 +8、爆擊率 +8%',eff:{atk:8,crit:.08},price:2500}
+  n9999:{n:'No.9999 擴充型背包',r:'單',d:'全滅時,身上的戰利品保留一半',eff:{keepLoot:1},price:400*ECON},
+  n8811:{n:'No.8811 迅捷長靴',r:'單',d:'速度 +8',eff:{spd:8},price:350*ECON},
+  n7702:{n:'No.7702 鐵壁護符',r:'單',d:'防禦 +5',eff:{def:5},price:350*ECON},
+  n6630:{n:'No.6630 魂石墜飾',r:'單',d:'魂力 +25',eff:{soul:25},price:350*ECON},
+  n0303:{n:'No.303 保溫石',r:'單',d:'不受寒冷影響(冰霜峽谷、冰河洞窟)',eff:{warm:1},price:300*ECON},
+  n5148:{n:'No.5148 吸血鬼之牙',r:'雙',d:'吸血 10%',eff:{ls:.1},price:800*ECON},
+  n4410:{n:'No.4410 再生指環',r:'雙',d:'每回合回復 4% 生命',eff:{regen:.04},price:800*ECON},
+  n3307:{n:'No.3307 先知之眼',r:'雙',d:'迷宮中能看清兩格內的房間',eff:{sight:1},price:900*ECON},
+  n2725:{n:'No.2725 幸運硬幣',r:'雙',d:'精髓掉落率 +2%',eff:{luck:.02},price:900*ECON},
+  n1964:{n:'No.1964 狂戰士之血',r:'雙',d:'生命低於 30% 時攻擊 +40%',eff:{rage:.4},price:800*ECON},
+  n0911:{n:'No.911 破魔戒指',r:'雙',d:'魔抗 +15',eff:{mres:15},price:800*ECON},
+  n0077:{n:'No.77 英雄的護手',r:'三',d:'攻擊 +8、爆擊率 +8%',eff:{atk:8,crit:.08},price:2500*ECON}
 };
 const RT={
   entry:{g:'入',n:'降落點'},combat:{g:'戰',n:'怪物'},elite:{g:'精',n:'精英怪物'},chest:{g:'寶',n:'寶箱'},resource:{g:'晶',n:'魔石礦脈'},
@@ -803,17 +806,17 @@ const RT={
 const SAFE_ROOMS=['sage','hut','redstart','seaport'];
 const NAMES=['艾登','莉娜','葛雷','薇拉','托倫','米拉','卡爾','希爾達','羅文','伊莎','貝恩','諾拉','達瑞克','芙蕾雅','歐林','塞拉','雷克','艾薇','古斯','妮雅','哈根','露絲','布蘭','凱特','瑟琳','杜蘭','安柏','洛克','梅芙','提歐'];
 const BARB_NAMES=['阿克森','烏爾格','卡拉克','莫拉德','希庫','瓦爾加','托格','布蘭卡','約根','哈爾德'];
-const DAYS_IN_MONTH=30,LIVING=2,TAX=20,POTION=30,TORCH=60,MAXPOT=5;
+const DAYS_IN_MONTH=30,LIVING=2*ECON,TAX=20*ECON,POTION=30*ECON,TORCH=60*ECON,MAXPOT=5;
 
 /* ================= STATE ================= */
 let S=null,B=null,SAVED=null;
-function newState(){return{v:5,uid:1,month:1,day:1,stone:450,potions:2,torches:1,debt:0,dorm:1,members:[],bag:[],items:[],tavern:[],shop:[],reqs:[],active:[],contrib:0,fame:0,examPassed:false,
+function newState(){return{v:5,uid:1,month:1,day:1,stone:450*ECON,potions:2,torches:1,debt:0,dorm:1,members:[],bag:[],items:[],tavern:[],shop:[],reqs:[],active:[],contrib:0,fame:0,examPassed:false,
   known:[],kc:{},riftsCleared:0,removals:0,revives:0,riftCD:{},floorBoss:{},dreadKills:0,ship:0,navigator:false,carnon:false,maxFloor:1,log:[],auto:false,fast:false,sel:[],startFloor:1,tab:'home',run:null,screen:'intro',fallen:[],draft:null};}
 const getM=id=>S.members.find(m=>m.id===+id);
 const hero=()=>S.members.find(m=>m.hero);
 const hasT=(m,t)=>m.traits.includes(t);
 const capacity=()=>3+S.dorm*2;
-const DISPATCH_MISSIONS={short:{n:'短程派遣',days:1,rate:15},mid:{n:'中程派遣',days:3,rate:18},long:{n:'長程派遣',days:7,rate:22}};
+const DISPATCH_MISSIONS={short:{n:'短程派遣',days:1,rate:15*ECON},mid:{n:'中程派遣',days:3,rate:18*ECON},long:{n:'長程派遣',days:7,rate:22*ECON}};
 const dispatchSlots=()=>S.dorm+1;
 const activeDispatches=()=>living().filter(m=>m.dispatch).length;
 const living=()=>S.members.filter(m=>!m.dead);
@@ -834,7 +837,7 @@ function essDesc(it){const e=essInfo(it),p=[],lb={hp:'生命',atk:'攻擊',def:'
   for(const[s,v]of Object.entries(e.st)){if(lb[s])p.push(`${lb[s]} ${v>0?'+':''}${v}`);else if(s==='ls')p.push(`吸血 ${Math.round(v*100)}%`);else if(s==='regen')p.push(`再生 ${Math.round(v*100)}%`);}
   return `${e.g}級${e.gd?'・守護者':''}。${p.join('、')}。主動「${e.acts.map(a=>SK[a].n).join('」「')}」${e.pas?`;被動「${PS[e.pas].n}」`:''}`;}
 function essSkillDesc(it){const e=essInfo(it);return e.acts.map(a=>`「${SK[a].n}」${SK[a].d}(魂力 ${SK[a].cost})`).join('<br>')+(e.pas?`<br>被動「${PS[e.pas].n}」${PS[e.pas].d}`:'');}
-const essSlots=m=>m.lv;
+const essSlots=m=>Math.max(1,m.lv-(memberPas(m).includes('corrupted')?1:0));
 function memberActs(m){const acts=[...new Set(m.ess.flatMap(it=>essInfo(it).acts))];if(m.race==='barb'&&m.tattoo&&m.tattoo.path==='wild'&&!acts.includes('wildburst'))acts.push('wildburst');return acts;}
 function memberPas(m){return[...new Set(m.ess.map(it=>ESS[it.k].pas).filter(Boolean))];}
 function absorbCheck(m,it){
@@ -891,8 +894,8 @@ function killMember(m){
   S.members=S.members.filter(x=>x.id!==m.id);S.sel=S.sel.filter(id=>id!==m.id);S.fallen.push({name:m.name,lv:m.lv,d:`${S.month}/${S.day}`});log(`${m.name}(Lv${m.lv})死在了迷宮裡。`);
   if(m.num)S.items.push(m.num);
 }
-function reviveCost(){const h=hero();return S.revives===0?0:150*(h?h.lv:1)*S.revives;}
-const removeCost=()=>500*Math.pow(2,S.removals);
+function reviveCost(){const h=hero();return S.revives===0?0:150*ECON*(h?h.lv:1)*S.revives;}
+const removeCost=()=>500*ECON*Math.pow(2,S.removals);
 function taxOf(m){return Math.round(TAX*(RACE[m.race].tax??1));}
 function livingCost(m){return Math.round(LIVING*(RACE[m.race].live||1)*(hasT(m,'glutton')?2:1)*(S.carnon?.85:1));}
 
@@ -1052,7 +1055,7 @@ ACT.draft=arg=>{const[f,v]=arg.split(':');S.draft[f]=f==='look'?+v:v;render();};
 ACT.confirmHero=()=>{
   const d=S.draft;const h=makeMember({name:d.name.trim()||genName(d.race),race:d.race,weapon:d.weapon,traits:[d.bg],look:d.look});
   h.hero=true;S.members.push(h);
-  if(d.bg==='bg_noble'){S.stone+=300;S.fame+=10;}
+  if(d.bg==='bg_noble'){S.stone+=300*ECON;S.fame+=10;}
   if(d.bg==='bg_scholar')['goblin','ghoul','gnome','bladewolf'].forEach(learn);
   S.draft=null;S.sel=[h.id];
   refreshTavern();refreshShop();genRequests();
@@ -1184,8 +1187,8 @@ ACT.bagEssOpen=i=>{const it=S.bag[+i];if(!it)return;
     [{label:'吸收',act:'absorbOpen',arg:'bag:'+i},{label:`賣 ${essPrice(it)}`,act:'sellEssClose',arg:i},{label:'取消',act:'closeModal'}]);};
 ACT.sellEssClose=i=>{ACT.sellEss(i);ACT.closeModal();};
 ACT.itemOpen=i=>{const it=S.items[+i];if(!it)return;
-  if(it.type==='riftstone'){modal('裂縫石',`<p class="mute">第 ${it.f} 層的裂縫石。</p>`,[{label:`賣 ${300*it.f}`,act:'sellItemClose',arg:i},{label:'取消',act:'closeModal'}]);return;}
-  if(!it.ided){modal('未鑑定的編號物品',`<p class="mute">要花錢鑑定才知道是什麼。</p>`,[{label:'鑑定(300 石幣)',act:'appraiseClose',arg:i},{label:'直接賣 150',act:'sellItemClose',arg:i},{label:'取消',act:'closeModal'}]);return;}
+  if(it.type==='riftstone'){modal('裂縫石',`<p class="mute">第 ${it.f} 層的裂縫石。</p>`,[{label:`賣 ${300*ECON*it.f}`,act:'sellItemClose',arg:i},{label:'取消',act:'closeModal'}]);return;}
+  if(!it.ided){modal('未鑑定的編號物品',`<p class="mute">要花錢鑑定才知道是什麼。</p>`,[{label:`鑑定(${300*ECON} 石幣)`,act:'appraiseClose',arg:i},{label:`直接賣 ${150*ECON}`,act:'sellItemClose',arg:i},{label:'取消',act:'closeModal'}]);return;}
   const d=NUM[it.id];
   modal(d.n,`<p class="mute">${d.d}</p>`,[{label:'裝備',act:'equipOpen',arg:i},{label:`賣 ${d.price}`,act:'sellItemClose',arg:i},{label:'取消',act:'closeModal'}]);};
 ACT.sellItemClose=i=>{ACT.sellItem(i);ACT.closeModal();};
@@ -1240,7 +1243,7 @@ function memberCard(m,mini){
   </article>`;
 }
 function homeTab(){
-  const c=150*S.dorm,max=S.dorm>=4;
+  const c=150*ECON*S.dorm,max=S.dorm>=4;
   return `<div class="kv"><span>住處</span><b>拉維吉恩區的舊倉庫</b><span>可住</span><b>${capacity()} 人(目前 ${living().length})</b><span>派遣名額</span><b>${activeDispatches()}/${dispatchSlots()}</b><span>每日開銷</span><b>${living().reduce((a,m)=>a+livingCost(m),0)} 石幣</b><span>每月稅金</span><b>${living().reduce((a,m)=>a+taxOf(m),0)} 石幣(1 日繳)</b>${S.carnon?'<span>第 1 區特權</span><b style="color:var(--torch-hi)">已取得(生活開銷 -15%)</b>':''}</div>
     <div class="row"><button class="btn sm" data-act="dorm" ${!max&&S.stone>=c?'':'disabled'}>${max?'住處已擴建到最大':`擴建住處(${c} 石幣)`}</button><span class="mute" style="font-size:12px">多住 2 人,休息時壓力多降 6</span></div>
     ${!S.carnon?`<p class="mute" style="font-size:12px">名聲達到 150 能讓第 1 區卡隆的守衛放行,受認可的探險者生活開銷會降低(目前名聲 ${S.fame})。</p>`:''}
@@ -1257,7 +1260,7 @@ const TAVERN_TIERS=[
   {lv:7,cond:s=>s.fame>=130&&s.maxFloor>=5&&s.contrib>=80,w:.7,label:'名聲 130、抵達過第 5 層、貢獻點 80'}
 ];
 function tavernUnlocked(){return TAVERN_TIERS.filter(t=>t.cond(S));}
-function recruitCost(m){return 150+m.lv*80+m.ess.length*120;}
+function recruitCost(m){return (150+m.lv*80+m.ess.length*120)*ECON;}
 function refreshTavern(){
   const unlocked=tavernUnlocked();
   S.tavern=Array.from({length:4},()=>{
@@ -1283,10 +1286,10 @@ function reqDone(r){return reqProgress(r)>=(r.type==='kill'?r.n:1);}
 function genRequests(){
   const f=Math.min(6,S.maxFloor),pools=[];for(const[k,fd]of Object.entries(FIELDS)){const fl=fieldFloor(k);if(fl&&fl<=Math.min(6,f+1))pools.push(...fd.pool);}
   const out=[];const mk=()=>{const t=pick(['kill','kill','kill','deliver','reach','rift']);
-    if(t==='kill'){const k=pick(pools.length?pools:['goblin']);const g=MON[k].g;const n=g>=9?ri(3,6):ri(1,3);return{type:'kill',k,n,stone:GRADE[g].stone*n*3+60,contrib:g>=9?3:6,fame:1};}
-    if(t==='deliver'){const k=pick(Object.keys(ESS).filter(e=>ESS[e].g===9));return{type:'deliver',k,stone:550,contrib:6,fame:2};}
-    if(t==='reach'&&f<6)return{type:'reach',f:f+1,stone:250*f,contrib:10,fame:3};
-    return{type:'rift',stone:600,contrib:12,fame:5};};
+    if(t==='kill'){const k=pick(pools.length?pools:['goblin']);const g=MON[k].g;const n=g>=9?ri(3,6):ri(1,3);return{type:'kill',k,n,stone:GRADE[g].stone*n*3+60*ECON,contrib:g>=9?3:6,fame:1};}
+    if(t==='deliver'){const k=pick(Object.keys(ESS).filter(e=>ESS[e].g===9));return{type:'deliver',k,stone:550*ECON,contrib:6,fame:2};}
+    if(t==='reach'&&f<6)return{type:'reach',f:f+1,stone:250*ECON*f,contrib:10,fame:3};
+    return{type:'rift',stone:600*ECON,contrib:12,fame:5};};
   for(let i=0;i<3;i++){const r=mk();r.id=S.uid++;out.push(r);}S.reqs=out;
 }
 function fieldFloor(k){return({ccN:1,ccS:1,ccE:1,ccW:1,beast:2,dead:2,desert:2,gforest:2,steelhill:3,orc:3,marsh:3,estuary:3,witch:3,tower:4,hellfire:5,frost:5,specter:5,calmsea:6,doldrums:6,icesea:6})[k];}
@@ -1317,8 +1320,8 @@ function libraryTab(){
   const seen=new Set();for(const[k,fd]of Object.entries(FIELDS)){const fl=fieldFloor(k);if(fl&&fl<=Math.min(6,S.maxFloor+1))fd.pool.forEach(x=>seen.add(x));}
   const unknown=[...seen].filter(k=>!isKnown(k));
   return `<p class="mute">拉維吉恩中央圖書館。不外借,只能在館內查閱。9 級精髓在這裡販售。</p>
-    <div class="sub">怪物資料(查詢費 30 石幣)</div>
-    ${unknown.length?`<div class="list">${unknown.map(k=>`<div class="item"><span>${monName(k)} <span class="lv">${MON[k].g}級</span></span><button class="btn sm" data-act="research" data-arg="${k}" ${S.stone>=30?'':'disabled'}>查詢</button></div>`).join('')}</div>`:'<p class="mute">附近樓層的怪物都查過了。</p>'}
+    <div class="sub">怪物資料(查詢費 ${30*ECON} 石幣)</div>
+    ${unknown.length?`<div class="list">${unknown.map(k=>`<div class="item"><span>${monName(k)} <span class="lv">${MON[k].g}級</span></span><button class="btn sm" data-act="research" data-arg="${k}" ${S.stone>=30*ECON?'':'disabled'}>查詢</button></div>`).join('')}</div>`:'<p class="mute">附近樓層的怪物都查過了。</p>'}
     <div class="sub">9 級精髓(顏色隨機)</div>
     <div class="list">${LIB_ESS.map(k=>`<div class="item"><span>${monName(k)}精髓</span><button class="btn sm" data-act="buyLibEss" data-arg="${k}" ${S.stone>=GRADE[9].price?'':'disabled'}>${GRADE[9].price}</button><small>${ESS[k].acts.map(a=>`「${SK[a].n}」`).join('或')}${ESS[k].pas?`;被動「${PS[ESS[k].pas].n}」`:''}</small></div>`).join('')}</div>
     <div class="sub">怪物圖鑑(${S.known.length})</div>
@@ -1328,7 +1331,7 @@ function monNote(k){const t=MON[k].tags||{},n=[];
   if(t.passive)n.push('不會主動攻擊');if(t.spirit)n.push('靈體,物理攻擊幾乎無效');if(t.poison)n.push('攻擊帶毒');if(t.stealth)n.push('會融入周圍隱身');if(t.curse)n.push('先出手攻擊會被下「怨恨之印」');
   if(t.bind)n.push('會束縛對手');if(t.heal)n.push('會治療同伴');if(t.buff)n.push('會強化同伴');if(t.fear)n.push('會讓人恐懼');if(t.silence)n.push('會下沉默,封鎖精髓技能');if(t.enrage)n.push('生命降低時會覺醒,越打越強');if(t.summon)n.push(`會召喚${monName(t.summon)}`);if(t.drain)n.push('攻擊時吸血');if(t.noheal)n.push('傷口難以癒合');
   if(MON[k].atkdt)n.push(`${DT[MON[k].atkdt]}屬性攻擊`);return n.join('、')||'沒有特別的能力';}
-ACT.research=k=>{if(S.stone<30)return;S.stone-=30;learn(k);toast(`查到了${monName(k)}的資料`);save();render();};
+ACT.research=k=>{if(S.stone<30*ECON)return;S.stone-=30*ECON;learn(k);toast(`查到了${monName(k)}的資料`);save();render();};
 ACT.buyLibEss=k=>{if(S.stone<GRADE[9].price)return;S.stone-=GRADE[9].price;const it=makeEss(k);S.bag.push(it);log(`在圖書館買下${essInfo(it).n}。`);save();render();};
 /* --- exchange --- */
 function exchangeTab(){
@@ -1339,13 +1342,13 @@ function exchangeTab(){
     ${S.items.length?`<div class="list">${S.items.map((it,i)=>itemRow(it,i)).join('')}</div>`:'<p class="mute">沒有物品。</p>'}`;
 }
 function itemRow(it,i){
-  if(it.type==='riftstone')return `<div class="item"><span>裂縫石(第 ${it.f} 層)</span><button class="btn sm" data-act="sellItem" data-arg="${i}">賣 ${300*it.f}</button></div>`;
-  if(!it.ided)return `<div class="item"><span>未鑑定的編號物品</span><span class="row"><button class="btn sm" data-act="appraise" data-arg="${i}" ${S.stone>=300?'':'disabled'}>鑑定 300</button><button class="btn sm" data-act="sellItem" data-arg="${i}">直接賣 150</button></span></div>`;
+  if(it.type==='riftstone')return `<div class="item"><span>裂縫石(第 ${it.f} 層)</span><button class="btn sm" data-act="sellItem" data-arg="${i}">賣 ${300*ECON*it.f}</button></div>`;
+  if(!it.ided)return `<div class="item"><span>未鑑定的編號物品</span><span class="row"><button class="btn sm" data-act="appraise" data-arg="${i}" ${S.stone>=300*ECON?'':'disabled'}>鑑定 ${300*ECON}</button><button class="btn sm" data-act="sellItem" data-arg="${i}">直接賣 ${150*ECON}</button></span></div>`;
   const d=NUM[it.id];return `<div class="item"><span>${d.n} <span class="mute">(${d.r})</span></span><span class="row"><button class="btn sm" data-act="equipOpen" data-arg="${i}">裝備</button><button class="btn sm" data-act="sellItem" data-arg="${i}">賣 ${d.price}</button></span><small>${d.d}</small></div>`;
 }
 ACT.sellEss=i=>{const it=S.bag[+i];if(!it)return;S.stone+=essPrice(it);S.bag.splice(+i,1);log(`把${essInfo(it).n}賣了 ${essPrice(it)} 石幣。`);save();render();};
-ACT.sellItem=i=>{const it=S.items[+i];if(!it)return;const v=it.type==='riftstone'?300*it.f:!it.ided?150:NUM[it.id].price;S.stone+=v;S.items.splice(+i,1);save();render();};
-ACT.appraise=i=>{const it=S.items[+i];if(!it||S.stone<300)return;S.stone-=300;it.ided=true;toast(`鑑定結果:${NUM[it.id].n}`);log(`鑑定出${NUM[it.id].n}。`);save();render();};
+ACT.sellItem=i=>{const it=S.items[+i];if(!it)return;const v=it.type==='riftstone'?300*ECON*it.f:!it.ided?150*ECON:NUM[it.id].price;S.stone+=v;S.items.splice(+i,1);save();render();};
+ACT.appraise=i=>{const it=S.items[+i];if(!it||S.stone<300*ECON)return;S.stone-=300*ECON;it.ided=true;toast(`鑑定結果:${NUM[it.id].n}`);log(`鑑定出${NUM[it.id].n}。`);save();render();};
 ACT.equipOpen=i=>{const it=S.items[+i];if(!it)return;modal(`裝備 ${NUM[it.id].n}`,`<p class="mute">${NUM[it.id].d}</p><div class="list">${living().map(m=>`<div class="item"><span><b>${m.name}</b> <span class="mute">${m.num?'已裝備 '+NUM[m.num.id].n:''}</span></span><button class="btn sm primary" data-act="equipDo" data-arg="${i}:${m.id}">裝備</button></div>`).join('')}</div>`,[{label:'取消',act:'closeModal'}]);};
 ACT.equipDo=arg=>{const[i,id]=arg.split(':');const it=S.items[+i],m=getM(id);if(!it||!m)return;if(m.num)S.items.push(m.num);S.items.splice(+i,1);m.num=it;ACT.closeModal();save();render();};
 ACT.unequip=id=>{const m=getM(id);if(!m||!m.num)return;S.items.push(m.num);m.num=null;m.hp=Math.min(m.hp,stats(m).maxhp);save();render();};
@@ -1362,26 +1365,26 @@ function templeTab(){
     <div class="sub">移除精髓(本次 ${removeCost()} 石幣,每次翻倍)</div>
     <div class="list">${living().filter(m=>m.ess.length).map(m=>`<div class="item"><span><b>${m.name}</b></span><span></span><small class="row">${m.ess.map((it,j)=>`<button class="btn sm danger" data-act="removeDo" data-arg="${m.id}:${j}" ${S.stone>=removeCost()?'':'disabled'}>移除 ${essInfo(it).short}</button>`).join('')}</small></div>`).join('')||'<p class="mute">沒有人吸收過精髓。</p>'}</div>`;
 }
-function healAllCost(){return living().reduce((a,m)=>a+Math.ceil((stats(m).maxhp-m.hp)/2),0);}
+function healAllCost(){return living().reduce((a,m)=>a+Math.ceil((stats(m).maxhp-m.hp)/2*ECON),0);}
 ACT.revive=()=>{const h=hero();if(!h||!h.dead)return;const c=reviveCost();if(S.stone<c)return;S.stone-=c;S.revives++;h.dead=false;h.hp=Math.round(stats(h).maxhp*.5);h.stress=40;h.soul=stats(h).soul;
   log(`三神教的祭司讓 ${h.name} 重新睜開了眼睛。${c?`花了 ${c} 石幣。`:'第一次的復活不收費。'}`);save();render();};
 ACT.templeHeal=()=>{const c=healAllCost();if(S.stone<c)return;S.stone-=c;living().forEach(m=>m.hp=stats(m).maxhp);toast('全員的傷都治好了');save();render();};
-ACT.purifyOpen=()=>{modal('安定心神','<p class="mute">祭司的祈禱能讓壓力歸零。</p><div class="list">'+living().map(m=>`<div class="item"><span><b>${m.name}</b> <span class="mute">壓力 ${Math.round(m.stress)}</span></span><button class="btn sm" data-act="purifyDo" data-arg="${m.id}" ${S.stone>=40&&m.stress>0?'':'disabled'}>40 石幣</button></div>`).join('')+'</div>',[{label:'關閉',act:'closeModal'}]);};
-ACT.purifyDo=id=>{const m=getM(id);if(!m||S.stone<40)return;S.stone-=40;m.stress=0;save();render();ACT.purifyOpen();};
+ACT.purifyOpen=()=>{modal('安定心神','<p class="mute">祭司的祈禱能讓壓力歸零。</p><div class="list">'+living().map(m=>`<div class="item"><span><b>${m.name}</b> <span class="mute">壓力 ${Math.round(m.stress)}</span></span><button class="btn sm" data-act="purifyDo" data-arg="${m.id}" ${S.stone>=40*ECON&&m.stress>0?'':'disabled'}>${40*ECON} 石幣</button></div>`).join('')+'</div>',[{label:'關閉',act:'closeModal'}]);};
+ACT.purifyDo=id=>{const m=getM(id);if(!m||S.stone<40*ECON)return;S.stone-=40*ECON;m.stress=0;save();render();ACT.purifyOpen();};
 ACT.removeDo=arg=>{const[id,j]=arg.split(':');const m=getM(id);if(!m)return;const it=m.ess[+j];if(!it)return;const c=removeCost();if(S.stone<c)return;
   S.stone-=c;S.removals++;m.ess.splice(+j,1);m.hp=Math.min(m.hp,stats(m).maxhp);log(`${m.name} 和${essInfo(it).short}之間的「線」被切斷了。花了 ${c} 石幣。`);save();render();};
 /* --- smith / store --- */
-function gearCost(m,t){return Math.round(80*(t+1)*(RACE[m.race].forge||1));}
-function shipCost(t){return t===1?4000:t===2?9000:16000;}
+function gearCost(m,t){return Math.round(80*ECON*(t+1)*(RACE[m.race].forge||1));}
+function shipCost(t){return (t===1?4000:t===2?9000:16000)*ECON;}
 function smithTab(){
   return `<p class="mute">強化裝備最多到 +5。也可以換一把不同類型的武器。</p><div class="list">${living().map(m=>{const cw=gearCost(m,m.wpn),ca=gearCost(m,m.arm);return `<div class="item"><span><b>${m.name}</b> <span class="mute">${WEAPON[m.weapon].n} +${m.wpn}・防具 +${m.arm}</span></span><span></span>
     <small class="row"><button class="btn sm" data-act="gear" data-arg="${m.id}:wpn" ${m.wpn<5&&S.stone>=cw?'':'disabled'}>武器 +1(${cw})</button><button class="btn sm" data-act="gear" data-arg="${m.id}:arm" ${m.arm<5&&S.stone>=ca?'':'disabled'}>防具 +1(${ca})</button>
     <select data-change="swapWeapon" data-arg="${m.id}" aria-label="換武器"><option value="">換武器…</option>${Object.entries(WEAPON).filter(([k])=>k!==m.weapon).map(([k,w])=>`<option value="${k}">${w.n}(${w.price})</option>`).join('')}</select></small></div>`;}).join('')}</div>
     <div class="sub">造船廠(要去第 6 層大海必須兩樣都準備好)</div>
     <div class="kv"><span>航海士</span><b>${S.navigator?'已雇用':'未雇用'}</b><span>船隻</span><b>${S.ship?`${S.ship} 級`:'還沒有船'}</b></div>
-    <div class="row">${!S.navigator?`<button class="btn sm" data-act="hireNav" ${S.stone>=3000?'':'disabled'}>雇用航海士・3000</button>`:''}${S.ship<3?`<button class="btn sm" data-act="buyShip" ${S.stone>=shipCost(S.ship+1)?'':'disabled'}>${S.ship?'升級船隻':'建造船隻'}・${S.ship+1} 級・${shipCost(S.ship+1)}</button>`:''}</div>`;
+    <div class="row">${!S.navigator?`<button class="btn sm" data-act="hireNav" ${S.stone>=3000*ECON?'':'disabled'}>雇用航海士・${3000*ECON}</button>`:''}${S.ship<3?`<button class="btn sm" data-act="buyShip" ${S.stone>=shipCost(S.ship+1)?'':'disabled'}>${S.ship?'升級船隻':'建造船隻'}・${S.ship+1} 級・${shipCost(S.ship+1)}</button>`:''}</div>`;
 }
-ACT.hireNav=()=>{if(S.navigator||S.stone<3000)return;S.stone-=3000;S.navigator=true;log('雇用了一位航海士,準備好航向大海了。');save();render();};
+ACT.hireNav=()=>{if(S.navigator||S.stone<3000*ECON)return;S.stone-=3000*ECON;S.navigator=true;log('雇用了一位航海士,準備好航向大海了。');save();render();};
 ACT.buyShip=()=>{const c=shipCost(S.ship+1);if(S.ship>=3||S.stone<c)return;S.stone-=c;S.ship++;log(`船隻建造/升級到 ${S.ship} 級。`);save();render();};
 ACT.gear=arg=>{const[id,slot]=arg.split(':');const m=getM(id);if(!m||m[slot]>=5)return;const c=gearCost(m,m[slot]);if(S.stone<c)return;S.stone-=c;m[slot]++;if(slot==='arm')m.hp+=12;log(`${m.name} 的${slot==='wpn'?'武器':'防具'}強化到 +${m[slot]}。`);save();render();};
 ACT.swapWeapon=(id,el)=>{const m=getM(id),w=el.value;if(!m||!w)return;const p=WEAPON[w].price;if(S.stone<p){toast('石幣不夠');el.value='';return;}S.stone-=p;m.weapon=w;m.wpn=0;m.hp=Math.min(m.hp,stats(m).maxhp);log(`${m.name} 換成了${WEAPON[w].n}。`);save();render();};
@@ -1391,7 +1394,7 @@ function storeTab(){
 }
 ACT.buyPotion=()=>{if(S.stone<POTION||S.potions>=MAXPOT)return;S.stone-=POTION;S.potions++;save();render();};
 ACT.buyTorch=()=>{if(S.stone<TORCH)return;S.stone-=TORCH;S.torches++;save();render();};
-ACT.dorm=()=>{const c=150*S.dorm;if(S.dorm>=4||S.stone<c)return;S.stone-=c;S.dorm++;log('住處擴建了。');save();render();};
+ACT.dorm=()=>{const c=150*ECON*S.dorm;if(S.dorm>=4||S.stone<c)return;S.stone-=c;S.dorm++;log('住處擴建了。');save();render();};
 
 ACT.help=()=>modal('玩法',`<ul>
   <li><b>月曆</b>:迷宮每月 1 日開啟。其他日子在城裡休息、打工、整備。每天要付生活費,每月 1 日繳稅(人類減半、龍人族免稅,欠稅進不了迷宮)。</li>
@@ -1655,7 +1658,7 @@ function eventHTML(r){
     case'spring':if(r.cleared)return `<h3>乾涸的泉水</h3><p class="desc">泉水已經被喝光了。</p><div class="row">${camp}</div>`;
       return `<h3>治癒泉水</h3><p class="desc">全隊回復 40% 生命和魂力,壓力 -12。</p><div class="row">${act('飲用泉水','drink','','primary')}</div>`;
     case'merchant':return `<h3>流浪商人</h3><p class="desc">在迷宮裡做生意的探險者,收你身上的魔石(${run.loot.stone})。</p>
-      <div class="row">${act('藥水 · 45','buy','potion','',run.loot.stone<45||S.potions>=MAXPOT)}${act('火把 · 80','buy','torch','',run.loot.stone<80)}${act('鎮定香 全隊壓力 -20 · 40','buy','calm','',run.loot.stone<40)}${act('魂力藥劑 · 60','buy','soul','',run.loot.stone<60)}</div>`;
+      <div class="row">${act(`藥水 · ${45*ECON}`,'buy','potion','',run.loot.stone<45*ECON||S.potions>=MAXPOT)}${act(`火把 · ${80*ECON}`,'buy','torch','',run.loot.stone<80*ECON)}${act(`鎮定香 全隊壓力 -20 · ${40*ECON}`,'buy','calm','',run.loot.stone<40*ECON)}${act(`魂力藥劑 · ${60*ECON}`,'buy','soul','',run.loot.stone<60*ECON)}</div>`;
     default:return `<h3>空地</h3><p class="desc">${r.note||'寂靜得令人不安。'}</p><div class="row">${camp}</div>`;
   }
 }
@@ -1679,7 +1682,7 @@ ACT.stair=i=>{const run=S.run,t=run.tower,c=t.choices[+i];if(!c)return;
     else if(r<.7){t.pending=1;save();startBattle(['orc_hero','tower_guardian'],{tower:1});}
     else{t.stage=Math.min(100,t.stage+10);t.choices=towerChoices();toast('命運之階把你們送上了 10 階!');save();render();}return;}
 };
-function towerChest(big){const L=S.run.loot;if(Math.random()<(big?.4:.12)){L.items.push(randomNum());return '寶箱裡有一件編號物品!';}if(Math.random()<(big?.3:.08)){const it=makeEss(pick(['orc_warrior','orc_archer','iron_falcon','owlbear','lizardman','homunculus']));L.ess.push(it);return `寶箱裡有一顆${essInfo(it).n}!`;}const v=ri(80,160);L.stone+=v;return `寶箱裡有 ${v} 石幣的魔石。`;}
+function towerChest(big){const L=S.run.loot;if(Math.random()<(big?.4:.12)){L.items.push(randomNum());return '寶箱裡有一件編號物品!';}if(Math.random()<(big?.3:.08)){const it=makeEss(pick(['orc_warrior','orc_archer','iron_falcon','owlbear','lizardman','homunculus']));L.ess.push(it);return `寶箱裡有一顆${essInfo(it).n}!`;}const v=ri(80*ECON,160*ECON);L.stone+=v;return `寶箱裡有 ${v} 石幣的魔石。`;}
 ACT.towerBoss=()=>{S.run.tower.pending=0;startBattle(['sky_sentinel','tower_guardian','tower_guardian'],{tower:1,boss:1});};
 /* --- dimension collapse --- */
 function collapseHTML(){const c=S.run.collapse;return{map:`<p class="notice bad">次元崩壞!迷宮提前封閉,地板變成隨機的傳送門,人和怪物被丟到各處。撐過所有波次才回得去。</p>`,
@@ -1728,21 +1731,21 @@ function randomNum(){const ids=Object.keys(NUM);const w=ids.map(id=>NUM[id].r===
 ACT.openChest=()=>{
   const run=S.run,r=run.map.rooms[run.map.cur];if(r.cleared)return;
   if(r.mimic){r.type='combat';r.mimic=false;toast('寶箱是陷阱,怪物衝了出來!');save();startBattle(r.enemies,{});return;}
-  const f=run.floor,st=ri(10,25)*f+f*8;run.loot.stone+=st;let msg=`魔石 +${st}`;
+  const f=run.floor,st=(ri(10,25)*f+f*8)*ECON;run.loot.stone+=st;let msg=`魔石 +${st}`;
   if(Math.random()<.06){run.loot.items.push(randomNum());msg+=',還有一件未鑑定的編號物品!';}
   else if(Math.random()<.04){const pool=FIELDS[r.field].pool.filter(k=>ESS[k]);if(pool.length){const it=makeEss(pick(pool));run.loot.ess.push(it);msg+=`,還有一顆${essInfo(it).n}!`;}}
   if(Math.random()<.25&&S.potions<MAXPOT){S.potions++;msg+=',以及一瓶藥水';}
   r.cleared=true;toast(msg);save();render();
 };
 ACT.gather=()=>{
-  const run=S.run,r=run.map.rooms[run.map.cur];if(r.cleared)return;const f=run.floor;const v=ri(20,35)*f;run.loot.stone+=v;
+  const run=S.run,r=run.map.rooms[run.map.cur];if(r.cleared)return;const f=run.floor;const v=ri(20,35)*f*ECON;run.loot.stone+=v;
   partyMembers().forEach(m=>addStress(m,5));r.cleared=true;
   if(advanceTime(4))return;
   if(FIELDS[r.field].pool.length&&Math.random()<.25){toast(`魔石 +${v}。採集的聲音引來了怪物!`);r.type='combat';r.cleared=false;r.enemies=genEnemies(r.field,'combat');save();startBattle(r.enemies,{});return;}
   toast(`魔石 +${v}`);save();render();
 };
 ACT.drink=()=>{const r=S.run.map.rooms[S.run.map.cur];if(r.cleared)return;partyMembers().forEach(m=>{const st=stats(m);m.hp=Math.min(st.maxhp,m.hp+st.maxhp*.4);m.soul=Math.min(st.soul,m.soul+st.soul*.4);addStress(m,-12);});r.cleared=true;toast('全隊恢復了精神');save();render();};
-ACT.buy=k=>{const run=S.run,price={potion:45,torch:80,calm:40,soul:60}[k];if(run.loot.stone<price)return;
+ACT.buy=k=>{const run=S.run,price={potion:45*ECON,torch:80*ECON,calm:40*ECON,soul:60*ECON}[k];if(run.loot.stone<price)return;
   if(k==='potion'){if(S.potions>=MAXPOT)return;S.potions++;}if(k==='torch')S.torches++;
   if(k==='calm')partyMembers().forEach(m=>addStress(m,-20));if(k==='soul')partyMembers().forEach(m=>m.soul=stats(m).soul);
   run.loot.stone-=price;autoTorch();save();render();};
@@ -1970,12 +1973,12 @@ async function perform(a,act,tok){
     case'def':a.defend=true;a.soul=Math.min(a.soulMax,a.soul+15);await say('防禦','dim',a);break;
     case'pot':{if(!S.potions)return;S.potions--;const al=allyOf(a);const t=al.reduce((x,y)=>y.hp/y.maxhp<x.hp/x.maxhp?y:x,al[0]);const h=healU(t,t.maxhp*.4);await say(h?'+'+h:'無法回復',h?'good':'st',t);break;}
     case'flee':{if(Math.random()<.7){await banner('逃跑成功');B.fled=true;B.over=true;}else await banner('逃跑失敗','bad');break;}
-    case'sk':{const s=SK[act.k];a.soul-=skillCost(a,act.k);await say(s.n,'gold',a);const dt=s.dt||a.dt;
+    case'sk':{const s=SK[act.k];a.soul-=skillCost(a,act.k);await say(s.n,'gold',a);const dt=s.dt||a.dt;const mult=(s.mult||0)*(a.pas.includes('corrupted')?1.5:1);
       const st=act.t&&aliveU(act.t)?act.t:curTarget(a);
-      if(s.kind==='single'){if(st)await hit(a,st,s.mult,dt,s.brk,{ignore:s.ignore,drain:s.drain,status:s.status,delay:s.delay});}
-      else if(s.kind==='multi'){for(let i=0;i<s.hits;i++){const fs=foesOf(a);if(!fs.length)break;await hit(a,pick(fs),s.mult,dt,s.brk,{status:s.status});}}
-      else if(s.kind==='aoe'){for(const t of foesOf(a)){await hit(a,t,s.mult,dt,s.brk,{multi:1});if(s.debuff&&aliveU(t)){addBuff(t,s.debuff,s.label);}}await delay();}
-      else if(s.kind==='debuff'){if(st){if(s.mult)await hit(a,st,s.mult,dt,10,{status:s.status});if(aliveU(st)){addBuff(st,s.debuff,s.label);await say(s.label,'st',st);}}}
+      if(s.kind==='single'){if(st)await hit(a,st,mult,dt,s.brk,{ignore:s.ignore,drain:s.drain,status:s.status,delay:s.delay});}
+      else if(s.kind==='multi'){for(let i=0;i<s.hits;i++){const fs=foesOf(a);if(!fs.length)break;await hit(a,pick(fs),mult,dt,s.brk,{status:s.status});}}
+      else if(s.kind==='aoe'){for(const t of foesOf(a)){await hit(a,t,mult,dt,s.brk,{multi:1});if(s.debuff&&aliveU(t)){addBuff(t,s.debuff,s.label);}}await delay();}
+      else if(s.kind==='debuff'){if(st){if(mult)await hit(a,st,mult,dt,10,{status:s.status});if(aliveU(st)){addBuff(st,s.debuff,s.label);await say(s.label,'st',st);}}}
       else if(s.kind==='debuffAll'){for(const t of foesOf(a)){addBuff(t,s.debuff,s.label);pop(t,s.label,'st');if(s.status)applyStatus(t,s.status,a);}await delay();}
       else if(s.kind==='self'){addBuff(a,s.buff,s.label||s.n);if(s.heal){const h=healU(a,a.maxhp*s.heal);if(h)pop(a,'+'+h,'good');}await say(s.label||s.n,'good',a);}
       else if(s.kind==='team'){allyOf(a).forEach(u=>{addBuff(u,s.buff,s.label);pop(u,s.label,'good');});renderTeam();await delay();}
@@ -2040,7 +2043,7 @@ async function fall(t,src){
   if(!B.opt.exam){B.loot.stone+=Math.round(G.stone*greedy);B.kills.add(t.key);S.kc[t.key]=(S.kc[t.key]||0)+1;}
   renderStage();
   if(B.opt.exam||MON[t.key].noEss)return;
-  if(t.boss&&(B.opt.rift||B.opt.fmaster)){const r=Math.random();if(r<.34){const it=makeEss(t.key,true);B.loot.ess.push(it);await say('守護者精髓!','gold',t);}else if(r<.67){B.loot.items.push(randomNum());await say('編號物品!','gold',t);}else if(B.opt.rift){B.loot.items.push({type:'riftstone',f:B.f});await say('裂縫石','gold',t);}else{B.loot.stone+=400;await say('大量魔石!','gold',t);}return;}
+  if(t.boss&&(B.opt.rift||B.opt.fmaster)){const r=Math.random();if(r<.34){const it=makeEss(t.key,true);B.loot.ess.push(it);await say('守護者精髓!','gold',t);}else if(r<.67){B.loot.items.push(randomNum());await say('編號物品!','gold',t);}else if(B.opt.rift){B.loot.items.push({type:'riftstone',f:B.f});await say('裂縫石','gold',t);}else{B.loot.stone+=400*ECON;await say('大量魔石!','gold',t);}return;}
   const pu=B.units.filter(u=>u.side==='p');
   const luck=pu.reduce((a,u)=>a+(hasT(u.m,'lucky')?.01:0)+(hasT(u.m,'bg_hunter')?.01:0)+(u.pas.includes('greed')?.02:0)+(u.num.luck||0),0);
   const drop=(t.boss?.5:t.elite?.12:t.g<=5?.06:.02)+luck;
@@ -2083,7 +2086,7 @@ async function endBattle(tok){
     if(opt.fmaster){S.floorBoss=S.floorBoss||{};if(!S.floorBoss[opt.fmaster]){S.floorBoss[opt.fmaster]=true;S.fame+=8;}log(`打倒了第 ${opt.fmaster} 層的層主「${FLOORMASTER[opt.fmaster].n}」!`);
       if(opt.fmaster===1){S.dreadKills=(S.dreadKills||0)+1;if(S.dreadKills>=9)log('接連打倒了九次「恐懼之主」,深處傳來了更深沉的氣息……');}
       if(opt.fmaster==='abyss')S.dreadKills=0;
-      if(opt.fmaster===4&&pu.length===1){S.stone+=800;log(`${pu[0].m.name} 獨自打倒了天空之主,守衛認可了這份孤高的實力,額外獲得 800 石幣。`);}}
+      if(opt.fmaster===4&&pu.length===1){S.stone+=800*ECON;log(`${pu[0].m.name} 獨自打倒了天空之主,守衛認可了這份孤高的實力,額外獲得 ${800*ECON} 石幣。`);}}
   }else if(opt.fmaster===1){
     const victim=pick(pu).m;deaths.push(victim.name);killMember(victim);
     pu.filter(u=>u.m!==victim).forEach(u=>{u.m.soul=u.soul;u.m.hp=Math.max(1,Math.round(u.maxhp*.2));addStress(u.m,15);});
