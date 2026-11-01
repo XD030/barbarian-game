@@ -33,7 +33,6 @@ export function stats(m) {
     if (m.spirits.includes('wind')) spd += 8;
     if (m.spirits.includes('earth')) def += 5;
   }
-  if (m.prayBuff) atk *= 1 + (m.prayBuff.atk || 0);
   return {
     maxhp: Math.max(10, Math.round(hp)), atk: Math.max(1, Math.round(atk * 10) / 10), def: Math.max(0, Math.round(def * 10) / 10),
     spd: Math.max(40, Math.round(spd)), soul: Math.round(soul), mres: Math.round(mres), crit, ls, regen,

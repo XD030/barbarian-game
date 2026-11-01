@@ -31,11 +31,11 @@ export default function TempleTab({ state, onJoinChurch, onTempleHeal, onPurify,
         <button className="btn sm" disabled={state.stone < hc || hc <= 0} onClick={onTempleHeal}>治療全員({hc} 石幣)</button>
         <button className="btn sm" disabled title="解咒要等戰鬥引擎做完(詛咒是戰鬥裡的狀態效果,目前遊戲還沒有這個系統)">解咒・戰鬥系統還沒搬過來</button>
       </div>
-      <div className="sub">祈禱(每人每天一次,免費:一半機率壓力 -15,一半機率攻擊 +5% 一天)</div>
+      <div className="sub">祈禱(每人每天一次,免費:一半機率壓力歸零,一半機率沒有效果)</div>
       <div className="list">
         {living(state).map(m => (
           <div className="item" key={m.id}>
-            <span><b>{m.name}</b> <span className="mute">壓力 {Math.round(m.stress)}{m.prayBuff ? ' · 祈禱增益中' : ''}</span></span>
+            <span><b>{m.name}</b> <span className="mute">壓力 {Math.round(m.stress)}</span></span>
             <button className="btn sm" disabled={m.prayedToday} onClick={() => onPray(m.id)}>{m.prayedToday ? '今天已祈禱' : '祈禱'}</button>
           </div>
         ))}

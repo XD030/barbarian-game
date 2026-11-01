@@ -13,17 +13,16 @@ export function joinChurch(state, key, log) {
   log(`在${CHURCHES[key].n}的神殿獻上誓言,正式成為${CHURCHES[key].god}的信徒。`);
 }
 
-/* 祈禱:一天一次,免費。一半機率壓力 -15,一半機率拿到 1 天的小增益(攻擊 +5%)。
-   已經有增益在身上的話就不會疊加,改成壓力 -15。 */
+/* 祈禱:一天一次,免費。一半機率壓力歸零,一半機率沒有效果。
+   隨機增益那個版本先不做(之後有需要再設計)。 */
 export function pray(state, memberId, log) {
   const m = state.members.find(x => x.id === memberId);
   if (!m || m.dead || m.prayedToday) return;
   m.prayedToday = true;
-  if (!m.prayBuff && Math.random() < 0.5) {
-    m.prayBuff = { atk: .05, left: 1 };
-    log(`${m.name}在神殿祈禱,感覺渾身充滿力量(攻擊 +5%,持續 1 天)。`);
+  if (Math.random() < 0.5) {
+    m.stress = 0;
+    log(`${m.name}在神殿祈禱,心情徹底平靜下來(壓力歸零)。`);
   } else {
-    m.stress = Math.max(0, m.stress - 15);
-    log(`${m.name}在神殿祈禱,心情平靜了一些(壓力 -15)。`);
+    log(`${m.name}在神殿祈禱,但沒有感覺到什麼特別的。`);
   }
 }

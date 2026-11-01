@@ -54,10 +54,7 @@ export function healAllCost(state) { return living(state).reduce((a, m) => a + M
 export function processDays(state, n, log) {
   for (let d = 0; d < n; d++) {
     let earn = 0;
-    for (const m of state.members) {
-      m.prayedToday = false;
-      if (m.prayBuff) { m.prayBuff.left--; if (m.prayBuff.left <= 0) m.prayBuff = null; }
-    }
+    for (const m of state.members) m.prayedToday = false;
     for (const m of living(state)) {
       const st = stats(m);
       if (m.dispatch) {
