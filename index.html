@@ -100,8 +100,6 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .tslot.foc{box-shadow:0 0 0 2px var(--torch-hi)}
 .tslot.dead{opacity:.45;border-style:dashed}
 .tslot .chk{position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:var(--torch);color:#1c1309;font-size:10px;line-height:16px;text-align:center;font-weight:700}
-.teamstats{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12.5px;color:var(--mute);margin-bottom:4px}
-.teamstats b{font-family:var(--f-num);font-weight:400;color:var(--ink);margin-left:4px}
 .meter{height:6px;background:var(--void);border-radius:3px;overflow:hidden}
 .meter i{display:block;height:100%;transition:width .25s}
 .hp i{background:var(--blood)} .st i{background:var(--mind)} .xp i{background:var(--gold)} .sl i{background:var(--soul)} .tm i{background:var(--torch)} .tg i{background:#e8e0cc}
@@ -1035,8 +1033,6 @@ let teamFocus=null;
 function teamScreenHTML(){
   const fid=teamFocus&&getM(teamFocus)?teamFocus:(S.sel[0]||(S.members[0]&&S.members[0].id));
   const fm=fid&&getM(fid);
-  const party=S.sel.map(getM).filter(m=>m&&!m.dead);
-  const sum=(f)=>party.reduce((a,m)=>a+f(stats(m)),0);
   return `<div class="teamhead"><h2>隊伍 ${S.sel.length}/4</h2><button class="btn sm primary" data-act="backToMap">確定</button></div>
   <div class="teamslots">${S.members.map(m=>{
     const inParty=S.sel.includes(m.id),foc=m.id===fid;
@@ -1046,7 +1042,6 @@ function teamScreenHTML(){
       ${inParty?'<span class="chk">✓</span>':''}
     </button>`;
   }).join('')}</div>
-  <div class="teamstats"><span>出征人數<b>${party.length}/4</b></span><span>總生命<b>${sum(s=>s.maxhp)}</b></span><span>總攻擊<b>${sum(s=>s.atk)}</b></span><span>總魂力<b>${sum(s=>s.soul)}</b></span></div>
   ${fm?memberCard(fm):'<p class="mute">還沒有任何人</p>'}`;
 }
 function cityMapHTML(){
