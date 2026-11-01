@@ -311,6 +311,8 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--torch);color:var(--ink);padding:8px 14px;border-radius:5px;z-index:40;font-size:13.5px;max-width:calc(100% - 32px);pointer-events:none}
 /* ---------- Mobile (phone) layout: Tower-of-Saviors-style fixed bottom nav/sheet + fullscreen battle ---------- */
 @media (max-width:720px){
+  /* iOS Safari 碰到 <16px 的表單控制項會自動放大畫面,下拉選單一律拉到 16px 避免點一下畫面就跳縮放 */
+  select{font-size:16px}
   .top{padding-block:6px}
   .top-in{flex-wrap:nowrap;gap:6px;overflow-x:auto}
   .brand{display:none}
