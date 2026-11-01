@@ -1052,7 +1052,6 @@ function baseHTML(){
   if(mobile){
     const bldg=`<div class="row bback"><button class="btn sm" data-act="backToMap">← 返回地圖</button></div>
         <div class="tabpanel">
-          <div class="tabs" role="tablist">${TABS.map(([k,n,ic])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-arg="${k}"><span class="ic">${ic}</span><span class="tl">${n}</span></button>`).join('')}</div>
           <div class="tabbody">${tabHTML()}</div>
         </div>`;
     const body=mobileView==='team'?teamScreenHTML():mobileView==='bag'?bagScreenHTML():mobileView==='bldg'?bldg:cityMapHTML();
