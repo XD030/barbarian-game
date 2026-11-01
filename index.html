@@ -813,6 +813,9 @@ const getM=id=>S.members.find(m=>m.id===+id);
 const hero=()=>S.members.find(m=>m.hero);
 const hasT=(m,t)=>m.traits.includes(t);
 const capacity=()=>3+S.dorm*2;
+const DISPATCH_MISSIONS={short:{n:'短程派遣',days:1,rate:15},mid:{n:'中程派遣',days:3,rate:18},long:{n:'長程派遣',days:7,rate:22}};
+const dispatchSlots=()=>S.dorm+1;
+const activeDispatches=()=>living().filter(m=>m.dispatch).length;
 const living=()=>S.members.filter(m=>!m.dead);
 const monName=k=>MON[k].n;
 function save(){if(B||!S||['intro','create'].includes(S.screen))return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
@@ -1048,7 +1051,7 @@ ACT.draftName=(a,el)=>{S.draft.name=el.value.replace(/[<>&"'`]/g,'').slice(0,8);
 ACT.draft=arg=>{const[f,v]=arg.split(':');S.draft[f]=f==='look'?+v:v;render();};
 ACT.confirmHero=()=>{
   const d=S.draft;const h=makeMember({name:d.name.trim()||genName(d.race),race:d.race,weapon:d.weapon,traits:[d.bg],look:d.look});
-  h.hero=true;h.job='work';S.members.push(h);
+  h.hero=true;S.members.push(h);
   if(d.bg==='bg_noble'){S.stone+=300;S.fame+=10;}
   if(d.bg==='bg_scholar')['goblin','ghoul','gnome','bladewolf'].forEach(learn);
   S.draft=null;S.sel=[h.id];
@@ -1172,7 +1175,7 @@ ACT.enterBld=k=>{S.tab=k;mobileView='bldg';save();render();};
 ACT.backToMap=()=>{mobileView='map';render();};
 ACT.mnav=k=>{mobileView=k;render();};
 ACT.teamSlot=id=>{id=+id;const m=getM(id);if(!m)return;teamFocus=id;
-  if(!m.dead){if(S.sel.includes(id))S.sel=S.sel.filter(x=>x!==id);else{if(S.sel.length>=5){toast('隊伍最多 5 人');}else S.sel.push(id);}}
+  if(!m.dead){if(S.sel.includes(id))S.sel=S.sel.filter(x=>x!==id);else if(m.dispatch){toast('派遣中,無法出戰');}else{if(S.sel.length>=5){toast('隊伍最多 5 人');}else S.sel.push(id);}}
   save();render();};
 ACT.teamSub=k=>{teamSubTab=k;render();};
 ACT.bagSub=k=>{bagSubTab=k;render();};
@@ -1212,6 +1215,13 @@ function fairyHTML(m){
     <div class="row" style="margin-top:6px">${Object.entries(SPIRIT).filter(([k])=>!held.includes(k)).map(([k,p])=>`<button class="btn sm" data-act="spiritStone" data-arg="${m.id}:${k}" title="${p.d};使用精靈石嘗試契約,花費 ${SPIRIT_STONE_COST} 石幣,成功率 ${SPIRIT_STONE_RATE*100}%" ${S.stone>=SPIRIT_STONE_COST?'':'disabled'}>精靈石:${p.n}</button>`).join('')}</div>
     ${held.length?`<div class="mute" style="font-size:12px;margin-top:4px">${held.map(k=>`${SPIRIT[k].n}:${SPIRIT[k].d}`).join('<br>')}</div>`:''}</div>`;
 }
+function dispatchHTML(m){
+  if(m.hero)return'';
+  if(m.dispatch){const ms=DISPATCH_MISSIONS[m.dispatch.key];return `<div class="notice">派遣中:${ms.n}(剩 ${m.dispatch.left} 天)</div>`;}
+  const full=activeDispatches()>=dispatchSlots();
+  return `<div class="notice">派遣:外出賺石幣,派遣中無法出戰(名額 ${activeDispatches()}/${dispatchSlots()})
+    <div class="row" style="margin-top:6px">${Object.entries(DISPATCH_MISSIONS).map(([k,ms])=>`<button class="btn sm" data-act="dispatch" data-arg="${m.id}:${k}" ${full?'disabled':''} title="${ms.days} 天後回來,帶回石幣">${ms.n}(${ms.days}天)</button>`).join('')}</div></div>`;
+}
 function memberCard(m,mini){
   const st=stats(m),sel=S.sel.includes(m.id);
   const next=m.lv<MAXLV?LV_XP[m.lv+1]:LV_XP[MAXLV],prev=LV_XP[m.lv];
@@ -1221,17 +1231,17 @@ function memberCard(m,mini){
     ${mini?'':`<label class="go"><input type="checkbox" id="go-${m.id}" data-change="toggleSel" data-arg="${m.id}" ${sel?'checked':''}>出征</label>`}</div>
     <div>${mrow('生命',m.hp,st.maxhp,'hp')}${mrow('壓力',m.stress,100,m.stress>=70?'st hi':'st')}${mrow('經驗',m.xp-prev,Math.max(1,next-prev),'xp')}</div>
     <div class="statline"><span>攻擊<b>${st.atk}</b></span><span>防禦<b>${st.def}</b></span><span>速度<b>${st.spd}</b></span><span>魂力<b>${st.soul}</b></span><span>魔抗<b>${st.mres}</b></span><span>${DT[WEAPON[m.weapon].dt]}擊</span></div>
+    ${dispatchHTML(m)}
     ${m.race==='beast'?beastPactHTML(m):''}
     ${m.race==='barb'?tattooHTML(m):''}
     ${m.race==='fairy'?fairyHTML(m):''}
     ${mini?'':`<div class="chips">${traitChips(m)}${essChips(m)}</div>
-    <div class="mact"><label for="job-${m.id}">工作</label><select id="job-${m.id}" data-change="setJob" data-arg="${m.id}"><option value="rest" ${m.job==='rest'?'selected':''}>休息</option><option value="work" ${m.job==='work'?'selected':''}>打工</option></select>
-      ${m.num?`<button class="btn sm" data-act="unequip" data-arg="${m.id}">卸下編號物品</button>`:''}</div>`}
+    <div class="mact">${m.num?`<button class="btn sm" data-act="unequip" data-arg="${m.id}">卸下編號物品</button>`:''}</div>`}
   </article>`;
 }
 function homeTab(){
   const c=150*S.dorm,max=S.dorm>=4;
-  return `<div class="kv"><span>住處</span><b>拉維吉恩區的舊倉庫</b><span>可住</span><b>${capacity()} 人(目前 ${living().length})</b><span>每日開銷</span><b>${living().reduce((a,m)=>a+livingCost(m),0)} 石幣</b><span>每月稅金</span><b>${living().reduce((a,m)=>a+taxOf(m),0)} 石幣(1 日繳)</b>${S.carnon?'<span>第 1 區特權</span><b style="color:var(--torch-hi)">已取得(生活開銷 -15%)</b>':''}</div>
+  return `<div class="kv"><span>住處</span><b>拉維吉恩區的舊倉庫</b><span>可住</span><b>${capacity()} 人(目前 ${living().length})</b><span>派遣名額</span><b>${activeDispatches()}/${dispatchSlots()}</b><span>每日開銷</span><b>${living().reduce((a,m)=>a+livingCost(m),0)} 石幣</b><span>每月稅金</span><b>${living().reduce((a,m)=>a+taxOf(m),0)} 石幣(1 日繳)</b>${S.carnon?'<span>第 1 區特權</span><b style="color:var(--torch-hi)">已取得(生活開銷 -15%)</b>':''}</div>
     <div class="row"><button class="btn sm" data-act="dorm" ${!max&&S.stone>=c?'':'disabled'}>${max?'住處已擴建到最大':`擴建住處(${c} 石幣)`}</button><span class="mute" style="font-size:12px">多住 2 人,休息時壓力多降 6</span></div>
     ${!S.carnon?`<p class="mute" style="font-size:12px">名聲達到 150 能讓第 1 區卡隆的守衛放行,受認可的探險者生活開銷會降低(目前名聲 ${S.fame})。</p>`:''}
     <div class="sub">日誌</div><div class="log">${S.log.map(l=>`<div><span class="d">${l.d}</span>${l.m}</div>`).join('')}</div>`;
@@ -1395,8 +1405,9 @@ ACT.help=()=>modal('玩法',`<ul>
   <li>數字鍵可以快速選戰鬥指令。進度自動存在這個瀏覽器裡。</li></ul>`,[{label:'重新開始',act:'resetAsk',cls:'danger'},{label:'知道了',act:'closeModal',cls:'primary'}]);
 ACT.resetAsk=()=>modal('確定要重新開始?','<p class="mute">目前的進度和所有同伴都會消失,無法復原。</p>',[{label:'取消',act:'closeModal'},{label:'刪除存檔並重來',act:'resetDo',cls:'danger'}]);
 ACT.resetDo=()=>{try{localStorage.removeItem(SAVE_KEY);}catch(e){}SAVED=null;ACT.closeModal();if(B)B.token=null;B=null;S=newState();render();};
-ACT.toggleSel=(id,el)=>{id=+id;if(el.checked){if(S.sel.length>=5){el.checked=false;toast('隊伍最多 5 人');return;}S.sel.push(id);}else S.sel=S.sel.filter(x=>x!==id);save();render();};
-ACT.setJob=(id,el)=>{const m=getM(id);if(m){m.job=el.value;save();}};
+ACT.toggleSel=(id,el)=>{id=+id;const m=getM(id);if(el.checked){if(m&&m.dispatch){el.checked=false;toast('派遣中,無法出戰');return;}if(S.sel.length>=5){el.checked=false;toast('隊伍最多 5 人');return;}S.sel.push(id);}else S.sel=S.sel.filter(x=>x!==id);save();render();};
+ACT.dispatch=arg=>{const[id,key]=arg.split(':');const m=getM(id);if(!m||m.hero||m.dispatch||!DISPATCH_MISSIONS[key])return;if(activeDispatches()>=dispatchSlots())return;
+  m.dispatch={key,left:DISPATCH_MISSIONS[key].days};S.sel=S.sel.filter(x=>x!==m.id);toast(`${m.name}出發去${DISPATCH_MISSIONS[key].n}了`);save();render();};
 ACT.setFloor=(a,el)=>{S.startFloor=+el.value;save();};
 ACT.passDay=()=>{processDays(1);save();render();checkGameOver();};
 ACT.skipToOpen=()=>{const n=DAYS_IN_MONTH-S.day+1;processDays(n);toast(`過了 ${n} 天,今天迷宮開啟`);save();render();checkGameOver();};
@@ -1405,8 +1416,9 @@ function processDays(n,away=new Set()){
     let earn=0;
     for(const m of living()){
       if(away.has(m.id))continue;const st=stats(m);
-      if(m.job==='work'){const k=hasT(m,'diligent')?1.5:hasT(m,'lazy')?.5:1;earn+=Math.round(8*k);m.hp=Math.min(st.maxhp,m.hp+st.maxhp*.15);m.stress=Math.max(0,m.stress-3);}
-      else{m.hp=Math.min(st.maxhp,m.hp+st.maxhp*.35);m.stress=Math.max(0,m.stress-(15+S.dorm*6)*(hasT(m,'insomniac')?.5:1));}
+      if(m.dispatch){m.dispatch.left--;if(m.dispatch.left<=0){const ms=DISPATCH_MISSIONS[m.dispatch.key],k=hasT(m,'diligent')?1.5:hasT(m,'lazy')?.5:1;
+        const reward=Math.round(ms.rate*ms.days*(1+(m.lv-1)*.1)*k);earn+=reward;log(`${m.name}結束了${ms.n},帶回 ${reward} 石幣。`);m.dispatch=null;}continue;}
+      m.hp=Math.min(st.maxhp,m.hp+st.maxhp*.35);m.stress=Math.max(0,m.stress-(15+S.dorm*6)*(hasT(m,'insomniac')?.5:1));
       m.soul=st.soul;
     }
     S.stone+=earn;
