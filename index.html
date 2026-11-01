@@ -328,9 +328,9 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
   .res .hideM{display:none}
   .helpBtn{display:none}
   /* city: 次元廣場 + 建物地圖/內容在上,底部固定主選單列 */
-  .camp{display:flex;flex-direction:column;gap:14px;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+  .camp{display:flex;flex-direction:column;align-items:stretch;gap:14px;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}
   /* 迷宮房間:地圖/隊伍在上方可滑動,事件與選項變成貼底的卡片(像神魔之塔的關卡資訊面板) */
-  .dun{display:flex;flex-direction:column;gap:12px;padding-bottom:calc(42vh + 10px)}
+  .dun{display:flex;flex-direction:column;align-items:stretch;gap:12px;padding-bottom:calc(42vh + 10px)}
   .dmain{display:contents}
   .dun .panel.event{position:fixed;left:0;right:0;bottom:0;z-index:15;max-height:42vh;overflow-y:auto;border-radius:14px 14px 0 0;box-shadow:0 -8px 22px rgba(0,0,0,.5);padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
   .map{--cell:clamp(40px,15vw,58px);--gap:clamp(6px,2.4vw,14px)}
