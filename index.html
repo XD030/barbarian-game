@@ -2043,10 +2043,15 @@ async function fall(t,src){
   if(!B.opt.exam){B.loot.stone+=Math.round(G.stone*greedy);B.kills.add(t.key);S.kc[t.key]=(S.kc[t.key]||0)+1;}
   renderStage();
   if(B.opt.exam||MON[t.key].noEss)return;
-  if(t.boss&&(B.opt.rift||B.opt.fmaster)){const r=Math.random();if(r<.34){const it=makeEss(t.key,true);B.loot.ess.push(it);await say('守護者精髓!','gold',t);}else if(r<.67){B.loot.items.push(randomNum());await say('編號物品!','gold',t);}else if(B.opt.rift){B.loot.items.push({type:'riftstone',f:B.f});await say('裂縫石','gold',t);}else{B.loot.stone+=400*ECON;await say('大量魔石!','gold',t);}return;}
+  if(t.boss&&(B.opt.rift||B.opt.fmaster)){
+    if(Math.random()<.33){const it=makeEss(t.key,true);B.loot.ess.push(it);await say('守護者精髓!','gold',t);}
+    if(Math.random()<.33){B.loot.items.push(randomNum());await say('編號物品!','gold',t);}
+    if(B.opt.rift){if(Math.random()<.33){B.loot.items.push({type:'riftstone',f:B.f});await say('裂縫石','gold',t);}}
+    else if(Math.random()<.33){B.loot.stone+=400*ECON;await say('大量魔石!','gold',t);}
+    return;}
   const pu=B.units.filter(u=>u.side==='p');
   const luck=pu.reduce((a,u)=>a+(hasT(u.m,'lucky')?.01:0)+(hasT(u.m,'bg_hunter')?.01:0)+(u.pas.includes('greed')?.02:0)+(u.num.luck||0),0);
-  const drop=(t.boss?.5:t.elite?.12:t.g<=5?.06:.02)+luck;
+  const drop=(t.boss?.5:.01)+luck;
   if(ESS[t.key]&&Math.random()<drop){const it=makeEss(t.key);B.loot.ess.push(it);await say('精髓!','gold',t);}
   if(src&&src.side==='p'&&hasT(src.m,'bloodlust')&&aliveU(src))healU(src,src.maxhp*.1);
 }
