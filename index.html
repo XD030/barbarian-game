@@ -100,6 +100,11 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .tslot.foc{box-shadow:0 0 0 2px var(--torch-hi)}
 .tslot.dead{opacity:.45;border-style:dashed}
 .tslot .chk{position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:var(--torch);color:#1c1309;font-size:10px;line-height:16px;text-align:center;font-weight:700}
+.tsgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:5px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:4px}
+.tstat{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute);min-width:0}
+.tstat .tsIco{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-title);font-size:10px;color:#1c1309;font-weight:700}
+.tstat .tl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tstat b{font-family:var(--f-num);font-weight:400;color:var(--ink);flex:none}
 .meter{height:6px;background:var(--void);border-radius:3px;overflow:hidden}
 .meter i{display:block;height:100%;transition:width .25s}
 .hp i{background:var(--blood)} .st i{background:var(--mind)} .xp i{background:var(--gold)} .sl i{background:var(--soul)} .tm i{background:var(--torch)} .tg i{background:#e8e0cc}
@@ -224,7 +229,7 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .wk span.sp{background:#1c2232;color:#a8c0f0;border-color:#2a3a5a}
 .sts{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;min-height:14px}
 .sts span{font-size:10px;color:#e8c0f0;background:#2a1830;border-radius:3px;padding:0 3px}
-.team{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:10px;background:var(--panel2);border-top:3px double var(--line)}
+.team{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:10px;background:var(--panel2);border-top:3px double var(--line)}
 .pt{display:flex;flex-direction:column;gap:3px;align-items:stretch;min-width:0;padding:4px;border-radius:6px;border:1px solid transparent}
 .pt .face{aspect-ratio:1;border-radius:6px;border:2px solid #4a6a8a;background:linear-gradient(#2a3442,#141a22);display:grid;place-items:center;overflow:hidden}
 .pt .face img{image-rendering:pixelated;width:88%;height:auto}
@@ -309,7 +314,7 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
   .bt-top{padding-top:calc(8px + env(safe-area-inset-top,0px))}
   .stage{flex:1;min-height:0;overflow-y:auto}
   .foeU{flex:0 1 96px}
-  .team{padding:8px 6px;grid-template-columns:repeat(4,minmax(0,1fr))}
+  .team{padding:8px 6px;grid-template-columns:repeat(5,minmax(0,1fr))}
   .cmd{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
   .cmdb{padding:9px 10px}
   body:has(.bt){overflow:hidden}
@@ -339,6 +344,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    DATA — 依原作《게임 속 바바리안으로 살아남기》世界觀整理,數值為遊戲用
    ===================================================================== */
 const DT={slash:'斬',pierce:'刺',blunt:'鈍',magic:'魔',fire:'火',ice:'冰',thunder:'雷',holy:'聖',dark:'暗'};
+const DTCOLOR={slash:'#8a9aae',pierce:'#8a9aae',blunt:'#8a9aae',magic:'#7e9fd6',fire:'#e07a4a',ice:'#6ec3e0',thunder:'#e0c850',holy:'#f0e0a8',dark:'#b080d6'};
 const PHYS=['slash','pierce','blunt'];
 const WEAPON={
   shield:{n:'盾與單手錘',dt:'blunt',hp:125,atk:9,def:10,spd:92,line:3,pass:'格擋:25% 機率減免 60% 傷害',block:.25,price:150},
@@ -1005,7 +1011,7 @@ function baseHTML(){
         <h2>次元廣場</h2>
         ${open?`<p class="notice">今天迷宮開啟。錯過要等下個月。</p>`:`<p class="mute">迷宮每月 1 日開啟,還有 <span class="num">${until}</span> 天。</p>`}
         ${S.debt?`<p class="notice bad">你還欠 ${S.debt} 石幣的稅。欠稅的人進不了次元廣場。</p>`:''}
-        <p>${party.length?party.map(m=>m.name).join('、'):'<span class="mute">還沒選人</span>'} <span class="mute">(${party.length}/4)</span></p>
+        <p>${party.length?party.map(m=>m.name).join('、'):'<span class="mute">還沒選人</span>'} <span class="mute">(${party.length}/5)</span></p>
         <div class="row"><label class="mute" for="startFloor">傳送到</label><select id="startFloor" data-change="setFloor">${floors.map(f=>`<option value="${f}" ${f===S.startFloor?'selected':''}>第 ${f} 層 ${FLOORS[f].n}</option>`).join('')}</select></div>
         <div class="row"><button class="btn primary" data-act="enterLab" ${open&&party.length&&!S.debt?'':'disabled'}>進入迷宮</button><button class="btn" data-act="passDay">度過一天</button>${open?'':`<button class="btn" data-act="skipToOpen">快轉到開啟日</button>`}</div>
       </section>`;
@@ -1018,7 +1024,7 @@ function baseHTML(){
   }
   return `<div class="camp">
     <section class="panel">
-      <div class="panel-h"><h2>探險者</h2><span class="mute">勾選「出征」組隊,最多 4 人</span></div>
+      <div class="panel-h"><h2>探險者</h2><span class="mute">勾選「出征」組隊,最多 5 人</span></div>
       <div class="roster">${S.members.map(memberCard).join('')}</div>
     </section>
     <div class="side">${portal}
@@ -1033,7 +1039,18 @@ let teamFocus=null;
 function teamScreenHTML(){
   const fid=teamFocus&&getM(teamFocus)?teamFocus:(S.sel[0]||(S.members[0]&&S.members[0].id));
   const fm=fid&&getM(fid);
-  return `<div class="teamhead"><h2>隊伍 ${S.sel.length}/4</h2><button class="btn sm primary" data-act="backToMap">確定</button></div>
+  const party=S.sel.map(getM).filter(m=>m&&!m.dead);
+  const sum=f=>party.reduce((a,m)=>a+f(stats(m)),0);
+  const byType={};party.forEach(m=>{const t=WEAPON[m.weapon].dt;byType[t]=(byType[t]||0)+stats(m).atk;});
+  const tile=(c,ic,l,v)=>`<div class="tstat"><span class="tsIco" style="background:${c}">${ic}</span><span class="tl">${l}</span><b>${v}</b></div>`;
+  const tsgrid=`<div class="tsgrid">
+    ${tile('var(--soul)','人','隊伍人數',`${party.length}/5`)}
+    ${tile('var(--blood)','命','總生命',sum(s=>s.maxhp))}
+    ${tile('var(--good)','魂','總魂力',sum(s=>s.soul))}
+    ${tile('var(--gold)','攻','總攻擊',sum(s=>s.atk))}
+    ${Object.entries(byType).map(([t,v])=>tile(DTCOLOR[t],DT[t],`${DT[t]}擊`,v)).join('')}
+  </div>`;
+  return `<div class="teamhead"><h2>隊伍 ${S.sel.length}/5</h2><button class="btn sm primary" data-act="backToMap">確定</button></div>
   <div class="teamslots">${S.members.map(m=>{
     const inParty=S.sel.includes(m.id),foc=m.id===fid;
     return `<button class="tslot ${inParty?'in':''} ${foc?'foc':''} ${m.dead?'dead':''}" data-act="teamSlot" data-arg="${m.id}" aria-label="${m.name}">
@@ -1042,6 +1059,7 @@ function teamScreenHTML(){
       ${inParty?'<span class="chk">✓</span>':''}
     </button>`;
   }).join('')}</div>
+  ${tsgrid}
   ${fm?memberCard(fm):'<p class="mute">還沒有任何人</p>'}`;
 }
 function cityMapHTML(){
@@ -1063,7 +1081,7 @@ ACT.enterBld=k=>{S.tab=k;mobileView='bldg';save();render();};
 ACT.backToMap=()=>{mobileView='map';render();};
 ACT.mnav=k=>{mobileView=k;render();};
 ACT.teamSlot=id=>{id=+id;const m=getM(id);if(!m)return;teamFocus=id;
-  if(!m.dead){if(S.sel.includes(id))S.sel=S.sel.filter(x=>x!==id);else{if(S.sel.length>=4){toast('隊伍最多 4 人');}else S.sel.push(id);}}
+  if(!m.dead){if(S.sel.includes(id))S.sel=S.sel.filter(x=>x!==id);else{if(S.sel.length>=5){toast('隊伍最多 5 人');}else S.sel.push(id);}}
   save();render();};
 function tabHTML(){return({home:homeTab,tavern:tavernTab,guild:guildTab,library:libraryTab,exchange:exchangeTab,temple:templeTab,smith:smithTab,store:storeTab}[S.tab]||homeTab)();}
 function memberCard(m){
@@ -1242,7 +1260,7 @@ ACT.help=()=>modal('玩法',`<ul>
   <li>數字鍵可以快速選戰鬥指令。進度自動存在這個瀏覽器裡。</li></ul>`,[{label:'重新開始',act:'resetAsk',cls:'danger'},{label:'知道了',act:'closeModal',cls:'primary'}]);
 ACT.resetAsk=()=>modal('確定要重新開始?','<p class="mute">目前的進度和所有同伴都會消失,無法復原。</p>',[{label:'取消',act:'closeModal'},{label:'刪除存檔並重來',act:'resetDo',cls:'danger'}]);
 ACT.resetDo=()=>{try{localStorage.removeItem(SAVE_KEY);}catch(e){}SAVED=null;ACT.closeModal();if(B)B.token=null;B=null;S=newState();render();};
-ACT.toggleSel=(id,el)=>{id=+id;if(el.checked){if(S.sel.length>=4){el.checked=false;toast('隊伍最多 4 人');return;}S.sel.push(id);}else S.sel=S.sel.filter(x=>x!==id);save();render();};
+ACT.toggleSel=(id,el)=>{id=+id;if(el.checked){if(S.sel.length>=5){el.checked=false;toast('隊伍最多 5 人');return;}S.sel.push(id);}else S.sel=S.sel.filter(x=>x!==id);save();render();};
 ACT.setJob=(id,el)=>{const m=getM(id);if(m){m.job=el.value;save();}};
 ACT.setFloor=(a,el)=>{S.startFloor=+el.value;save();};
 ACT.passDay=()=>{processDays(1);save();render();checkGameOver();};
