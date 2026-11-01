@@ -31,10 +31,9 @@ export default function GuildTab({ state, onClaimReq }) {
 
   return (
     <>
-      <h3 style={{ margin: 0 }}>每日委託</h3>
       <p className="mute" style={{ fontSize: 12.5, marginBottom: 16 }}>
-        每 4 小時可獲取一個新任務。最多可同時持有 {REQ_CAP} 個任務
-        {nextIn != null && <> · 下一個任務:{fmtCountdown(nextIn)}後</>}
+        每 4 小時可獲取一個新委託。最多可同時持有 {REQ_CAP} 個委託
+        {nextIn != null && <> · 下一個委託:{fmtCountdown(nextIn)}後</>}
       </p>
 
       <div className="pillbar" style={{ marginBottom: 14 }}>
