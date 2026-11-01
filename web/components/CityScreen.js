@@ -121,12 +121,8 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     s.stone -= c; s.members.filter(m => !m.dead).forEach(m => { m.hp = stats(m).maxhp; });
     log(s, '全員的傷都治好了。');
   });
-  const onPurify = (id) => mutate(s => {
-    const m = getM(s, id); const c = 40 * ECON; if (!m || s.stone < c) return;
-    s.stone -= c; m.stress = 0;
-  });
   const onJoinChurch = (k) => mutate(s => joinChurch(s, k, (msg) => log(s, msg)));
-  const onPray = (id) => mutate(s => pray(s, id, (msg) => log(s, msg)));
+  const onPray = () => mutate(s => pray(s, (msg) => log(s, msg)));
 
   const onPassDay = () => mutate(s => processDays(s, 1, (msg) => log(s, msg)));
   const onClaimReq = (id) => mutate(s => claimReq(s, id, (msg) => log(s, msg)));
@@ -152,7 +148,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     guild: <GuildTab state={state} onClaimReq={onClaimReq} />,
     library: <LibraryTab state={state} onResearch={onResearch} />,
     exchange: <PlaceholderTab title="中央交易所" desc="賣精髓、裂縫石和編號物品的地方。" />,
-    temple: <TempleTab state={state} onJoinChurch={onJoinChurch} onTempleHeal={onTempleHeal} onPurify={onPurify} onPray={onPray} />,
+    temple: <TempleTab state={state} onJoinChurch={onJoinChurch} onTempleHeal={onTempleHeal} onPray={onPray} />,
     smith: <SmithTab state={state} onGear={onGear} onSwapWeapon={onSwapWeapon} onHireNav={onHireNav} onBuyShip={onBuyShip} />,
     store: <StoreTab state={state} onBuyPotion={onBuyPotion} onBuyTorch={onBuyTorch} />,
   }[tab];

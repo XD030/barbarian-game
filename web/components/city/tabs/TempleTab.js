@@ -1,5 +1,4 @@
-import { healAllCost, living } from '../../../lib/city';
-import { ECON } from '../../../lib/data';
+import { healAllCost } from '../../../lib/city';
 import { CHURCHES } from '../../../lib/temple';
 
 function ChurchPicker({ onJoinChurch }) {
@@ -19,40 +18,20 @@ function ChurchPicker({ onJoinChurch }) {
   );
 }
 
-export default function TempleTab({ state, onJoinChurch, onTempleHeal, onPurify, onPray }) {
+export default function TempleTab({ state, onJoinChurch, onTempleHeal, onPray }) {
   if (!state.church) return <ChurchPicker onJoinChurch={onJoinChurch} />;
-  const church = CHURCHES[state.church];
   const hc = healAllCost(state);
-  const purifyCost = 40 * ECON;
   return (
     <>
-      <p className="mute" style={{ fontSize: 12.5 }}>你是{church.n}的信徒,信奉{church.god}。</p>
       <div className="row">
         <button className="btn sm" disabled={state.stone < hc || hc <= 0} onClick={onTempleHeal}>治療全員({hc} 石幣)</button>
-        <button className="btn sm" disabled title="解咒要等戰鬥引擎做完(詛咒是戰鬥裡的狀態效果,目前遊戲還沒有這個系統)">解咒・戰鬥系統還沒搬過來</button>
+        <button className="btn sm" disabled>解咒・戰鬥系統還沒搬過來</button>
       </div>
-      <div className="sub">祈禱(每人每天一次,免費:一半機率壓力歸零,一半機率沒有效果)</div>
-      <div className="list">
-        {living(state).map(m => (
-          <div className="item" key={m.id}>
-            <span><b>{m.name}</b> <span className="mute">壓力 {Math.round(m.stress)}</span></span>
-            <button className="btn sm" disabled={m.prayedToday} onClick={() => onPray(m.id)}>{m.prayedToday ? '今天已祈禱' : '祈禱'}</button>
-          </div>
-        ))}
-      </div>
-      <div className="sub">安定心神(每人 {purifyCost} 石幣,壓力歸零)</div>
-      <div className="list">
-        {living(state).map(m => (
-          <div className="item" key={m.id}>
-            <span><b>{m.name}</b> <span className="mute">壓力 {Math.round(m.stress)}</span></span>
-            <button className="btn sm" disabled={state.stone < purifyCost || m.stress <= 0} onClick={() => onPurify(m.id)}>安定心神</button>
-          </div>
-        ))}
+      <div className="sub">祈禱(全隊一天一次,免費,壓力減半)</div>
+      <div className="row">
+        <button className="btn sm" disabled={state.prayedToday} onClick={onPray}>{state.prayedToday ? '今天已祈禱' : '祈禱'}</button>
       </div>
       <div className="sub">移除精髓</div>
-      <p className="mute" style={{ fontSize: 12 }}>精髓系統還沒搬過來(迷宮/戰鬥階段會補),這裡先空著。每移除一次費用會往上漲。</p>
-      <div className="sub">復活</div>
-      <p className="mute" style={{ fontSize: 12 }}>復活不再是神殿服務,要用「蘇生之石」——迷宮戰鬥掉落的道具,戰鬥引擎做完才會有。</p>
     </>
   );
 }
