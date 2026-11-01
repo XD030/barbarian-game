@@ -392,13 +392,26 @@ const WEAPON={
 };
 const RACE={
   human:{n:'人類',d:'稅金減半,魂力 +10',tax:.5,soul:10},
-  barb:{n:'蠻族',d:'巨大強壯:生命 +25%、攻擊 +2,但生活開銷較大。真正的強項其實是精神力:累積壓力的速度 -15%,幾乎不受恐懼效果影響',hp:1.25,atk:2,live:1.5},
+  barb:{n:'蠻族',d:'巨大強壯:生命 +25%、攻擊 +2,但生活開銷較大。真正的強項其實是精神力:累積壓力的速度 -15%,幾乎不受恐懼效果影響。嬰兒時期薩滿刻下的靈魂刻印能進一步強化自己',hp:1.25,atk:2,live:1.5},
   dwarf:{n:'矮人',d:'防禦 +3,鍛造費用 -25%,速度 -5,裝備編號物品的效果 ×1.5',def:3,spd:-5,forge:.75},
   elf:{n:'精靈',d:'速度 +4、魂力 +10、魔抗 +5,能察覺陷阱',spd:4,soul:10,mres:5,trap:1},
   beast:{n:'獸人',d:'速度 +8,嗅覺敏銳能察覺陷阱',spd:8,trap:1},
-  fairy:{n:'妖精',d:'魂力 +25、魔抗 +8、速度 +6,生命 -20%',hp:.8,soul:25,mres:8,spd:6},
+  fairy:{n:'妖精',d:'魂力 +25、魔抗 +8、速度 +6,生命 -20%。能跟四大元素精靈(火/水/風/土)締結契約,天賦高的能同時締約全部四個;傳說中每個時代只有一人能締結「精靈王契約」',hp:.8,soul:25,mres:8,spd:6},
   dragon:{n:'龍人族',d:'因祖先的功績免繳稅金,防禦 +2',tax:0,def:2}
 };
+const TATTOO_PATH={
+  flame:{n:'熰燰之魂',d:'灼熱的靈魂。攻擊 +10%、爆擊率 +8%,普通攻擊有 20% 機率使目標燃燒'},
+  steel:{n:'鋼鐵之魂',d:'如鋼鐵般堅硬的軀體。防禦 +12、生命 +15%'},
+  wild:{n:'野性之魂',d:'原始的野性,仇恨值大增但也更容易被盯上。生命 +50、防禦 +8,解鎖主動技能「野性噴發」'}
+};
+const TATTOO_COST=[550000,1000000,2000000,4000000,8000000];
+const SPIRIT={
+  fire:{n:'火精靈',d:'攻擊 +5%,普通攻擊有 15% 機率使目標燃燒'},
+  water:{n:'水精靈',d:'每回合回復 3% 生命'},
+  wind:{n:'風精靈',d:'速度 +8'},
+  earth:{n:'土精靈',d:'防禦 +5'}
+};
+const SPIRIT_STONE_COST=150000,SPIRIT_STONE_RATE=.1;
 const BEASTPACT={
   summon:{n:'召喚·靈魂獸追擊',d:'普通攻擊有 25% 機率讓靈魂獸追加一擊(40% 攻擊力)'},
   enhance:{n:'強化·猛獸之力',d:'攻擊 +15%、速度 +10%'},
@@ -425,6 +438,7 @@ const COLORS=[['赤','#e05a4a'],['青','#4a9ae0'],['翠','#5ac06a'],['金','#e0b
 
 /* ---------- 技能(主動) ---------- */
 const SK={
+  wildburst:{n:'野性噴發',cost:20,kind:'self',buff:{atk:.3,def:.2,t:2},label:'野性噴發',d:'仇恨值大增,攻擊 +30%、防禦 +20%,持續 2 回合(野性之魂刺青專屬)'},
   trap:{n:'設置陷阱',cost:12,kind:'self',buff:{counter:1.5,t:2},label:'陷阱',d:'下一個攻擊自己的敵人受到 150% 反擊並被麻痺'},
   poisonblade:{n:'淬毒',cost:10,kind:'single',mult:1.2,brk:10,status:'poison',d:'造成 120% 傷害並使目標中毒'},
   pounce:{n:'撲擊',cost:10,kind:'single',mult:1.5,brk:15,delay:.3,d:'造成 150% 傷害並延後目標行動'},
@@ -818,7 +832,7 @@ function essDesc(it){const e=essInfo(it),p=[],lb={hp:'生命',atk:'攻擊',def:'
   return `${e.g}級${e.gd?'・守護者':''}。${p.join('、')}。主動「${e.acts.map(a=>SK[a].n).join('」「')}」${e.pas?`;被動「${PS[e.pas].n}」`:''}`;}
 function essSkillDesc(it){const e=essInfo(it);return e.acts.map(a=>`「${SK[a].n}」${SK[a].d}(魂力 ${SK[a].cost})`).join('<br>')+(e.pas?`<br>被動「${PS[e.pas].n}」${PS[e.pas].d}`:'');}
 const essSlots=m=>m.lv;
-function memberActs(m){return[...new Set(m.ess.flatMap(it=>essInfo(it).acts))];}
+function memberActs(m){const acts=[...new Set(m.ess.flatMap(it=>essInfo(it).acts))];if(m.race==='barb'&&m.tattoo&&m.tattoo.path==='wild'&&!acts.includes('wildburst'))acts.push('wildburst');return acts;}
 function memberPas(m){return[...new Set(m.ess.map(it=>ESS[it.k].pas).filter(Boolean))];}
 function absorbCheck(m,it){
   const e=essInfo(it);
@@ -856,6 +870,10 @@ function stats(m){
   if(hasT(m,'tough'))hp*=1.15;if(hasT(m,'quick'))spd+=6;if(hasT(m,'pacifist'))atk*=.75;if(hasT(m,'bg_merc'))atk+=3;
   if(m.race==='beast'&&m.beastPact==='enhance'){atk*=1.15;spd*=1.10;}
   if(m.race==='beast'&&m.beastPact==='ability'){crit+=.12;ls+=.08;}
+  if(m.race==='barb'&&m.tattoo&&m.tattoo.path==='flame'){atk*=1.10;crit+=.08;}
+  if(m.race==='barb'&&m.tattoo&&m.tattoo.path==='steel'){def+=12;hp*=1.15;}
+  if(m.race==='barb'&&m.tattoo&&m.tattoo.path==='wild'){hp+=50;def+=8;}
+  if(m.race==='fairy'&&m.spirits){if(m.spirits.includes('fire'))atk*=1.05;if(m.spirits.includes('water'))regen+=.03;if(m.spirits.includes('wind'))spd+=8;if(m.spirits.includes('earth'))def+=5;}
   return{maxhp:Math.max(10,Math.round(hp)),atk:Math.max(1,Math.round(atk*10)/10),def:Math.max(0,Math.round(def*10)/10),spd:Math.max(40,Math.round(spd)),soul:Math.round(soul),mres:Math.round(mres),crit,ls,regen};
 }
 function essValue(m){return m.ess.reduce((a,it)=>a+GRADE[ESS[it.k].g].ev*(it.gd?1.5:1),0);}
@@ -1175,6 +1193,25 @@ function beastPactHTML(m){
   if(m.lv<2)return `<p class="mute" style="font-size:12px">獸人在 Lv2 能與靈魂獸締結契約(目前 Lv${m.lv})。</p>`;
   return `<div class="notice">尚未締結靈魂獸契約<div class="row" style="margin-top:6px">${Object.entries(BEASTPACT).map(([k,p])=>`<button class="btn sm" data-act="setBeastPact" data-arg="${m.id}:${k}" title="${p.d}">${p.n}</button>`).join('')}</div></div>`;
 }
+function tattooHTML(m){
+  const t=m.tattoo||{stage:0,path:null};
+  if(t.stage>=5)return `<div class="notice">靈魂刻印:第 5 階 · <b>${TATTOO_PATH[t.path].n}</b><br><span class="mute" style="font-size:12px">${TATTOO_PATH[t.path].d}</span></div>`;
+  if(t.stage===2&&!t.path){
+    const cost=TATTOO_COST[2];
+    return `<div class="notice">靈魂刻印:第 2 階。選擇一條路線進入第 3 階(花費 ${cost} 石幣,路線選定後不能更改)
+      <div class="row" style="margin-top:6px">${Object.entries(TATTOO_PATH).map(([k,p])=>`<button class="btn sm" data-act="tattooPath" data-arg="${m.id}:${k}" title="${p.d}" ${S.stone>=cost?'':'disabled'}>${p.n}</button>`).join('')}</div></div>`;
+  }
+  const cost=TATTOO_COST[t.stage];
+  const label=t.stage===0?'尚未刻印':`第 ${t.stage} 階${t.path?' · '+TATTOO_PATH[t.path].n:''}`;
+  return `<div class="notice">靈魂刻印:${label}${t.path?`<br><span class="mute" style="font-size:12px">${TATTOO_PATH[t.path].d}</span>`:''}
+    <div class="row" style="margin-top:6px"><button class="btn sm" data-act="tattooUp" data-arg="${m.id}" ${S.stone>=cost?'':'disabled'}>刻印升級至第 ${t.stage+1} 階(${cost} 石幣)</button></div></div>`;
+}
+function fairyHTML(m){
+  const held=m.spirits||[];
+  return `<div class="notice">精靈契約:${held.length?held.map(k=>SPIRIT[k].n).join('、'):'尚未締結'}
+    <div class="row" style="margin-top:6px">${Object.entries(SPIRIT).filter(([k])=>!held.includes(k)).map(([k,p])=>`<button class="btn sm" data-act="spiritStone" data-arg="${m.id}:${k}" title="${p.d};使用精靈石嘗試契約,花費 ${SPIRIT_STONE_COST} 石幣,成功率 ${SPIRIT_STONE_RATE*100}%" ${S.stone>=SPIRIT_STONE_COST?'':'disabled'}>精靈石:${p.n}</button>`).join('')}</div>
+    ${held.length?`<div class="mute" style="font-size:12px;margin-top:4px">${held.map(k=>`${SPIRIT[k].n}:${SPIRIT[k].d}`).join('<br>')}</div>`:''}</div>`;
+}
 function memberCard(m,mini){
   const st=stats(m),sel=S.sel.includes(m.id);
   const next=m.lv<MAXLV?LV_XP[m.lv+1]:LV_XP[MAXLV],prev=LV_XP[m.lv];
@@ -1185,6 +1222,8 @@ function memberCard(m,mini){
     <div>${mrow('生命',m.hp,st.maxhp,'hp')}${mrow('壓力',m.stress,100,m.stress>=70?'st hi':'st')}${mrow('經驗',m.xp-prev,Math.max(1,next-prev),'xp')}</div>
     <div class="statline"><span>攻擊<b>${st.atk}</b></span><span>防禦<b>${st.def}</b></span><span>速度<b>${st.spd}</b></span><span>魂力<b>${st.soul}</b></span><span>魔抗<b>${st.mres}</b></span><span>${DT[WEAPON[m.weapon].dt]}擊</span></div>
     ${m.race==='beast'?beastPactHTML(m):''}
+    ${m.race==='barb'?tattooHTML(m):''}
+    ${m.race==='fairy'?fairyHTML(m):''}
     ${mini?'':`<div class="chips">${traitChips(m)}${essChips(m)}</div>
     <div class="mact"><label for="job-${m.id}">工作</label><select id="job-${m.id}" data-change="setJob" data-arg="${m.id}"><option value="rest" ${m.job==='rest'?'selected':''}>休息</option><option value="work" ${m.job==='work'?'selected':''}>打工</option></select>
       ${m.num?`<button class="btn sm" data-act="unequip" data-arg="${m.id}">卸下編號物品</button>`:''}</div>`}
@@ -1301,6 +1340,9 @@ ACT.equipOpen=i=>{const it=S.items[+i];if(!it)return;modal(`裝備 ${NUM[it.id].
 ACT.equipDo=arg=>{const[i,id]=arg.split(':');const it=S.items[+i],m=getM(id);if(!it||!m)return;if(m.num)S.items.push(m.num);S.items.splice(+i,1);m.num=it;ACT.closeModal();save();render();};
 ACT.unequip=id=>{const m=getM(id);if(!m||!m.num)return;S.items.push(m.num);m.num=null;m.hp=Math.min(m.hp,stats(m).maxhp);save();render();};
 ACT.setBeastPact=arg=>{const[id,k]=arg.split(':');const m=getM(id);if(!m||m.race!=='beast'||m.beastPact||m.lv<2||!BEASTPACT[k])return;m.beastPact=k;toast(`${m.name}與靈魂獸締結了契約:${BEASTPACT[k].n}`);save();render();};
+ACT.tattooUp=id=>{const m=getM(id);if(!m||m.race!=='barb')return;const t=m.tattoo||(m.tattoo={stage:0,path:null});if(t.stage>=5||t.stage===2)return;const cost=TATTOO_COST[t.stage];if(S.stone<cost)return;S.stone-=cost;t.stage++;toast(`${m.name}的靈魂刻印進展到第 ${t.stage} 階`);save();render();};
+ACT.tattooPath=arg=>{const[id,k]=arg.split(':');const m=getM(id);if(!m||m.race!=='barb'||!TATTOO_PATH[k])return;const t=m.tattoo||(m.tattoo={stage:0,path:null});if(t.stage!==2||t.path)return;const cost=TATTOO_COST[2];if(S.stone<cost)return;S.stone-=cost;t.stage=3;t.path=k;toast(`${m.name}選擇了「${TATTOO_PATH[k].n}」路線!`);save();render();};
+ACT.spiritStone=arg=>{const[id,el]=arg.split(':');const m=getM(id);if(!m||m.race!=='fairy'||!SPIRIT[el])return;m.spirits=m.spirits||[];if(m.spirits.includes(el)||S.stone<SPIRIT_STONE_COST)return;S.stone-=SPIRIT_STONE_COST;if(Math.random()<SPIRIT_STONE_RATE){m.spirits.push(el);toast(`${m.name}的精靈石發揮作用,締結了${SPIRIT[el].n}契約!`);}else{toast(`${m.name}的精靈石碎裂了,契約沒有成功。`);}save();render();};
 /* --- temple --- */
 function templeTab(){
   const h=hero(),hc=healAllCost();
@@ -1728,7 +1770,7 @@ function eject(){returnToCity('迷宮關閉了','關閉的時間到了。一陣�
 /* ================= TURN-BASED BATTLE ================= */
 function heroUnit(m){const st=stats(m),w=WEAPON[m.weapon],pas=memberPas(m);
   return{side:'p',m,name:m.name,hp:Math.max(1,m.hp),maxhp:st.maxhp,atk:st.atk,def:st.def,spd:st.spd,mres:st.mres,soul:Math.min(st.soul,m.soul),soulMax:st.soul,crit:st.crit,ls:st.ls,regen:st.regen,
-    dt:w.dt,w,line:w.line,skills:memberActs(m),pas,num:numEff(m),buffs:[],momentum:0,face:faceImg(m),icon:faceImg(m)};}
+    dt:w.dt,w,line:w.line*(m.race==='barb'&&m.tattoo&&m.tattoo.path==='wild'?3:1),skills:memberActs(m),pas,num:numEff(m),buffs:[],momentum:0,face:faceImg(m),icon:faceImg(m)};}
 let eid=1;
 function monUnit(k){const d=MON[k],t=d.tags||{};
   const u={side:'e',key:k,uid:eid++,name:d.n,g:d.g,hp:d.hp,maxhp:d.hp,atk:d.atk,def:d.def,spd:d.spd,mres:d.mres??(10-d.g)*3,weak:d.weak||[],resist:d.resist||[],tough:d.tough,toughMax:d.tough,broken:false,
@@ -1970,6 +2012,8 @@ async function hit(src,t,mult,dt,brk,opt){
     if(src.side==='p'&&(hasBuff(src,'poisonHit')||(src.pas.includes('poisonArrow')&&Math.random()<.3)))applyStatus(t,'poison',src);
     if(src.side==='e'&&src.tags.poison&&Math.random()<src.tags.poison)applyStatus(t,'poison',src);
     if(src.side==='e'&&src.tags.noheal)addBuff(t,{noheal:1,t:2},'怨念');
+    if(src.side==='p'&&src.m.race==='barb'&&src.m.tattoo&&src.m.tattoo.path==='flame'&&Math.random()<.2)applyStatus(t,'burn',src);
+    if(src.side==='p'&&src.m.race==='fairy'&&src.m.spirits&&src.m.spirits.includes('fire')&&Math.random()<.15)applyStatus(t,'burn',src);
   }
   const drain=(src.ls||0)+(opt.drain||0)+(src.side==='e'?src.tags.drain||0:0);if(drain&&aliveU(src)){const h=healU(src,dmg*drain);if(h>0&&(opt.drain||src.side==='e'))pop(src,'+'+h,'good');}
   const th=buffSum(t,'thorns');if(th&&aliveU(src)){const r=Math.max(1,Math.round(dmg*th));src.hp-=r;pop(src,'反彈 '+r,'bad');if(src.hp<=0)await fall(src,t);}
