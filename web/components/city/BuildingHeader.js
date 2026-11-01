@@ -12,7 +12,7 @@ export default function BuildingHeader({ k }) {
           <p className="mute" style={{ fontSize: 12.5 }}>{b.place}</p>
         </div>
       </div>
-      <p className="mute" style={{ fontSize: 13 }}>{b.flavor}</p>
+      {b.flavor && <p className="mute" style={{ fontSize: 13 }}>{b.flavor}</p>}
     </>
   );
 }

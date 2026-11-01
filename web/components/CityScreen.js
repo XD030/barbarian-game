@@ -181,7 +181,6 @@ export default function CityScreen({ state, mutate, onResetSave }) {
       : mobileView === 'bldg'
       ? (
         <>
-          <div className="row" style={{ marginBottom: 4 }}><button className="btn sm" onClick={() => setMobileView('map')}>← 返回地圖</button></div>
           <BuildingHeader k={tab} />
           <div className="tabpanel"><div className="tabbody">{tabBody}</div></div>
         </>
