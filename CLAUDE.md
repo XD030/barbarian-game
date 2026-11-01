@@ -15,7 +15,8 @@
 - `index.html`:**現在上線的版本**,整個遊戲(單一檔案,原生 JS,無外部套件,像素圖用程式產生)。用瀏覽器直接打開就能玩,存檔在 localStorage(鍵 `barbarian-labyrinth-v5`)。GitHub Pages 目前直接服務這個檔案(`main` 分支、`/` 路徑),改這個檔案目前還是正式的開發方式。
 - `docs/design-notes.md`:設計紀錄、已實作的原作設定、自訂部分、尚未做的原作要素。
 - `tests/smoke.js`:無介面流程測試,`node tests/smoke.js`。
-- `web/`:**2026-11-01 開始的 React/Next.js 模組化重寫,還在進行中,還沒接上線**。使用者決定把整個遊戲從單檔案改成 React 元件化開發(跟參考網站 myteam.swordgale.online 一樣是「模組化開發 + 建置流程」,但不用 Next.js 的伺服器功能,純前端靜態匯出 `output:'export'`,之後要加排行榜/存檔同步才會真的用到伺服器,到時候得搬離 GitHub Pages)。分階段進行,**先搞好架構+建立角色畫面,確認可行後再繼續搬城市/迷宮/戰鬥**。進度細節看 `web/README.md`(如果有寫)或直接問使用者目前搬到哪。在整個遷移完成、確認可以取代 `index.html` 之前,**不要改動 GitHub Pages 的部署設定**,現場服務的仍然是 `index.html`。
+- `web/`:**2026-11-01 開始的 React/Next.js 模組化重寫,還在進行中,還沒接上線**。使用者決定把整個遊戲從單檔案改成 React 元件化開發(跟參考網站 myteam.swordgale.online 一樣是「模組化開發 + 建置流程」,但不用 Next.js 的伺服器功能,純前端靜態匯出 `output:'export'`,之後要加排行榜/存檔同步才會真的用到伺服器,到時候得搬離 GitHub Pages)。分階段進行,**先搞好架構+建立角色畫面,確認可行後再繼續搬城市/迷宮/戰鬥**,目前已搬到城市畫面(桌面版)。進度細節看 `web/README.md`。在整個遷移完成、確認可以取代 `index.html` 之前,**不要改動 GitHub Pages 的部署設定**,現場服務的仍然是 `index.html`。
+  - **寫 state 更新時一定要在 `mutate`/`setState` 的 updater 裡用 `structuredClone(prev)` 深拷貝再改,不要淺拷貝 `{...prev}` 後直接 mutate 巢狀陣列/物件**——React/Next 開發模式的 StrictMode 會把 updater 函式呼叫兩次來抓副作用,淺拷貝時巢狀的陣列/物件跟 `prev` 是同一個參照,兩次呼叫會把同一個操作套用兩次(已經實際踩過這個坑,酒館招募重複執行、出現重複 id)。`app/page.js` 的 `mutate` helper 已經這樣寫,照抄這個 pattern 就好。
 
 ## index.html 結構(搜尋區塊註解)
 - `DATA`:`WEAPON`、`RACE`、`TRAIT`、`GRADE`、`SK`(主動技能)、`PS`(被動)、`ESS`(精髓)、`MON`(怪物與像素圖設定)、`FIELDS`(區域)、`FLOORS`、`RIFTS`、`NUM`(編號物品)。

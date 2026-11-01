@@ -1,0 +1,165 @@
+'use client';
+import { useState } from 'react';
+import RosterPanel from './city/RosterPanel';
+import TopBar from './city/TopBar';
+import HomeTab from './city/tabs/HomeTab';
+import TavernTab from './city/tabs/TavernTab';
+import SmithTab from './city/tabs/SmithTab';
+import StoreTab from './city/tabs/StoreTab';
+import TempleTab from './city/tabs/TempleTab';
+import PlaceholderTab from './city/tabs/PlaceholderTab';
+import { WEAPON, TATTOO_COST, TATTOO_PATH, BEASTPACT, SPIRIT, SPIRIT_STONE_COST, SPIRIT_STONE_RATE, ECON } from '../lib/data';
+import { getM } from '../lib/getM';
+import { stats } from '../lib/stats';
+import { gearCost, shipCost, reviveCost, healAllCost, processDays } from '../lib/city';
+
+const TABS = [
+  ['home', '住處'], ['tavern', '酒館'], ['guild', '探險者公會'], ['library', '中央圖書館'],
+  ['exchange', '中央交易所'], ['temple', '大神殿'], ['smith', '鐵匠鋪'], ['store', '雜貨店'],
+];
+
+export default function CityScreen({ state, mutate, onResetSave }) {
+  const [tab, setTab] = useState('home');
+  const party = state.sel.map(id => getM(state, id)).filter(m => m && !m.dead);
+  const open = state.day === 1, until = 30 - state.day + 1;
+
+  const log = (s, msg) => { s.log.unshift({ d: `${s.month}/${s.day}`, m: msg }); s.log.length = Math.min(s.log.length, 60); };
+
+  const onToggleSel = (id, checked) => mutate(s => {
+    const m = getM(s, id);
+    if (checked) { if (m?.dispatch || s.sel.length >= 5) return; s.sel.push(id); }
+    else s.sel = s.sel.filter(x => x !== id);
+  });
+
+  const onDispatch = (id, key) => mutate(s => {
+    const m = getM(s, id);
+    if (!m || m.hero || m.dispatch) return;
+    m.dispatch = { key, left: { short: 1, mid: 3, long: 7 }[key] };
+    s.sel = s.sel.filter(x => x !== id);
+    log(s, `${m.name}出發去${{ short: '短程派遣', mid: '中程派遣', long: '長程派遣' }[key]}了`);
+  });
+
+  const onTattooUp = (id) => mutate(s => {
+    const m = getM(s, id); if (!m || m.race !== 'barb') return;
+    const t = m.tattoo || (m.tattoo = { stage: 0, path: null });
+    if (t.stage >= 5 || t.stage === 2) return;
+    const cost = TATTOO_COST[t.stage]; if (s.stone < cost) return;
+    s.stone -= cost; t.stage++;
+    log(s, `${m.name}的靈魂刻印進展到第 ${t.stage} 階`);
+  });
+  const onTattooPath = (id, key) => mutate(s => {
+    const m = getM(s, id); if (!m || m.race !== 'barb' || !TATTOO_PATH[key]) return;
+    const t = m.tattoo || (m.tattoo = { stage: 0, path: null });
+    if (t.stage !== 2 || t.path) return;
+    const cost = TATTOO_COST[2]; if (s.stone < cost) return;
+    s.stone -= cost; t.stage = 3; t.path = key;
+    log(s, `${m.name}選擇了「${TATTOO_PATH[key].n}」路線!`);
+  });
+  const onSetPact = (id, key) => mutate(s => {
+    const m = getM(s, id); if (!m || m.race !== 'beast' || m.beastPact || m.lv < 2 || !BEASTPACT[key]) return;
+    m.beastPact = key;
+    log(s, `${m.name}與靈魂獸締結了契約:${BEASTPACT[key].n}`);
+  });
+  const onSpiritStone = (id, key) => mutate(s => {
+    const m = getM(s, id); if (!m || m.race !== 'fairy' || !SPIRIT[key]) return;
+    m.spirits = m.spirits || [];
+    if (m.spirits.includes(key) || s.stone < SPIRIT_STONE_COST) return;
+    s.stone -= SPIRIT_STONE_COST;
+    if (Math.random() < SPIRIT_STONE_RATE) { m.spirits.push(key); log(s, `${m.name}的精靈石發揮作用,締結了${SPIRIT[key].n}契約!`); }
+    else log(s, `${m.name}的精靈石碎裂了,契約沒有成功。`);
+  });
+
+  const onDorm = () => mutate(s => {
+    const c = 150 * ECON * s.dorm; if (s.dorm >= 4 || s.stone < c) return;
+    s.stone -= c; s.dorm++; log(s, '住處擴建了。');
+  });
+
+  const onRecruit = (id) => mutate(s => {
+    const m = s.tavern.find(x => x.id === id); if (!m) return;
+    const c = (150 + m.lv * 80 + m.ess.length * 120) * ECON;
+    if (s.stone < c || s.members.filter(x => !x.dead).length >= 3 + s.dorm * 2) return;
+    s.stone -= c; s.members.push(m); s.tavern = s.tavern.filter(x => x !== m);
+    log(s, `${m.name} 在酒館加入了隊伍。`);
+  });
+
+  const onGear = (id, slot) => mutate(s => {
+    const m = getM(s, id); if (!m || m[slot] >= 5) return;
+    const c = gearCost(m, m[slot]); if (s.stone < c) return;
+    s.stone -= c; m[slot]++; if (slot === 'arm') m.hp += 12;
+    log(s, `${m.name} 的${slot === 'wpn' ? '武器' : '防具'}強化到 +${m[slot]}。`);
+  });
+  const onSwapWeapon = (id, w) => mutate(s => {
+    const m = getM(s, id); if (!m || !w) return;
+    const p = WEAPON[w].price; if (s.stone < p) return;
+    s.stone -= p; m.weapon = w; m.wpn = 0;
+    log(s, `${m.name} 換成了${WEAPON[w].n}。`);
+  });
+  const onHireNav = () => mutate(s => { if (s.navigator || s.stone < 3000 * ECON) return; s.stone -= 3000 * ECON; s.navigator = true; log(s, '雇用了一位航海士,準備好航向大海了。'); });
+  const onBuyShip = () => mutate(s => { const c = shipCost(s.ship + 1); if (s.ship >= 3 || s.stone < c) return; s.stone -= c; s.ship++; log(s, `船隻建造/升級到 ${s.ship} 級。`); });
+
+  const onBuyPotion = () => mutate(s => { if (s.stone < 30 * ECON || s.potions >= 5) return; s.stone -= 30 * ECON; s.potions++; });
+  const onBuyTorch = () => mutate(s => { if (s.stone < 60 * ECON) return; s.stone -= 60 * ECON; s.torches++; });
+
+  const onRevive = () => mutate(s => {
+    const h = s.members.find(m => m.hero); if (!h || !h.dead) return;
+    const c = reviveCost(s); if (s.stone < c) return;
+    s.stone -= c; s.revives++; h.dead = false; h.hp = Math.round(stats(h).maxhp * .5); h.stress = 40; h.soul = stats(h).soul;
+    log(s, `三神教的祭司讓 ${h.name} 重新睜開了眼睛。${c ? `花了 ${c} 石幣。` : '第一次的復活不收費。'}`);
+  });
+  const onTempleHeal = () => mutate(s => {
+    const c = healAllCost(s); if (s.stone < c) return;
+    s.stone -= c; s.members.filter(m => !m.dead).forEach(m => { m.hp = stats(m).maxhp; });
+    log(s, '全員的傷都治好了。');
+  });
+  const onPurify = (id) => mutate(s => {
+    const m = getM(s, id); const c = 40 * ECON; if (!m || s.stone < c) return;
+    s.stone -= c; m.stress = 0;
+  });
+
+  const onPassDay = () => mutate(s => processDays(s, 1, (msg) => log(s, msg)));
+
+  const tabBody = {
+    home: <HomeTab state={state} onDorm={onDorm} />,
+    tavern: <TavernTab state={state} onRecruit={onRecruit} />,
+    guild: <PlaceholderTab title="探險者公會" desc="接委託、公會認證、精髓交易的地方。" />,
+    library: <PlaceholderTab title="中央圖書館" desc="查詢怪物資料、購買 9 級精髓的地方。" />,
+    exchange: <PlaceholderTab title="中央交易所" desc="賣精髓、裂縫石和編號物品的地方。" />,
+    temple: <TempleTab state={state} onRevive={onRevive} onTempleHeal={onTempleHeal} onPurify={onPurify} />,
+    smith: <SmithTab state={state} onGear={onGear} onSwapWeapon={onSwapWeapon} onHireNav={onHireNav} onBuyShip={onBuyShip} />,
+    store: <StoreTab state={state} onBuyPotion={onBuyPotion} onBuyTorch={onBuyTorch} />,
+  }[tab];
+
+  const handlers = { onToggleSel, onDispatch, onTattooUp, onTattooPath, onSetPact, onSpiritStone };
+
+  return (
+    <>
+      <TopBar state={state} />
+      <div className="wrap">
+        <div className="camp">
+          <RosterPanel state={state} handlers={handlers} />
+          <div className="side">
+            <section className="panel">
+              <h2>次元廣場</h2>
+              {open ? <p className="notice">今天迷宮開啟。錯過要等下個月。</p> : <p className="mute">迷宮每月 1 日開啟,還有 <span className="num">{until}</span> 天。</p>}
+              {state.debt > 0 && <p className="notice bad">你還欠 {state.debt} 石幣的稅。欠稅的人進不了次元廣場。</p>}
+              <p>{party.length ? party.map(m => m.name).join('、') : <span className="mute">還沒選人</span>} <span className="mute">({party.length}/5)</span></p>
+              <p className="mute" style={{ fontSize: 12 }}>迷宮探索還沒搬過來(下一階段),先能度過天數看城市經濟運作。</p>
+              <div className="row"><button className="btn" onClick={onPassDay}>度過一天</button></div>
+            </section>
+            <section className="panel">
+              <div className="tabs" role="tablist">
+                {TABS.map(([k, n]) => (
+                  <button key={k} className="tab" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{n}</button>
+                ))}
+              </div>
+              <div>{tabBody}</div>
+            </section>
+            <section className="panel">
+              <button className="btn sm" onClick={onResetSave}>清除存檔,回到開頭</button>
+            </section>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
