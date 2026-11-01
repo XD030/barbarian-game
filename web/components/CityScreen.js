@@ -14,6 +14,7 @@ import SmithTab from './city/tabs/SmithTab';
 import StoreTab from './city/tabs/StoreTab';
 import TempleTab from './city/tabs/TempleTab';
 import GuildTab from './city/tabs/GuildTab';
+import LibraryTab from './city/tabs/LibraryTab';
 import PlaceholderTab from './city/tabs/PlaceholderTab';
 import { WEAPON, TATTOO_COST, TATTOO_PATH, BEASTPACT, SPIRIT, SPIRIT_STONE_COST, SPIRIT_STONE_RATE, ECON } from '../lib/data';
 import { getM } from '../lib/getM';
@@ -21,6 +22,7 @@ import { stats } from '../lib/stats';
 import { gearCost, shipCost, reviveCost, healAllCost, processDays } from '../lib/city';
 import { genFloor1, portalXp, FLOORS } from '../lib/dungeon';
 import { tickRequests, claimReq } from '../lib/guild';
+import { research } from '../lib/library';
 import { useIsMobile } from '../lib/useIsMobile';
 
 export default function CityScreen({ state, mutate, onResetSave }) {
@@ -131,6 +133,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
 
   const onPassDay = () => mutate(s => processDays(s, 1, (msg) => log(s, msg)));
   const onClaimReq = (id) => mutate(s => claimReq(s, id, (msg) => log(s, msg)));
+  const onResearch = (k) => mutate(s => research(s, k, (msg) => log(s, msg)));
 
   const onEnterLab = () => mutate(s => {
     if (s.debt && s.stone >= s.debt) { s.stone -= s.debt; s.debt = 0; }
@@ -150,7 +153,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     home: <HomeTab state={state} onDorm={onDorm} />,
     tavern: <TavernTab state={state} onRecruit={onRecruit} />,
     guild: <GuildTab state={state} onClaimReq={onClaimReq} />,
-    library: <PlaceholderTab title="中央圖書館" desc="查詢怪物資料、購買 9 級精髓的地方。" />,
+    library: <LibraryTab state={state} onResearch={onResearch} />,
     exchange: <PlaceholderTab title="中央交易所" desc="賣精髓、裂縫石和編號物品的地方。" />,
     temple: <TempleTab state={state} onRevive={onRevive} onTempleHeal={onTempleHeal} onPurify={onPurify} />,
     smith: <SmithTab state={state} onGear={onGear} onSwapWeapon={onSwapWeapon} onHireNav={onHireNav} onBuyShip={onBuyShip} />,

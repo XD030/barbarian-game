@@ -151,6 +151,17 @@ button{touch-action:manipulation}
 .bldicon{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-family:var(--f-title);font-size:19px;color:#1c1309;box-shadow:0 3px 0 rgba(0,0,0,.4),inset 0 -4px 0 rgba(0,0,0,.18);border:2px solid rgba(0,0,0,.3);flex:none}
 .bldhead h2{margin:0}
 
+.monGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.moncard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:5px;align-items:center;text-align:center}
+.moncard.locked{opacity:.7}
+.moncard .micon{width:40px;height:40px;border-radius:50%;background:var(--void);display:grid;place-items:center;font-family:var(--f-num);font-size:16px;color:var(--dim)}
+.moncard b{font-size:13px;font-family:var(--f-title)}
+
+.wk{display:flex;gap:3px;justify-content:center;flex-wrap:wrap}
+.wk span{font-size:10.5px;padding:0 4px;border-radius:3px;background:#2a3a20;color:#c8e8a8;border:1px solid #4a6a30}
+.wk span.rs{background:#2a1c1c;color:#b08880;border-color:#4a2a26}
+.wk span.sp{background:#1c2232;color:#a8c0f0;border-color:#2a3a5a}
+
 .gbooks{display:flex;gap:4px;background:var(--void);border-radius:14px;padding:5px}
 .gbook{flex:1;font:inherit;font-weight:700;font-size:14px;background:none;border:0;border-radius:10px;padding:10px 0;color:var(--mute);cursor:pointer}
 .gbook.sel{background:#2b2b2b;color:var(--gold)}
