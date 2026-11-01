@@ -112,6 +112,11 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .booktab.sel{background:var(--panel);color:var(--torch-hi);border-color:var(--torch)}
 .bookpanel{background:var(--panel);border:1px solid var(--line);border-radius:0 8px 8px 8px;padding:10px;margin-top:-1px}
 .bookpanel b{font-family:var(--f-title);color:var(--torch-hi);font-size:14px}
+.essList{display:flex;flex-direction:column;gap:7px;max-height:58vh;overflow-y:auto;padding-right:2px}
+.essCard{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--c,var(--line));border-radius:6px;padding:8px 10px}
+.essCard b{font-family:var(--f-title);color:var(--torch-hi);font-size:14px}
+.essCard.empty{border-left-style:dashed;opacity:.6}
+.essCard.empty b{color:var(--mute);font-family:var(--f-body);font-size:13px}
 .bagGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .gcard{position:relative;font:inherit;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 2px 3px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--ink)}
 .gcard:hover{border-color:var(--torch)}
@@ -1049,7 +1054,6 @@ function baseHTML(){
 }
 let teamFocus=null;
 let teamSubTab='detail'; // detail | ess
-let essFocusIdx=0;
 function teamScreenHTML(){
   const fid=teamFocus&&getM(teamFocus)?teamFocus:(S.sel[0]||(S.members[0]&&S.members[0].id));
   const fm=fid&&getM(fid);
@@ -1074,15 +1078,13 @@ function teamScreenHTML(){
 }
 function essSlotsHTML(m){
   const n=essSlots(m);
-  if(essFocusIdx>=n)essFocusIdx=0;
-  const it=m.ess[essFocusIdx];
-  const tabs=Array.from({length:n},(_,i)=>{
-    const filled=m.ess[i];
-    return `<button class="booktab ${i===essFocusIdx?'sel':''} ${filled?'':'empty'}" data-act="essFocus" data-arg="${i}" style="${filled?`--c:${essInfo(filled).color}`:''}">${i+1}</button>`;
+  const cards=Array.from({length:n},(_,i)=>{
+    const it=m.ess[i];
+    if(!it)return `<div class="essCard empty"><b>精髓槽 ${i+1}</b><p class="mute">空精髓槽</p></div>`;
+    const e=essInfo(it);
+    return `<div class="essCard" style="--c:${e.color}"><b>${e.n}</b><p class="mute" style="margin:4px 0">${essDesc(it)}</p><p style="font-size:12.5px">${essSkillDesc(it)}</p></div>`;
   }).join('');
-  const panel=it?`<div class="bookpanel"><b>${essInfo(it).n}</b><p class="mute" style="margin:4px 0">${essDesc(it)}</p><p style="font-size:12.5px">${essSkillDesc(it)}</p></div>`
-    :`<div class="bookpanel"><p class="mute">空精髓槽</p></div>`;
-  return `<div class="booktabs">${tabs}</div>${panel}`;
+  return `<div class="essList">${cards}</div>`;
 }
 let bagSubTab='item'; // item(精髓背包) | num(編號物品)
 function bagScreenHTML(){
@@ -1122,11 +1124,10 @@ ACT.tab=k=>{S.tab=k;save();render();};
 ACT.enterBld=k=>{S.tab=k;mobileView='bldg';save();render();};
 ACT.backToMap=()=>{mobileView='map';render();};
 ACT.mnav=k=>{mobileView=k;render();};
-ACT.teamSlot=id=>{id=+id;const m=getM(id);if(!m)return;teamFocus=id;essFocusIdx=0;
+ACT.teamSlot=id=>{id=+id;const m=getM(id);if(!m)return;teamFocus=id;
   if(!m.dead){if(S.sel.includes(id))S.sel=S.sel.filter(x=>x!==id);else{if(S.sel.length>=5){toast('隊伍最多 5 人');}else S.sel.push(id);}}
   save();render();};
 ACT.teamSub=k=>{teamSubTab=k;render();};
-ACT.essFocus=i=>{essFocusIdx=+i;render();};
 ACT.bagSub=k=>{bagSubTab=k;render();};
 ACT.bagEssOpen=i=>{const it=S.bag[+i];if(!it)return;
   modal(essInfo(it).n,`<p class="mute" style="margin-bottom:6px">${essDesc(it)}</p><p style="font-size:13px">${essSkillDesc(it)}</p>`,
