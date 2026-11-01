@@ -4,6 +4,19 @@ export const ECON = 583;
 
 export const DT = { slash: '斬', pierce: '刺', blunt: '鈍', magic: '魔', fire: '火', ice: '冰', thunder: '雷', holy: '聖', dark: '暗' };
 
+/* 精髓等級(9 最弱、4 最強):stone 掉落換算石幣(GRADE.stone 直接照原作數字,不乘 ECON)、
+   xp/ev 是經驗/精髓價值權重、price 是精髓買賣的基準價。 */
+export const GRADE = {
+  9: { stone: 20, xp: 1, ev: 1, price: 350 * ECON },
+  8: { stone: 100, xp: 2, ev: 3, price: 1200 * ECON },
+  7: { stone: 500, xp: 3, ev: 8, price: 3500 * ECON },
+  6: { stone: 2500, xp: 5, ev: 20, price: 9000 * ECON },
+  5: { stone: 12500, xp: 8, ev: 50, price: 25000 * ECON },
+  4: { stone: 62500, xp: 12, ev: 120, price: 60000 * ECON },
+};
+
+export const COLORS = [['赤', '#e05a4a'], ['青', '#4a9ae0'], ['翠', '#5ac06a'], ['金', '#e0b84a'], ['紫', '#a06ae0']];
+
 export const WEAPON = {
   shield: { n: '盾與單手錘', dt: 'blunt', hp: 125, atk: 9, def: 10, spd: 92, line: 3, pass: '格擋:25% 機率減免 60% 傷害', block: .25, price: 150 * ECON },
   hammer: { n: '雙手戰鎚', dt: 'blunt', hp: 108, atk: 16, def: 4, spd: 84, line: 3, pass: '重擊:20% 機率讓目標行動延後', stun: .2, price: 180 * ECON },

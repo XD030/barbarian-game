@@ -32,6 +32,7 @@ npm run build   # 產生 out/,basePath 會是 /barbarian-game(對應 GitHub Page
   - 開發時關掉了 Next.js 開發模式的浮動除錯徽章(`next.config.mjs` 的 `devIndicators:false`),因為它在手機版版面的左下角正好蓋住底部主選單列的「隊伍」按鈕。
   - 用 Playwright 在 390×844(手機尺寸)視窗測過:建角色、底部選單切隊伍/背包/地圖、點建築進入酒館再返回地圖、進迷宮後事件卡片貼底顯示,全程沒有 console 錯誤。
 - 像素圖產生系統(`humanoid()`/`GRIDS`/`gridCanvas()`)目前還沒搬,角色頭像先用種族首字當佔位符(`.spr` 的文字版本)。
+- **精髓系統資料表(只搬資料,還沒接畫面/戰鬥)**:`lib/skills.js`(SK,主動技能)、`lib/passives.js`(PS,被動)、`lib/essence.js`(ESS 精髓表 + `makeEss`/`essInfo`/`essDesc`/`essSkillDesc`/`essSlots`/`memberActs`/`memberPas`/`absorbCheck`/`essPrice`/`essValue` 這些純計算函式)、`lib/num.js`(NUM,編號物品)、`lib/monNames.js`(只從 MON 表抽出代號→中文名,給精髓命名用,完整 MON 表留到戰鬥階段再搬)、`lib/data.js` 補了 `GRADE`(精髓等級對應的掉落石幣/經驗/精髓價值)跟 `COLORS`(精髓顏色)。都是純資料跟計算,沒有任何 UI 在用,獨立跑過確認邏輯跟原本一致(例如吸血鬼精髓算出來是「虹色・吸血鬼精髓」,5 級・守護者,帶兩個主動技能)。公會/圖書館/交易所畫面、精髓槽 UI、戰鬥效果計算都還沒接上這些資料,是下一步。
 
 ## 還沒做的事
 
