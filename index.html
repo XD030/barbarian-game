@@ -1004,7 +1004,7 @@ function baseHTML(){
         <div class="tabs" role="tablist">${TABS.map(([k,n,ic])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-arg="${k}"><span class="ic">${ic}</span><span class="tl">${n}</span></button>`).join('')}</div>
         ${tabHTML()}`;
     const body=mobileView==='team'?teamScreenHTML():mobileView==='bag'?`<h2 style="margin-bottom:4px">背包</h2>${exchangeTab()}`:mobileView==='bldg'?bldg:cityMapHTML();
-    return `<div class="camp">${portal}<section class="panel">${body}</section></div>${mobileTabBarHTML(open,until)}`;
+    return `<div class="camp"><section class="panel">${body}</section></div>${mobileTabBarHTML(open,until)}`;
   }
   return `<div class="camp">
     <section class="panel">
