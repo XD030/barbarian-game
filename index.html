@@ -21,14 +21,15 @@
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-html,body{background:var(--bg);color:var(--ink)}
-body{font-family:var(--f-body);font-size:14px;line-height:1.55;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
+html,body{background:var(--bg);color:var(--ink);height:100%}
+html{scrollbar-gutter:stable}
+body{font-family:var(--f-body);font-size:14px;line-height:1.55;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px;min-height:100vh;display:flex;flex-direction:column}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
 h1,h2,h3{font-family:var(--f-title);font-weight:700;margin:0;text-wrap:balance}
 h2{font-size:18px;color:var(--torch-hi)}
 h3{font-size:15px}
 p{margin:0}
-.wrap{max-width:1180px;margin:0 auto}
+.wrap{max-width:1180px;margin:0 auto;flex:1;width:100%;min-width:0}
 .mute{color:var(--mute)} .dim{color:var(--dim)}
 .num{font-family:var(--f-num);font-variant-numeric:tabular-nums;letter-spacing:.02em}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line);
@@ -61,8 +62,11 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .camp{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
 .side{display:flex;flex-direction:column;gap:16px;min-width:0}
 @media (max-width:920px){.camp{grid-template-columns:1fr}}
-.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);padding-bottom:8px}
-.tab{font:inherit;font-size:13px;background:none;border:1px solid transparent;color:var(--mute);padding:4px 9px;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.tabs{display:flex;flex-wrap:nowrap;gap:4px;border-bottom:1px solid var(--line);padding-bottom:8px;overflow-x:auto;scrollbar-width:none;flex:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabpanel{display:flex;flex-direction:column;height:min(72vh,680px);min-width:0}
+.tabpanel .tabbody{flex:1;min-height:0;overflow-y:auto;scrollbar-gutter:stable}
+.tab{font:inherit;font-size:13px;background:none;border:1px solid transparent;color:var(--mute);padding:4px 9px;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;flex:none;white-space:nowrap}
 .tab[aria-selected="true"]{color:var(--torch-hi);border-color:var(--torch);background:var(--panel2)}
 .tab:hover{color:var(--ink)}
 .tab .ic{font-family:var(--f-title);color:var(--torch);font-size:13px}
@@ -112,9 +116,7 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .booktab::before{content:"";display:inline-block;width:7px;height:7px;border-radius:2px;background:var(--c,var(--dim));margin-right:4px;vertical-align:1px}
 .booktab.empty::before{background:none;border:1px dashed var(--dim)}
 .booktab.sel{background:var(--panel);color:var(--torch-hi);border-color:var(--torch)}
-.bookpanel{background:var(--panel);border:1px solid var(--line);border-radius:0 8px 8px 8px;padding:10px;margin-top:-1px}
-.bookpanel b{font-family:var(--f-title);color:var(--torch-hi);font-size:14px}
-.essList{display:flex;flex-direction:column;gap:7px;max-height:58vh;overflow-y:auto;padding-right:2px}
+.essList{display:flex;flex-direction:column;gap:7px}
 .essCard{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--c,var(--line));border-radius:6px;padding:8px 10px}
 .essCard b{font-family:var(--f-title);color:var(--torch-hi);font-size:14px}
 .essCard.empty{border-left-style:dashed;opacity:.6}
@@ -315,14 +317,6 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
    手機優先、漸進式斷點(參考 421/640/768px 這套分法):這個區塊涵蓋到 767px(含平板直放的邊界),
    裡面在 420px 以下再收窄一層給小手機用,420~767px 共用同一套手機排版。 ---------- */
 @media (max-width:767px){
-  /* 外框固定(html/body 鎖死成整個視窗大小),只有 #screen 內部捲動。
-     這樣切分頁、內容變長變短都只影響 #screen 的內部捲軸,
-     不會動到整個網頁的高度,瀏覽器也就不會因為頁面高度變化重新計算
-     工具列/縮放,不會再出現「切分頁畫面跳一下」的狀況。 */
-  html,body{height:100%;overflow:hidden}
-  body{display:flex;flex-direction:column;overscroll-behavior:none}
-  .top{position:static;flex:none}
-  #screen{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
   /* iOS Safari 碰到 <16px 的表單控制項會自動放大畫面,下拉選單一律拉到 16px 避免點一下畫面就跳縮放 */
   select{font-size:16px}
   .top{padding-block:6px}
@@ -1057,8 +1051,10 @@ function baseHTML(){
       </section>`;
   if(mobile){
     const bldg=`<div class="row bback"><button class="btn sm" data-act="backToMap">← 返回地圖</button></div>
-        <div class="tabs" role="tablist">${TABS.map(([k,n,ic])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-arg="${k}"><span class="ic">${ic}</span><span class="tl">${n}</span></button>`).join('')}</div>
-        ${tabHTML()}`;
+        <div class="tabpanel">
+          <div class="tabs" role="tablist">${TABS.map(([k,n,ic])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-arg="${k}"><span class="ic">${ic}</span><span class="tl">${n}</span></button>`).join('')}</div>
+          <div class="tabbody">${tabHTML()}</div>
+        </div>`;
     const body=mobileView==='team'?teamScreenHTML():mobileView==='bag'?bagScreenHTML():mobileView==='bldg'?bldg:cityMapHTML();
     return `<div class="camp"><section class="panel">${body}</section></div>${mobileTabBarHTML(open,until)}`;
   }
@@ -1068,9 +1064,9 @@ function baseHTML(){
       <div class="roster">${S.members.map(memberCard).join('')}</div>
     </section>
     <div class="side">${portal}
-      <section class="panel">
+      <section class="panel tabpanel">
         <div class="tabs" role="tablist">${TABS.map(([k,n,ic])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-arg="${k}"><span class="ic">${ic}</span><span class="tl">${n}</span></button>`).join('')}</div>
-        ${tabHTML()}
+        <div class="tabbody">${tabHTML()}</div>
       </section>
     </div>
   </div>`;
@@ -1096,8 +1092,10 @@ function teamScreenHTML(){
   const body=!fm?'<p class="mute">還沒有任何人</p>':teamSubTab==='ess'?essSlotsHTML(fm):memberCard(fm,true);
   return `<div class="teamhead"><h2>隊伍 ${S.sel.length}/5</h2><button class="btn sm primary" data-act="backToMap">確定</button></div>
   <div class="teamslots">${slots.join('')}</div>
-  ${subtabs}
-  ${body}`;
+  <div class="tabpanel">
+    ${subtabs}
+    <div class="tabbody">${body}</div>
+  </div>`;
 }
 function essSlotsHTML(m){
   const n=essSlots(m);
@@ -1127,7 +1125,7 @@ function bagScreenHTML(){
       return `<button class="gcard" data-act="itemOpen" data-arg="${i}"><span class="gbadge">${badge}</span><span class="gicon">${it.ided||it.type==='riftstone'?'晶':'?'}</span><span class="gname">${label}</span></button>`;
     }).join('')}</div>`:'<p class="mute">沒有物品。</p>';
   }
-  return `<h2 style="margin-bottom:4px">背包</h2>${tabs}${grid}`;
+  return `<h2 style="margin-bottom:4px">背包</h2><div class="tabpanel">${tabs}<div class="tabbody">${grid}</div></div>`;
 }
 function cityMapHTML(){
   return `<h2 style="margin-bottom:4px">拉夫多尼亞</h2><p class="mute" style="font-size:12.5px;margin-bottom:4px">點建築物進去</p>
