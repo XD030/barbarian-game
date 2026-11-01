@@ -62,6 +62,23 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .tab:hover{color:var(--ink)}
 .tab .ic{font-family:var(--f-title);color:var(--torch);font-size:13px}
 .tab[aria-selected="true"] .ic{color:var(--torch-hi)}
+/* city map(手機版建物選單,神魔之塔風格的可點地圖) */
+.citymap{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:18px 8px;padding:20px 10px 14px;background:radial-gradient(ellipse 120% 90% at 50% -10%,#3a3022,#191410 75%);border-radius:10px;border:1px solid var(--line)}
+.citymap .bld{font:inherit;background:none;border:0;color:var(--ink);cursor:pointer;padding:0;display:flex;flex-direction:column;align-items:center;gap:5px}
+.citymap .bld .ico{width:60px;height:60px;border-radius:14px;display:grid;place-items:center;font-family:var(--f-title);font-size:24px;color:#1c1309;box-shadow:0 4px 0 rgba(0,0,0,.4),inset 0 -5px 0 rgba(0,0,0,.18);border:2px solid rgba(0,0,0,.3);transition:transform .15s}
+.citymap .bld:hover .ico,.citymap .bld:active .ico{transform:translateY(-2px)}
+.citymap .bld .tl{font-size:12px;color:var(--mute)}
+.citymap .bld:nth-child(3n+1){transform:translateY(-8px)}
+.citymap .bld:nth-child(3n+3){transform:translateY(10px)}
+.citymap .bld.home .ico{background:linear-gradient(#c9a876,#9c7f52)}
+.citymap .bld.tavern .ico{background:linear-gradient(var(--torch-hi),var(--torch))}
+.citymap .bld.guild .ico{background:linear-gradient(#8a9aae,#596b80)}
+.citymap .bld.library .ico{background:linear-gradient(#7e9fd6,#4a6aa0)}
+.citymap .bld.exchange .ico{background:linear-gradient(var(--gold),#a4802e)}
+.citymap .bld.temple .ico{background:linear-gradient(#d6bdf0,var(--mind))}
+.citymap .bld.smith .ico{background:linear-gradient(#e08a5a,#a24a2c)}
+.citymap .bld.store .ico{background:linear-gradient(var(--good),#5e9a4a)}
+.bback{align-self:flex-start}
 .meter{height:6px;background:var(--void);border-radius:3px;overflow:hidden}
 .meter i{display:block;height:100%;transition:width .25s}
 .hp i{background:var(--blood)} .st i{background:var(--mind)} .xp i{background:var(--gold)} .sl i{background:var(--soul)} .tm i{background:var(--torch)} .tg i{background:#e8e0cc}
@@ -246,16 +263,10 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
   .top{padding-block:7px}
   .brand{font-size:17px}
   .res{font-size:12.5px}
-  /* city: 次元廣場 + 選到的建物內容在上,角色名冊在下,底部留給固定選單 */
-  .camp{display:flex;flex-direction:column;gap:14px;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  /* city: 次元廣場 + 建物地圖/內容在上,角色名冊在下 */
+  .camp{display:flex;flex-direction:column;gap:14px}
   .camp>section.panel{order:3}
   .camp>.side{order:1}
-  /* 建物選單變成底部固定圖示列(像神魔之塔主選單) */
-  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:18;margin:0;border:0;border-top:1px solid var(--line);background:var(--panel);box-shadow:0 -4px 14px rgba(0,0,0,.4);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));display:flex;flex-wrap:nowrap;overflow-x:auto;gap:2px}
-  .tab{flex:0 0 auto;min-width:58px;flex-direction:column;gap:2px;font-size:10.5px;padding:6px 4px;border-radius:9px}
-  .tab .ic{font-size:19px;line-height:1}
-  .tab .tl{white-space:nowrap}
-  body:has(.tabs) .toast{bottom:calc(74px + env(safe-area-inset-bottom,0px))}
   /* 迷宮房間:地圖/隊伍在上方可滑動,事件與選項變成貼底的卡片(像神魔之塔的關卡資訊面板) */
   .dun{display:flex;flex-direction:column;gap:12px;padding-bottom:calc(42vh + 10px)}
   .dmain{display:contents}
@@ -952,10 +963,13 @@ ACT.confirmHero=()=>{
 
 /* ================= CITY ================= */
 const TABS=[['home','住處','住'],['tavern','酒館','酒'],['guild','探險者公會','會'],['library','中央圖書館','書'],['exchange','中央交易所','易'],['temple','大神殿','殿'],['smith','鐵匠鋪','匠'],['store','雜貨店','店']];
+const isMobile=()=>{try{return matchMedia('(max-width:720px)').matches;}catch(e){return false;}};
+let cityMapOpen=true;
 function baseHTML(){
   const party=S.sel.map(getM).filter(m=>m&&!m.dead);
   const floors=[];for(let f=1;f<=S.maxFloor;f++)floors.push(f);
   const open=S.day===1,until=DAYS_IN_MONTH-S.day+1;
+  const mobile=isMobile(),showMap=mobile&&cityMapOpen;
   return `<div class="camp">
     <section class="panel">
       <div class="panel-h"><h2>探險者</h2><span class="mute">勾選「出征」組隊,最多 4 人</span></div>
@@ -970,14 +984,20 @@ function baseHTML(){
         <div class="row"><label class="mute" for="startFloor">傳送到</label><select id="startFloor" data-change="setFloor">${floors.map(f=>`<option value="${f}" ${f===S.startFloor?'selected':''}>第 ${f} 層 ${FLOORS[f].n}</option>`).join('')}</select></div>
         <div class="row"><button class="btn primary" data-act="enterLab" ${open&&party.length&&!S.debt?'':'disabled'}>進入迷宮</button><button class="btn" data-act="passDay">度過一天</button>${open?'':`<button class="btn" data-act="skipToOpen">快轉到開啟日</button>`}</div>
       </section>
-      <section class="panel">
+      <section class="panel">${showMap?cityMapHTML():`${mobile?`<div class="row bback"><button class="btn sm" data-act="backToMap">← 返回地圖</button></div>`:''}
         <div class="tabs" role="tablist">${TABS.map(([k,n,ic])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-arg="${k}"><span class="ic">${ic}</span><span class="tl">${n}</span></button>`).join('')}</div>
-        ${tabHTML()}
+        ${tabHTML()}`}
       </section>
     </div>
   </div>`;
 }
+function cityMapHTML(){
+  return `<h2 style="margin-bottom:4px">拉夫多尼亞</h2><p class="mute" style="font-size:12.5px;margin-bottom:4px">點建築物進去</p>
+  <div class="citymap">${TABS.map(([k,n,ic])=>`<button class="bld ${k}" data-act="enterBld" data-arg="${k}"><span class="ico">${ic}</span><span class="tl">${n}</span></button>`).join('')}</div>`;
+}
 ACT.tab=k=>{S.tab=k;save();render();};
+ACT.enterBld=k=>{S.tab=k;cityMapOpen=false;save();render();};
+ACT.backToMap=()=>{cityMapOpen=true;render();};
 function tabHTML(){return({home:homeTab,tavern:tavernTab,guild:guildTab,library:libraryTab,exchange:exchangeTab,temple:templeTab,smith:smithTab,store:storeTab}[S.tab]||homeTab)();}
 function memberCard(m){
   const st=stats(m),sel=S.sel.includes(m.id);

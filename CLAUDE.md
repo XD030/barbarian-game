@@ -7,7 +7,7 @@
 - 原作沒有細節的地方才自訂,並在 `docs/design-notes.md` 標明哪些是原作、哪些是自訂。
 - 玩法結構參考 Steam 遊戲 Dungeon Settlers:城市經營 + 四人小隊下迷宮 + 同伴永久死亡。
 - 戰鬥是回合制,有依速度排列的順序條(類似崩壞:星穹鐵道),版面像神魔之塔:上方是怪物圖片,下方是隊伍頭像與血條。**不要文字訊息框**,傷害數字和狀態直接跳在角色身上。
-- 手機與電腦用不同介面:電腦維持置中卡片式排版;手機(`@media (max-width:720px)`)走神魔之塔風格——建物選單是底部固定圖示列、迷宮事件面板是貼底的固定卡片、戰鬥畫面滿版鋪開整個螢幕。純 CSS 切換,不是另外做一套 HTML。
+- 手機與電腦用不同介面:電腦維持置中卡片式排版;手機(`isMobile()`,`matchMedia('(max-width:720px)')`)走神魔之塔風格——城市畫面是可點的建物地圖(`cityMapHTML()`,點建築進去再用「返回地圖」鍵出來,狀態存在不存檔的 `cityMapOpen`)、迷宮事件面板是貼底的固定卡片(CSS)、戰鬥畫面滿版鋪開整個螢幕(CSS)。
 - 主角死亡要到三神教大神殿復活,第一次免費,之後收費遞增;同伴死亡是永久的。
 
 ## 目前的檔案
@@ -23,7 +23,7 @@
 - `LABYRINTH`:`genFloor()`(第 1 層十字四區、第 2 層四區之一、第 3 層朝聖者之路、第 5 層三峽谷、第 6 層大海三海域)、天空之塔(`towerHTML`、`ACT.stair`)、次元崩壞、時間與關閉(`advanceTime`、`eject`)、`FLOORMASTER`+`floorMasterBlock()`+`ACT.fmaster`(6 個層主都做了:第 1~5 層各一個 + 第 1 層的深淵之主貝爾札克特殊事件款,鍵 `'abyss'`,資料驅動,之後要加新層主只要加表格項目;第 6 層層主原作資料不足,還沒做)。第 6 層要在鐵匠鋪(`smithTab`)花石幣雇用航海士(`S.navigator`)、建造船隻(`S.ship`,1~3 級,`shipCost`)才能從第 5 層的 `f6gate` 房間出發。
 - `TURN-BASED BATTLE`:`startBattle`、`battleLoop`(非同步,玩家回合用 Promise 等待指令)、`hit`、`fall`、`endBattle`、跳字 `pop()`。敵方標籤除了原本的 `heavy`/`aoe`/`bind`/`fear`/`summon` 外,層主補完時新增了兩個通用機制:`silence`(沉默,下在玩家身上會讓精髓技能按鈕變灰、AI 也不會選技能,`renderCmd`/`autoChoose`/`ACT.bCmd` 都有擋)、`enrage`(覺醒,生命降到 50%/20% 各觸發一次永久強化,邏輯在 `enemyAct`)。6 個層主的技能、小怪都各自客製化,不互相套用同一招,細節見 `docs/design-notes.md`。
 - 互動統一用 `data-act` / `data-change` / `data-input` 事件委派到 `ACT` 物件。
-- `<style>` 開頭附近的「Mobile (phone) layout」media query集中放所有手機版專屬 CSS(`.tabs` 變底部固定圖示列、`.dun .panel.event` 變貼底固定卡片、`.bt` 滿版),都用 `display:contents`/`position:fixed` 之類純 CSS 手法接管既有 HTML,沒有另外寫手機版的 render 函式。
+- `<style>` 開頭附近的「Mobile (phone) layout」media query集中放手機版的迷宮/戰鬥 CSS(`.dun .panel.event` 變貼底固定卡片、`.bt` 滿版),用 `display:contents`/`position:fixed` 接管既有 HTML。城市畫面的建物地圖是真的分支邏輯(`baseHTML()` 裡 `isMobile()&&cityMapOpen` 才輸出 `cityMapHTML()`),不是純 CSS,因為手機版多了一層「地圖→建物內容」的狀態。
 
 ## 開發慣例
 - 介面文字一律繁體中文(台灣用語)。
