@@ -94,16 +94,16 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .mtab.center .orb small{display:block;font-family:var(--f-body);font-size:8.5px;font-weight:400}
 /* 隊伍畫面(手機版,仿神魔之塔的隊伍編輯畫面) */
 .teamhead{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:2px}
-.teamslots{display:flex;gap:7px;overflow-x:auto;padding:2px 2px 6px}
-.tslot{flex:0 0 auto;width:52px;background:var(--panel2);border:2px solid var(--line);border-radius:8px;padding:4px 2px 3px;position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
-.tslot img{width:38px;height:43px;image-rendering:pixelated}
+.teamslots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:2px 2px 6px}
+.tslot{width:100%;max-width:76px;justify-self:center;background:var(--panel2);border:2px solid var(--line);border-radius:8px;padding:4px 2px 3px;position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tslot img{width:72%;max-width:46px;aspect-ratio:45/51;height:auto;image-rendering:pixelated}
 .tslot .lv{font-family:var(--f-num);font-size:9px;color:var(--gold)}
 .tslot.in{border-color:var(--torch)}
 .tslot.foc{box-shadow:0 0 0 2px var(--torch-hi)}
 .tslot.dead{opacity:.45;border-style:dashed}
 .tslot .chk{position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:var(--torch);color:#1c1309;font-size:10px;line-height:16px;text-align:center;font-weight:700}
 .tslot.empty{border-style:dashed;opacity:.55}
-.tslot.empty .plus{font-size:19px;color:var(--dim);line-height:43px;height:43px}
+.tslot.empty .plus{font-size:19px;color:var(--dim);width:72%;max-width:46px;aspect-ratio:45/51;display:grid;place-items:center}
 .subtabs{display:flex;gap:4px;margin:8px 0 2px}
 .stab{flex:1;font:inherit;font-size:12.5px;padding:6px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--mute);cursor:pointer}
 .stab.sel{color:var(--torch-hi);border-color:var(--torch);background:#352a1d}
@@ -136,7 +136,7 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .mcard.is-sel{border-color:var(--torch);box-shadow:inset 0 0 0 1px var(--torch)}
 .mcard.dead{opacity:.6;border-style:dashed}
 .mhead{display:flex;gap:10px;align-items:center}
-.spr{image-rendering:pixelated;width:45px;height:51px;flex:none;background:var(--void);border-radius:4px}
+.spr{image-rendering:pixelated;width:22%;max-width:64px;min-width:38px;aspect-ratio:45/51;height:auto;flex:none;background:var(--void);border-radius:4px}
 .mname{flex:1;min-width:0;display:flex;flex-direction:column}
 .mname b{font-family:var(--f-title);font-size:16px}
 .mname span{font-size:12.5px;color:var(--mute)}
@@ -311,8 +311,10 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
 .box li{margin:3px 0}
 .box .acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--torch);color:var(--ink);padding:8px 14px;border-radius:5px;z-index:40;font-size:13.5px;max-width:calc(100% - 32px);pointer-events:none}
-/* ---------- Mobile (phone) layout: Tower-of-Saviors-style fixed bottom nav/sheet + fullscreen battle ---------- */
-@media (max-width:720px){
+/* ---------- Mobile (phone) layout: Tower-of-Saviors-style fixed bottom nav/sheet + fullscreen battle.
+   手機優先、漸進式斷點(參考 421/640/768px 這套分法):這個區塊涵蓋到 767px(含平板直放的邊界),
+   裡面在 420px 以下再收窄一層給小手機用,420~767px 共用同一套手機排版。 ---------- */
+@media (max-width:767px){
   /* 外框固定(html/body 鎖死成整個視窗大小),只有 #screen 內部捲動。
      這樣切分頁、內容變長變短都只影響 #screen 的內部捲軸,
      不會動到整個網頁的高度,瀏覽器也就不會因為頁面高度變化重新計算
@@ -348,6 +350,15 @@ select{font:inherit;background:var(--void);color:var(--ink);border:1px solid var
   .cmd{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
   .cmdb{padding:9px 10px}
   body:has(.bt){overflow:hidden}
+}
+/* 420px 以下的小手機:再收窄一層,圖示優先、文字標籤先讓位(跟參考文件的 421px 斷點手法一樣) */
+@media (max-width:420px){
+  .mtab .tl{display:none}
+  .mtab .ic{font-size:21px}
+  .citymap .bld .tl{font-size:10.5px}
+  .bagGrid{grid-template-columns:repeat(4,1fr)}
+  .tslot{max-width:64px}
+  .cmdg{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){.meter i,.foeU.dead{transition:none}.pop{animation-duration:.6s}}
 </style>
@@ -1029,7 +1040,7 @@ ACT.confirmHero=()=>{
 
 /* ================= CITY ================= */
 const TABS=[['home','住處','住'],['tavern','酒館','酒'],['guild','探險者公會','會'],['library','中央圖書館','書'],['exchange','中央交易所','易'],['temple','大神殿','殿'],['smith','鐵匠鋪','匠'],['store','雜貨店','店']];
-const isMobile=()=>{try{return matchMedia('(max-width:720px)').matches;}catch(e){return false;}};
+const isMobile=()=>{try{return matchMedia('(max-width:767px)').matches;}catch(e){return false;}};
 let mobileView='map'; // 手機版城市畫面目前顯示什麼:map(建物地圖)/bldg(建物內容)/bag(背包)/team(隊伍)
 function baseHTML(){
   const party=S.sel.map(getM).filter(m=>m&&!m.dead);
