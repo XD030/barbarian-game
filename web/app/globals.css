@@ -172,6 +172,9 @@ button{touch-action:manipulation}
 .qcard b{font-family:var(--f-title);font-size:15.5px}
 .qcard .sub{color:var(--mute);font-size:13px}
 
+.templeActions{display:flex;gap:8px;margin-bottom:14px}
+.templeActions .btn{flex:1;padding:14px 10px;font-size:15px;font-weight:700;text-align:center;border-radius:10px}
+
 .faithlist{display:flex;flex-direction:column;gap:10px}
 .faithcard{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
 .faithhead{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--f-title)}
