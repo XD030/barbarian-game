@@ -46,7 +46,6 @@ export function refreshTavern(state) {
 
 export function gearCost(m, t) { return Math.round(80 * ECON * (t + 1) * (RACE[m.race].forge || 1)); }
 export function shipCost(t) { return (t === 1 ? 4000 : t === 2 ? 9000 : 16000) * ECON; }
-export function reviveCost(state) { const h = state.members.find(m => m.hero); return state.revives === 0 ? 0 : 150 * ECON * (h ? h.lv : 1) * state.revives; }
 export function removeCost(state) { return 500 * ECON * Math.pow(2, state.removals); }
 export function healAllCost(state) { return living(state).reduce((a, m) => a + Math.ceil((stats(m).maxhp - m.hp) / 2 * ECON), 0); }
 
@@ -55,6 +54,10 @@ export function healAllCost(state) { return living(state).reduce((a, m) => a + M
 export function processDays(state, n, log) {
   for (let d = 0; d < n; d++) {
     let earn = 0;
+    for (const m of state.members) {
+      m.prayedToday = false;
+      if (m.prayBuff) { m.prayBuff.left--; if (m.prayBuff.left <= 0) m.prayBuff = null; }
+    }
     for (const m of living(state)) {
       const st = stats(m);
       if (m.dispatch) {

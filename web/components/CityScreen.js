@@ -19,10 +19,11 @@ import PlaceholderTab from './city/tabs/PlaceholderTab';
 import { WEAPON, TATTOO_COST, TATTOO_PATH, BEASTPACT, SPIRIT, SPIRIT_STONE_COST, SPIRIT_STONE_RATE, ECON } from '../lib/data';
 import { getM } from '../lib/getM';
 import { stats } from '../lib/stats';
-import { gearCost, shipCost, reviveCost, healAllCost, processDays } from '../lib/city';
+import { gearCost, shipCost, healAllCost, processDays } from '../lib/city';
 import { genFloor1, portalXp, FLOORS } from '../lib/dungeon';
 import { tickRequests, claimReq } from '../lib/guild';
 import { research } from '../lib/library';
+import { joinChurch, pray } from '../lib/temple';
 import { useIsMobile } from '../lib/useIsMobile';
 
 export default function CityScreen({ state, mutate, onResetSave }) {
@@ -115,12 +116,6 @@ export default function CityScreen({ state, mutate, onResetSave }) {
   const onBuyPotion = () => mutate(s => { if (s.stone < 30 * ECON || s.potions >= 5) return; s.stone -= 30 * ECON; s.potions++; });
   const onBuyTorch = () => mutate(s => { if (s.stone < 60 * ECON) return; s.stone -= 60 * ECON; s.torches++; });
 
-  const onRevive = () => mutate(s => {
-    const h = s.members.find(m => m.hero); if (!h || !h.dead) return;
-    const c = reviveCost(s); if (s.stone < c) return;
-    s.stone -= c; s.revives++; h.dead = false; h.hp = Math.round(stats(h).maxhp * .5); h.stress = 40; h.soul = stats(h).soul;
-    log(s, `三神教的祭司讓 ${h.name} 重新睜開了眼睛。${c ? `花了 ${c} 石幣。` : '第一次的復活不收費。'}`);
-  });
   const onTempleHeal = () => mutate(s => {
     const c = healAllCost(s); if (s.stone < c) return;
     s.stone -= c; s.members.filter(m => !m.dead).forEach(m => { m.hp = stats(m).maxhp; });
@@ -130,6 +125,8 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     const m = getM(s, id); const c = 40 * ECON; if (!m || s.stone < c) return;
     s.stone -= c; m.stress = 0;
   });
+  const onJoinChurch = (k) => mutate(s => joinChurch(s, k, (msg) => log(s, msg)));
+  const onPray = (id) => mutate(s => pray(s, id, (msg) => log(s, msg)));
 
   const onPassDay = () => mutate(s => processDays(s, 1, (msg) => log(s, msg)));
   const onClaimReq = (id) => mutate(s => claimReq(s, id, (msg) => log(s, msg)));
@@ -155,7 +152,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     guild: <GuildTab state={state} onClaimReq={onClaimReq} />,
     library: <LibraryTab state={state} onResearch={onResearch} />,
     exchange: <PlaceholderTab title="中央交易所" desc="賣精髓、裂縫石和編號物品的地方。" />,
-    temple: <TempleTab state={state} onRevive={onRevive} onTempleHeal={onTempleHeal} onPurify={onPurify} />,
+    temple: <TempleTab state={state} onJoinChurch={onJoinChurch} onTempleHeal={onTempleHeal} onPurify={onPurify} onPray={onPray} />,
     smith: <SmithTab state={state} onGear={onGear} onSwapWeapon={onSwapWeapon} onHireNav={onHireNav} onBuyShip={onBuyShip} />,
     store: <StoreTab state={state} onBuyPotion={onBuyPotion} onBuyTorch={onBuyTorch} />,
   }[tab];
