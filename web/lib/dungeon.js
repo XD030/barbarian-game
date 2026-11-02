@@ -42,13 +42,23 @@ function makeGrid(W, H, s0) {
   return rooms;
 }
 
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function genEnemies(field) {
+  const fd = FIELDS[field], pool = fd.pool.length ? fd.pool : ['goblin'];
+  const n = clamp(2 + ri(0, 1), 2, 5); // 第 1 層固定算 f=1
+  return Array.from({ length: n }, () => pick(pool));
+}
+
 // 原本 fillRooms 還有 elite/altar(裂縫)兩種房型,都需要還沒搬過來的怪物/裂縫資料,先從房間池拿掉。
 function fillRooms(rooms, ids) {
   const bag = ['combat', 'combat', 'combat', 'resource', 'resource', 'chest', 'trap', 'spring', 'empty'];
   ids = [...ids].sort(() => Math.random() - .5);
   let k = 0;
   if (ids.length > k && Math.random() < .3) rooms[ids[k++]].type = 'merchant';
-  for (; k < ids.length; k++) rooms[ids[k]].type = pick(bag);
+  for (; k < ids.length; k++) {
+    rooms[ids[k]].type = pick(bag);
+    if (rooms[ids[k]].type === 'combat') rooms[ids[k]].enemies = genEnemies(rooms[ids[k]].field);
+  }
 }
 
 export function genFloor1() {

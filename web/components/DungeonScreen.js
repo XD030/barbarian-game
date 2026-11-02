@@ -3,6 +3,7 @@ import TopBar from './city/TopBar';
 import MapGrid from './dungeon/MapGrid';
 import EventPanel from './dungeon/EventPanel';
 import { FIELDS, stayLimit, fmtH, partyMembers, moveTo, camp, campSafe, waitClose, openChest, gather, drink, buyAtMerchant } from '../lib/dungeon';
+import { startBattle } from '../lib/combat';
 import { stats } from '../lib/stats';
 import { WEAPON } from '../lib/data';
 
@@ -23,6 +24,11 @@ export default function DungeonScreen({ state, mutate }) {
   const onGather = () => mutate(s => { const msg = gather(s); if (msg) log(s, msg); });
   const onDrink = () => mutate(s => drink(s));
   const onBuy = (key) => mutate(s => buyAtMerchant(s, key));
+  const onFight = () => mutate(s => {
+    const r = s.run.map.rooms[s.run.map.cur];
+    if (!r.enemies || !r.enemies.length) return;
+    startBattle(s, r.enemies, {});
+  });
   const onUsePotion = () => mutate(s => {
     if (!s.potions) return;
     const p = partyMembers(s); if (!p.length) return;
@@ -44,7 +50,7 @@ export default function DungeonScreen({ state, mutate }) {
               <MapGrid map={map} prev={run.prev} onMove={onMove} />
             </section>
             <section className="panel event" style={{ marginTop: 16 }}>
-              <EventPanel state={state} r={cur} onCamp={onCamp} onCampSafe={onCampSafe} onWaitClose={onWaitClose} onOpenChest={onOpenChest} onGather={onGather} onDrink={onDrink} onBuy={onBuy} onMove={onMove} />
+              <EventPanel state={state} r={cur} onCamp={onCamp} onCampSafe={onCampSafe} onWaitClose={onWaitClose} onOpenChest={onOpenChest} onGather={onGather} onDrink={onDrink} onBuy={onBuy} onMove={onMove} onFight={onFight} />
             </section>
           </div>
           <aside className="side">

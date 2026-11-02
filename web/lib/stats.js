@@ -6,7 +6,11 @@ export { memberPas };
 
 export function numEff(m) {
   if (!m.num) return {};
-  return m.num.eff || {};
+  const f = m.num.eff || {};
+  if (m.race !== 'dwarf') return f;
+  const k = {};
+  for (const key in f) k[key] = typeof f[key] === 'number' ? f[key] * 1.5 : f[key];
+  return k;
 }
 
 export function stats(m) {
@@ -20,6 +24,8 @@ export function stats(m) {
     const e = essInfo(it).st;
     hp += e.hp || 0; atk += e.atk || 0; def += e.def || 0; spd += e.spd || 0; soul += e.soul || 0; mres += e.mres || 0; ls += e.ls || 0; regen += e.regen || 0;
   }
+  if (memberPas(m).includes('preserve')) regen += .03;
+  if (memberPas(m).includes('scent')) crit += .06;
   if (m.num) { const f = numEff(m); atk += f.atk || 0; def += f.def || 0; spd += f.spd || 0; soul += f.soul || 0; mres += f.mres || 0; ls += f.ls || 0; regen += f.regen || 0; crit += f.crit || 0; }
   if (hasT(m, 'tough')) hp *= 1.15; if (hasT(m, 'quick')) spd += 6; if (hasT(m, 'pacifist')) atk *= .75; if (hasT(m, 'bg_merc')) atk += 3;
   if (m.race === 'beast' && m.beastPact === 'enhance') { atk *= 1.15; spd *= 1.10; }

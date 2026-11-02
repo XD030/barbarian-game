@@ -1,7 +1,7 @@
 import { stayLimit, fmtH } from '../../lib/dungeon';
 import { ECON } from '../../lib/data';
 
-export default function EventPanel({ state, r, onCamp, onCampSafe, onWaitClose, onOpenChest, onGather, onDrink, onBuy, onMove }) {
+export default function EventPanel({ state, r, onCamp, onCampSafe, onWaitClose, onOpenChest, onGather, onDrink, onBuy, onMove, onFight }) {
   const run = state.run;
   const camp = <button className="btn" onClick={onCamp}>紮營休息(8 小時)</button>;
   const wait = <button className="btn primary" onClick={onWaitClose}>在這裡等到迷宮關閉({fmtH(Math.max(0, stayLimit(run) - run.h))})</button>;
@@ -27,8 +27,8 @@ export default function EventPanel({ state, r, onCamp, onCampSafe, onWaitClose, 
     return (
       <>
         <h3>遭遇怪物</h3>
-        <p className="desc">不打倒牠們就無法往其他方向前進——但戰鬥引擎還沒搬過來(下一階段),現在只能退回上一間。</p>
-        <div className="row">{back}</div>
+        <p className="desc">{(r.enemies || []).length} 隻怪物擋住了去路。打倒牠們才能繼續往其他方向前進。</p>
+        <div className="row"><button className="btn primary" onClick={onFight}>開戰</button>{back}</div>
       </>
     );
   }

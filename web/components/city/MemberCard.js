@@ -109,7 +109,7 @@ export default function MemberCard({ state, m, selected, mini, onToggleSel, onDi
       <article className="mcard dead">
         <div className="mhead">
           <div className="spr">{RACE[m.race].n[0]}</div>
-          <div className="mname"><b>{m.name}</b><span>已死亡,遺體安置在大神殿</span></div>
+          <div className="mname"><b>{m.name}</b><span>已死亡,要用「蘇生之石」才能復活</span></div>
         </div>
       </article>
     );
@@ -142,7 +142,7 @@ export default function MemberCard({ state, m, selected, mini, onToggleSel, onDi
       {m.race === 'barb' && <TattooPanel state={state} m={m} onTattooUp={onTattooUp} onTattooPath={onTattooPath} />}
       {m.race === 'fairy' && <FairyPanel state={state} m={m} onSpiritStone={onSpiritStone} />}
       <div className="chips">
-        {m.hero && <span className="chip hero" title="你自己。死亡後要到大神殿復活">主角</span>}
+        {m.hero && <span className="chip hero" title="你自己。死亡後要用「蘇生之石」復活">主角</span>}
         {m.traits.map(t => <span key={t} className={`chip ${TRAIT[t].good ? 'good' : 'bad'}`} title={TRAIT[t].d}>{TRAIT[t].n}</span>)}
       </div>
     </article>

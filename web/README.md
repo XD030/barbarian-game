@@ -14,16 +14,23 @@ npm run build   # 產生 out/,basePath 會是 /barbarian-game(對應 GitHub Page
 
 - **階段 1(已完成)**:專案架構(`lib/data.js`、`lib/stats.js`、`lib/state.js`)、建立角色流程(`IntroScreen` → `CreateScreen` → 存進 localStorage 鍵 `barbarian-labyrinth-v5`)。用 Playwright 驗證過畫面、存檔、重新整理後能讀回存檔,`next build` 靜態匯出成功。
 - **階段 2(已完成,桌面版)**:城市畫面(`lib/city.js` + `components/CityScreen.js` + `components/city/`)。
-  - 完整功能:探險者名單(`MemberCard`,含派遣/刺青/靈魂獸契約/精靈契約面板)、住處(`HomeTab`,擴建、日誌)、酒館(`TavernTab`,招募)、鐵匠鋪(`SmithTab`,強化裝備、換武器、造船廠)、雜貨店(`StoreTab`)、大神殿(`TempleTab`,治療/安定心神/復活;移除精髓先空著)、「度過一天」(`processDays`,派遣結算/生活費/稅金/酒館換人)。
+  - 完整功能:探險者名單(`MemberCard`,含派遣/刺青/靈魂獸契約/精靈契約面板)、住處(`HomeTab`,擴建、日誌)、酒館(`TavernTab`,招募)、鐵匠鋪(`SmithTab`,強化裝備、換武器、造船廠)、雜貨店(`StoreTab`)、神殿(`TempleTab`,詳見下方「神殿改版」)、「度過一天」(`processDays`,派遣結算/生活費/稅金/酒館換人)。
   - 先空著(`PlaceholderTab`):中央圖書館、中央交易所——這兩個需要怪物資料(`MON`/`FIELDS`)跟精髓系統(`ESS`/`SK`/`PS`/`NUM`)的畫面還沒接上(資料本身已經搬過來了,見下方)。公會(原「探險者公會」,已改名)已經做出來,見下方「公會改版」。
   - 迷宮入口(次元廣場的「進入迷宮」)也先空著,只留「度過一天」能推進時間。
   - **重要教訓**:`setState` 的 updater 函式一開始用淺拷貝(`{...prev}`)+ 直接 mutate 巢狀陣列/物件,結果在 React/Next 開發模式的 StrictMode 下,updater 會被呼叫兩次來檢查副作用,導致同一個操作套用兩次(例如酒館招募重複執行,出現重複 id)。改成 `structuredClone(prev)` 深拷貝後解決,詳見 `app/page.js` 的 `mutate` 註解。
 - **階段 3(已完成,只搬了第 1 層)**:迷宮探索(`lib/dungeon.js` + `components/DungeonScreen.js` + `components/dungeon/`)。
-  - 只搬了第 1 層水晶洞窟的地圖生成(`genFloor1`,十字四區+中心安全區)跟非戰鬥房型:寶箱、魔石礦脈、陷阱、治癒泉水、流浪商人、空地、安全區(大賢者紀念碑)、傳送門石碑(入口/返回)。其他 5 層的 `FIELDS`/`genFloor` 分支還沒搬,`怪物房`(combat)遇到時只能退回上一間——戰鬥引擎是下一階段才會做。
+  - 只搬了第 1 層水晶洞窟的地圖生成(`genFloor1`,十字四區+中心安全區)跟非戰鬥房型:寶箱、魔石礦脈、陷阱、治癒泉水、流浪商人、空地、安全區(大賢者紀念碑)、傳送門石碑(入口/返回)。其他 5 層的 `FIELDS`/`genFloor` 分支還沒搬。`怪物房`(combat)房間生成時就決定好敵人(`genEnemies`),階段 4 把戰鬥引擎接上後現在能直接開戰了,見下方「階段 4」。
   - 時間推進(`advanceTime`)、樓層關閉自動回城(`eject`/`returnToCity`)都照原本邏輯搬過來,城市那邊的「度過一天」(`processDays`)在回城時會接著跑,天數跟經濟會正確累加。
   - 精髓/裂縫/層主三個系統都還沒搬(跟 FIELDS 的 elite/altar 房型一起留到戰鬥階段),`fillRooms` 的房間池先拿掉這兩種。
   - 用 Playwright 測過完整流程:建角色、進迷宮、移動探索(含被怪物房擋住只能退回的情況)、紮營、等到關閉自動回城、城市經濟接續正確,沒有 console 錯誤。
-- **階段 4(未開始)**:回合制戰鬥引擎(最複雜,排最後)。
+- **階段 4(已完成,只接了一般戰鬥房)**:回合制戰鬥引擎(`lib/combat.js` + `components/BattleScreen.js`)。
+  - 玩法照原作(ATB 速度排序 + 指令制:普通攻擊/技能/防禦/藥水/逃跑),傷害公式、屬性剋制(弱點 ×1.4/抗性 ×0.6)、韌性/體勢崩潰、buff/debuff、持續傷害(中毒/流血/燃燒)、敵人意圖 AI(`decideIntent`/`enemyAct`)都是逐行照搬 `index.html` 的 `hit()`/`perform()`/`autoChoose()` 等函式。
+  - **跟原本最大的差異**:原本是 DOM + async/await(用 `sleep` 製造動畫節奏)逐步播放;這裡改成**同步解析**——玩家送出指令後立刻把自己這回合跟後面所有非玩家回合一次算完,直到遇到下一個需要玩家操作的回合或戰鬥結束為止,沒有逐幀動畫/飄字特效,改成一條文字戰鬥紀錄(`B.log`)。自動戰鬥開關打開時,整場戰鬥會一次解析到底。
+  - 補了兩個原本漏搬的 `stats()` 加成(`preserve`/`scent` 被動的再生/爆擊率、矮人裝編號物品 ×1.5),是用這次寫戰鬥引擎時跟原始碼逐行比對才發現的既有落差,順手修掉了。
+  - 完整搬了 `MON_COMBAT`(hp/atk/def/spd/tough/mres,從 `MON` 表另外抽出來跟 `monInfo.js` 的非戰鬥欄位配對),死亡結算搬了經驗(`gainXp`)、戰鬥死亡(`killMember`,主角死了留在隊伍裡 `dead:true` 等以後的「蘇生之石」復活,一般隊員直接從名單移除)、壓力(`addStress`,搬了種族/特質的壓力倍率)都放進 `lib/city.js`。
+  - **只接了「一般戰鬥房」(floor 1 的 combat 房型)**,遇到就能按「開戰」觸發(`lib/dungeon.js` 的 `genEnemies`,房間生成時就決定好敵人)。裂縫(rift)、層主(fmaster)、天空之塔、次元崩壞、公會考核(exam)、伏擊(ambush)這些 `opt` 旗標目前都還沒接——這些系統本身(裂縫/層主/第 1 層以外的 FIELDS)也還沒搬過來,等對應系統做了再補對應的 `opt` 處理。女妖的「怨恨之印」詛咒機制也沒做(第 1 層的場域池沒有女妖)。
+  - 用 Playwright 測過:進怪物房開戰、自動戰鬥秒解、手動按一次指令後重新整理(測存檔序列化安全)、勝利(經驗/升級/掉落入袋)、全滅(主角死亡留隊伍、一般隊員除名、回到城市、`run` 清空)三種結局都沒有 console 錯誤。
+  - 原本 `IntroScreen`/`MemberCard` 裡還留著「死了要到大神殿復活」的舊文案(死亡角色在這之前完全沒機會出現,所以沒發現),這次順便改成符合神殿改版後「死亡要用蘇生之石」的說法。
 - **階段 5(已完成,跳過階段 4 先做,因為排版跟戰鬥邏輯無關)**:手機版專屬 UI(`<768px` 斷點,照 `isMobile()` 那套神魔之塔風格排版搬過來)。
   - `lib/useIsMobile.js`:`matchMedia('(max-width:767px)')` 的 React hook,取代原本的 `isMobile()`。
   - 城市畫面在手機寬度下整個換成另一套排版(`components/CityScreen.js` 裡用 `mobile` 分支):`CityMap`(建物地圖,點建築進去)→`PlaceholderTab`/`HomeTab`/`TavernTab`/...(沿用桌面版同一套 tab 內容,只是外面包一個「返回地圖」)、`TeamScreen`(隊伍頭像槽位 + 角色詳情/精髓詳情子分頁,精髓子分頁先放文字說明)、`BagScreen`(背包,精髓/編號物品系統還沒搬所以先顯示「空的」)、底部固定主選單列 `MobileTabBar`(隊伍/背包/中央地圖圓鈕,另外兩格先停用)。

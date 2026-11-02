@@ -8,6 +8,7 @@ import IntroScreen from '../components/IntroScreen';
 import CreateScreen from '../components/CreateScreen';
 import CityScreen from '../components/CityScreen';
 import DungeonScreen from '../components/DungeonScreen';
+import BattleScreen from '../components/BattleScreen';
 
 export default function Page() {
   const [state, setState] = useState(null); // null = 還在讀 localStorage,避免 SSR/水合不一致
@@ -68,6 +69,7 @@ export default function Page() {
 
   if (screen === 'intro') return <div className="wrap"><IntroScreen saved={state.members.length ? state : null} onContinue={handleContinue} onNewGame={handleNewGame} /></div>;
   if (screen === 'create') return <div className="wrap"><CreateScreen onConfirm={handleConfirmHero} /></div>;
+  if (state.screen === 'battle' && state.run && state.run.battle) return <BattleScreen state={state} mutate={mutate} />;
   if (state.screen === 'dungeon' && state.run) return <DungeonScreen state={state} mutate={mutate} />;
   return <CityScreen state={state} mutate={mutate} onResetSave={handleResetSave} />;
 }

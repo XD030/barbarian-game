@@ -1,6 +1,38 @@
-import { RACE, WEAPON, ECON, TATTOO_PATH, TATTOO_COST, BEASTPACT, SPIRIT, SPIRIT_STONE_COST, SPIRIT_STONE_RATE } from './data';
+import { RACE, WEAPON, ECON, TATTOO_PATH, TATTOO_COST, BEASTPACT, SPIRIT, SPIRIT_STONE_COST, SPIRIT_STONE_RATE, LV_XP, MAXLV } from './data';
 import { hasT, stats } from './stats';
 import { makeMember } from './state';
+
+function stressMult(m) { let k = 1; if (hasT(m, 'brave')) k *= .7; if (hasT(m, 'coward')) k *= 1.4; if (hasT(m, 'bg_drifter')) k *= .7; if (m.race === 'barb') k *= .85; return k; }
+export function addStress(m, v) { m.stress = Math.max(0, Math.min(100, m.stress + (v > 0 ? v * stressMult(m) : v))); }
+
+export function gainXp(m, xp) {
+  m.xp += xp;
+  const ups = [];
+  while (m.lv < MAXLV && m.xp >= LV_XP[m.lv + 1]) {
+    const r = m.hp / stats(m).maxhp;
+    m.lv++;
+    m.hp = Math.round(r * stats(m).maxhp);
+    ups.push(m.lv);
+  }
+  return ups;
+}
+
+/* 戰鬥死亡:主角(m.hero)就算死了也留在隊伍裡(m.dead=true),等以後的「蘇生之石」復活;
+   一般隊員直接從 state.members 移除。 */
+export function killMember(state, m, log) {
+  if (m.hero) {
+    m.dead = true; m.hp = 0;
+    state.sel = state.sel.filter(id => id !== m.id);
+    log(state, `${m.name} 死在了迷宮裡。遺體在迷宮關閉時被送回,安置在神殿。`);
+    return;
+  }
+  state.members = state.members.filter(x => x.id !== m.id);
+  state.sel = state.sel.filter(id => id !== m.id);
+  state.fallen = state.fallen || [];
+  state.fallen.push({ name: m.name, lv: m.lv, d: `${state.month}/${state.day}` });
+  if (m.num) { state.items = state.items || []; state.items.push(m.num); }
+  log(state, `${m.name}(Lv${m.lv})死在了迷宮裡。`);
+}
 
 const ri = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
