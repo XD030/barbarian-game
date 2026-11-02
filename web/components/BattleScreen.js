@@ -6,7 +6,7 @@ import { startBattle, setTarget, buildPlayerAct, submitAction, toggleAuto, skill
 const meter = (v, max, cls) => <div className={`meter ${cls}`}><i style={{ width: `${Math.max(0, Math.min(100, v / max * 100))}%` }} /></div>;
 
 export default function BattleScreen({ state, mutate }) {
-  const B = state.run && state.run.battle;
+  const B = state.battle;
   if (!B) return null;
   const a = B.actor;
   const canAct = B.waiting && a && a.side === 'p' && !B.over;
@@ -25,7 +25,7 @@ export default function BattleScreen({ state, mutate }) {
     <div className="wrap">
       <section className="bt">
         <div className="bt-top">
-          <h2>戰鬥</h2>
+          <h2>{B.opt.exam ? '公會晉級考試' : B.opt.ambush ? '遭到偷襲!' : '戰鬥'}</h2>
           <button className="btn sm" onClick={onAuto}>自動:{B.auto ? '開' : '關'}</button>
         </div>
 
@@ -67,8 +67,8 @@ export default function BattleScreen({ state, mutate }) {
                 return <button className="cmdb sk" key={k} disabled={silenced || a.soul < c} onClick={() => onAct('sk', k)}><b>{s.n}</b><span className="c">魂力 {c}</span><small>{s.d}</small></button>;
               })}
               <button className="cmdb" onClick={() => onAct('def')}><b>防禦</b><small>受到的傷害減半,魂力 +15</small></button>
-              <button className="cmdb" disabled={!state.potions} onClick={() => onAct('pot')}><b>藥水({state.potions})</b><small>生命最低的隊友回復 40%</small></button>
-              <button className="cmdb" onClick={() => onAct('flee')}><b>逃跑</b><small>70% 機率成功,退回上一個房間</small></button>
+              <button className="cmdb" disabled={!state.potions || B.opt.exam} onClick={() => onAct('pot')}><b>藥水({state.potions})</b><small>生命最低的隊友回復 40%</small></button>
+              {!B.opt.exam && <button className="cmdb" onClick={() => onAct('flee')}><b>逃跑</b><small>70% 機率成功,退回上一個房間</small></button>}
             </div>
           ) : <div className="wait">……</div>}
         </div>

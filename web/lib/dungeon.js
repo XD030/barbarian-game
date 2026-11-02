@@ -56,8 +56,10 @@ function fillRooms(rooms, ids) {
   let k = 0;
   if (ids.length > k && Math.random() < .3) rooms[ids[k++]].type = 'merchant';
   for (; k < ids.length; k++) {
-    rooms[ids[k]].type = pick(bag);
-    if (rooms[ids[k]].type === 'combat') rooms[ids[k]].enemies = genEnemies(rooms[ids[k]].field);
+    const r = rooms[ids[k]];
+    r.type = pick(bag);
+    if (r.type === 'combat') r.enemies = genEnemies(r.field);
+    if (r.type === 'chest' && Math.random() < .12) { r.mimic = true; r.enemies = genEnemies(r.field); }
   }
 }
 
@@ -143,9 +145,14 @@ export function moveTo(s, log, i) {
   if (!r.visited) { r.visited = true; onEnter(partyMembers(s), r); }
 }
 
+// 回傳值:null = 平安無事,否則是伏擊怪物的 key 陣列(交給呼叫端去 startBattle)。
 export function camp(s) {
+  const run = s.run;
   restParty(partyMembers(s), .25, 6);
-  advanceTime(s, 8);
+  if (advanceTime(s, 8)) return null;
+  const fieldK = curField(run), pool = FIELDS[fieldK]?.pool || [];
+  if (Math.random() < .2 && pool.length) return genEnemies(fieldK);
+  return null;
 }
 export function campSafe(s) {
   restParty(partyMembers(s), .35, 10);
@@ -157,17 +164,20 @@ export function waitClose(s, log) {
   advanceTime(s, Math.max(1, h));
 }
 
+// 回傳 {msg, ambush}:ambush 非空時是機關怪物的 key 陣列,呼叫端要接著開戰。
 export function openChest(s) {
   const run = s.run, r = run.map.rooms[run.map.cur];
   if (r.cleared) return null;
+  if (r.mimic) { r.type = 'combat'; r.mimic = false; return { msg: '寶箱是陷阱,怪物衝了出來!', ambush: r.enemies }; }
   const f = run.floor, st = Math.round((ri(10, 25) * f + f * 8) * ECON);
   run.loot.stone += st;
   let msg = `魔石 +${st}`;
   if (Math.random() < .25 && s.potions < 5) { s.potions++; msg += ',以及一瓶藥水'; }
   r.cleared = true;
-  return msg;
+  return { msg, ambush: null };
 }
 
+// 回傳 {msg, ambush},同 openChest。
 export function gather(s) {
   const run = s.run, r = run.map.rooms[run.map.cur];
   if (r.cleared) return null;
@@ -175,8 +185,13 @@ export function gather(s) {
   run.loot.stone += v;
   partyMembers(s).forEach(m => { m.stress = Math.min(100, m.stress + 5); });
   r.cleared = true;
-  advanceTime(s, 4);
-  return `魔石 +${v}`;
+  if (advanceTime(s, 4)) return { msg: `魔石 +${v}`, ambush: null };
+  const pool = FIELDS[r.field]?.pool || [];
+  if (pool.length && Math.random() < .25) {
+    r.type = 'combat'; r.cleared = false; const enemies = genEnemies(r.field); r.enemies = enemies;
+    return { msg: `魔石 +${v}。採集的聲音引來了怪物!`, ambush: enemies };
+  }
+  return { msg: `魔石 +${v}`, ambush: null };
 }
 
 export function drink(s) {

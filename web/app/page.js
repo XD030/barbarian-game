@@ -69,7 +69,7 @@ export default function Page() {
 
   if (screen === 'intro') return <div className="wrap"><IntroScreen saved={state.members.length ? state : null} onContinue={handleContinue} onNewGame={handleNewGame} /></div>;
   if (screen === 'create') return <div className="wrap"><CreateScreen onConfirm={handleConfirmHero} /></div>;
-  if (state.screen === 'battle' && state.run && state.run.battle) return <BattleScreen state={state} mutate={mutate} />;
+  if (state.screen === 'battle' && state.battle) return <BattleScreen state={state} mutate={mutate} />;
   if (state.screen === 'dungeon' && state.run) return <DungeonScreen state={state} mutate={mutate} />;
   return <CityScreen state={state} mutate={mutate} onResetSave={handleResetSave} />;
 }

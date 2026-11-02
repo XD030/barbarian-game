@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { REQ_CAP, REQ_DESC, reqProgress, reqDone, nextReqInMs } from '../../../lib/guild';
+import { REQ_CAP, REQ_DESC, reqProgress, reqDone, nextReqInMs, rankCap } from '../../../lib/guild';
 
 const BOOKS = [['req', '委託'], ['bounty', '懸賞'], ['exam', '考核']];
 
@@ -25,9 +25,12 @@ function ReqCard({ state, r, onClaim }) {
   );
 }
 
-export default function GuildTab({ state, onClaimReq }) {
+export default function GuildTab({ state, onClaimReq, onExam }) {
   const [book, setBook] = useState('req');
   const nextIn = nextReqInMs(state);
+  const cap = rankCap(state);
+  const canExam = state.contrib >= 80 && !state.examPassed;
+  const sel = state.sel.map(id => state.members.find(m => m.id === id)).filter(m => m && !m.dead);
 
   return (
     <>
@@ -51,7 +54,24 @@ export default function GuildTab({ state, onClaimReq }) {
       )}
 
       {book === 'bounty' && <p className="mute">懸賞還沒開放。</p>}
-      {book === 'exam' && <p className="mute">考核還沒開放。</p>}
+      {book === 'exam' && (
+        <>
+          <p className="mute" style={{ fontSize: 12.5 }}>
+            公會認證:{cap === 7 ? '最高可認定為 7 級' : cap === 6 ? '中堅(可認定到 6 級)' : '考試合格(可認定到 4 級)'}
+            ・貢獻 {state.contrib}{state.contrib < 30 ? '(滿 30 通過 6 級審查)' : state.examPassed ? '' : '(滿 80 可報考 5 級)'}
+          </p>
+          {state.examPassed ? (
+            <p className="mute">已經通過 5 級晉級考試了。</p>
+          ) : !canExam ? (
+            <p className="mute">貢獻點滿 80 才能報考 5 級晉級考試(與公會考官交手)。</p>
+          ) : (
+            <>
+              <p className="mute" style={{ fontSize: 12.5 }}>{sel.length ? sel.map(m => m.name).join('、') : '還沒選人'}(到上方「探險者」名單勾選「出征」組隊)</p>
+              <div className="row"><button className="btn primary" disabled={!sel.length} onClick={onExam}>報考 5 級晉級考試(與考官交手)</button></div>
+            </>
+          )}
+        </>
+      )}
     </>
   );
 }

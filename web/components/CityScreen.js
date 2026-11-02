@@ -25,6 +25,7 @@ import { tickRequests, claimReq } from '../lib/guild';
 import { research } from '../lib/library';
 import { joinChurch, pray } from '../lib/temple';
 import { donateFaith } from '../lib/faith';
+import { startBattle } from '../lib/combat';
 import { useIsMobile } from '../lib/useIsMobile';
 
 export default function CityScreen({ state, mutate, onResetSave }) {
@@ -128,6 +129,10 @@ export default function CityScreen({ state, mutate, onResetSave }) {
 
   const onPassDay = () => mutate(s => processDays(s, 1, (msg) => log(s, msg)));
   const onClaimReq = (id) => mutate(s => claimReq(s, id, (msg) => log(s, msg)));
+  const onExam = () => mutate(s => {
+    if (!s.sel.length || s.examPassed || s.contrib < 80) return;
+    startBattle(s, s.sel, ['examiner'], { exam: 1 });
+  });
   const onResearch = (k) => mutate(s => research(s, k, (msg) => log(s, msg)));
 
   const onEnterLab = () => mutate(s => {
@@ -147,7 +152,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
   const tabBody = {
     home: <HomeTab state={state} onDorm={onDorm} />,
     tavern: <TavernTab state={state} onRecruit={onRecruit} />,
-    guild: <GuildTab state={state} onClaimReq={onClaimReq} />,
+    guild: <GuildTab state={state} onClaimReq={onClaimReq} onExam={onExam} />,
     library: <LibraryTab state={state} onResearch={onResearch} />,
     exchange: <PlaceholderTab title="中央交易所" desc="賣精髓、裂縫石和編號物品的地方。" />,
     temple: <TempleTab state={state} onJoinChurch={onJoinChurch} onTempleHeal={onTempleHeal} onPray={onPray} onDonateFaith={onDonateFaith} />,

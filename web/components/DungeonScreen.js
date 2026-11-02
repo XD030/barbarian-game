@@ -17,17 +17,30 @@ export default function DungeonScreen({ state, mutate }) {
   const log = (s, msg) => { s.log.unshift({ d: `${s.month}/${s.day}`, m: msg }); s.log.length = Math.min(s.log.length, 60); };
 
   const onMove = (i) => mutate(s => moveTo(s, log, i));
-  const onCamp = () => mutate(s => camp(s));
+  const onCamp = () => mutate(s => {
+    const amb = camp(s);
+    if (amb) startBattle(s, s.run.party, amb, { ambush: 1 });
+  });
   const onCampSafe = () => mutate(s => campSafe(s));
   const onWaitClose = () => mutate(s => waitClose(s, log));
-  const onOpenChest = () => mutate(s => { const msg = openChest(s); if (msg) log(s, msg); });
-  const onGather = () => mutate(s => { const msg = gather(s); if (msg) log(s, msg); });
+  const onOpenChest = () => mutate(s => {
+    const r = openChest(s);
+    if (!r) return;
+    if (r.msg) log(s, r.msg);
+    if (r.ambush) startBattle(s, s.run.party, r.ambush, {});
+  });
+  const onGather = () => mutate(s => {
+    const r = gather(s);
+    if (!r) return;
+    if (r.msg) log(s, r.msg);
+    if (r.ambush) startBattle(s, s.run.party, r.ambush, {});
+  });
   const onDrink = () => mutate(s => drink(s));
   const onBuy = (key) => mutate(s => buyAtMerchant(s, key));
   const onFight = () => mutate(s => {
     const r = s.run.map.rooms[s.run.map.cur];
     if (!r.enemies || !r.enemies.length) return;
-    startBattle(s, r.enemies, {});
+    startBattle(s, s.run.party, r.enemies, {});
   });
   const onUsePotion = () => mutate(s => {
     if (!s.potions) return;

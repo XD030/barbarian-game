@@ -3,9 +3,11 @@
    這裡改成同步解析——玩家送出指令後,立刻把「自己這回合」跟後面所有非玩家回合
    (敵人、或開了自動的玩家角色)一次算完,直到遇到下一個需要玩家操作的回合,或戰鬥結束為止。
    沒有逐幀動畫/飄字特效,改成一條文字戰鬥紀錄(B.log)。
-   這個引擎目前只有「一般戰鬥房」會用到:裂縫/層主/天空之塔/次元崩壞/公會考核/伏擊
-   這些還沒搬過來的系統用到的 opt 旗標(rift/fmaster/tower/collapse/exam/ambush)先不處理,
-   女妖的「怨恨之印」詛咒機制也先不做(第 1 層的場域池沒有女妖,用不到)。 */
+   戰鬥狀態放在 state.battle(不是 state.run.battle),因為公會考核(opt.exam)是在城市畫面打的,
+   沒有 state.run 可以掛。一般戰鬥房/伏擊/寶箱陷阱/採集被打擾都已經接上;
+   裂縫/層主/天空之塔/次元崩壞這些 opt 旗標還沒處理,因為那些系統本身也還沒搬過來
+   (需要 RIFTS/FLOORMASTER 資料跟對應的樓層/房型生成邏輯)。女妖的「怨恨之印」詛咒機制
+   也先不做(第 1 層的場域池沒有女妖,用不到)。 */
 import { WEAPON, GRADE } from './data';
 import { stats, hasT, memberPas, numEff } from './stats';
 import { ESS, essInfo, makeEss, memberActs } from './essence';
@@ -15,6 +17,7 @@ import { MON_COMBAT } from './monCombat';
 import { killMember, addStress, gainXp } from './city';
 import { roomHasFoes, advanceTime, stayLimit } from './dungeon';
 import { processDays } from './city';
+import { refreshShop } from './guild';
 
 const PHYS = ['slash', 'pierce', 'blunt'];
 export const INTENT_LABEL = {
@@ -202,13 +205,15 @@ function fall(state, B, t, src) {
   if (t.dead) return;
   t.dead = true; t.hp = 0;
   if (B.target === t) B.target = null;
-  state.kc[t.key] = (state.kc[t.key] || 0) + 1;
-  const G = GRADE[t.g];
-  const greedy = 1 + B.units.filter(u => u.side === 'p' && hasT(u.m, 'greedy')).length * .1;
-  B.loot.stone += Math.round(G.stone * greedy);
-  if (!B.kills.includes(t.key)) B.kills.push(t.key);
+  if (!B.opt.exam) {
+    state.kc[t.key] = (state.kc[t.key] || 0) + 1;
+    const G = GRADE[t.g];
+    const greedy = 1 + B.units.filter(u => u.side === 'p' && hasT(u.m, 'greedy')).length * .1;
+    B.loot.stone += Math.round(G.stone * greedy);
+    if (!B.kills.includes(t.key)) B.kills.push(t.key);
+  }
   B.log.push(`${t.name} 倒下了`);
-  if (t.noEss) return;
+  if (B.opt.exam || t.noEss) return;
   const pu = B.units.filter(u => u.side === 'p');
   const luck = pu.reduce((a, u) => a + (hasT(u.m, 'lucky') ? .01 : 0) + (hasT(u.m, 'bg_hunter') ? .01 : 0) + (u.pas.includes('greed') ? .02 : 0) + (u.num.luck || 0), 0);
   const drop = (t.boss ? .5 : .01) + luck;
@@ -344,30 +349,30 @@ function runLoop(state, B) {
   if (B.log.length > 120) B.log = B.log.slice(-120);
 }
 
-export function startBattle(state, enemyKeys, opt = {}) {
-  const party = state.run.party.map(id => state.members.find(m => m.id === id)).filter(m => m && !m.dead && m.hp > 0);
+export function startBattle(state, partyIds, enemyKeys, opt = {}) {
+  const party = partyIds.map(id => state.members.find(m => m.id === id)).filter(m => m && !m.dead && (opt.exam || m.hp > 0));
   const units = party.map(heroUnit).concat(enemyKeys.map(k => monUnit(k)));
-  units.forEach(u => { u.av = 10000 / effSpd(u); });
+  units.forEach(u => { u.av = 10000 / effSpd(u) * (u.side === 'e' && opt.ambush ? .6 : 1); });
   const B = { units, over: false, win: false, fled: false, opt, loot: { stone: 0, ess: [], items: [] }, kills: [], log: [], turn: 0, auto: false, actor: null, waiting: false, target: null };
-  state.run.battle = B;
+  state.battle = B;
   state.screen = 'battle';
   labelDupes(B);
-  B.log.push('戰鬥開始!');
+  B.log.push(opt.exam ? '晉級考試開始!' : opt.ambush ? '遭到偷襲!' : '戰鬥開始!');
   runLoop(state, B);
 }
 export function setTarget(state, idx) {
-  const B = state.run && state.run.battle; if (!B) return;
+  const B = state.battle; if (!B) return;
   const u = B.units[idx];
   if (!u || !aliveU(u)) return;
   if (hasBuff(u, 'untarget') && !(B.actor && B.actor.pas && B.actor.pas.includes('scent'))) return;
   B.target = u;
 }
 export function buildPlayerAct(state, kind, skillKey) {
-  const B = state.run.battle, a = B.actor;
+  const B = state.battle, a = B.actor;
   if (kind === 'atk') return { type: 'atk', t: curTarget(state, B, a) };
   if (kind === 'def') return { type: 'def' };
-  if (kind === 'pot') return state.potions ? { type: 'pot' } : null;
-  if (kind === 'flee') return { type: 'flee' };
+  if (kind === 'pot') return state.potions && !B.opt.exam ? { type: 'pot' } : null;
+  if (kind === 'flee') return B.opt.exam ? null : { type: 'flee' };
   if (kind === 'sk') {
     if (hasBuff(a, 'silence') || a.soul < skillCost(a, skillKey)) return null;
     return { type: 'sk', k: skillKey, t: curTarget(state, B, a) };
@@ -375,7 +380,7 @@ export function buildPlayerAct(state, kind, skillKey) {
   return null;
 }
 export function submitAction(state, act) {
-  const B = state.run && state.run.battle;
+  const B = state.battle;
   if (!B || !B.waiting || !act) return;
   const a = B.actor;
   B.waiting = false;
@@ -384,7 +389,7 @@ export function submitAction(state, act) {
   if (!B.over) runLoop(state, B); else if (B.log.length > 120) B.log = B.log.slice(-120);
 }
 export function toggleAuto(state) {
-  const B = state.run && state.run.battle; if (!B) return;
+  const B = state.battle; if (!B) return;
   B.auto = !B.auto;
   if (B.auto && B.waiting) submitAction(state, autoChoose(state, B, B.actor));
 }
@@ -398,9 +403,20 @@ function wipeOut(state, deaths, log) {
 }
 
 export function resolveBattle(state, log) {
-  const B = state.run && state.run.battle;
+  const B = state.battle;
   if (!B || !B.over) return;
-  const run = state.run, pu = B.units.filter(u => u.side === 'p');
+  const pu = B.units.filter(u => u.side === 'p');
+  B.units.filter(u => u.side === 'e').forEach(u => learn(state, u.key));
+
+  if (B.opt.exam) {
+    for (const u of pu) { const m = u.m; m.soul = u.soul; m.hp = Math.max(1, Math.round(u.down ? u.maxhp * .2 : u.hp)); }
+    state.battle = null; state.screen = 'base';
+    if (B.win) { state.examPassed = true; state.fame += 10; log(state, '通過了 5 級晉級考試!公會的認證上限提高到 4 級。'); refreshShop(state); }
+    else log(state, '晉級考試沒有通過。下次再來。');
+    return;
+  }
+
+  const run = state.run;
   if (B.fled) {
     const lost = [];
     for (const u of pu) {
@@ -409,15 +425,13 @@ export function resolveBattle(state, log) {
       else m.hp = Math.max(1, Math.round(u.hp));
       addStress(m, 12);
     }
-    B.units.filter(u => u.side === 'e').forEach(u => learn(state, u.key));
     run.party = run.party.filter(id => { const m = state.members.find(x => x.id === id); return m && !m.dead; });
     run.map.cur = run.prev;
-    state.run.battle = null; state.screen = 'dungeon';
+    state.battle = null; state.screen = 'dungeon';
     if (!run.party.length) { wipeOut(state, lost, log); return; }
     log(state, lost.length ? `逃跑時 ${lost.join('、')} 沒能跟上……` : '你們狼狽地逃了出來。');
     return;
   }
-  B.units.filter(u => u.side === 'e').forEach(u => learn(state, u.key));
   const win = B.win, loot = B.loot, kills = [...B.kills], deaths = [], downed = [], xpLines = [];
   if (win) {
     for (const u of pu) {
@@ -436,7 +450,7 @@ export function resolveBattle(state, log) {
     for (const u of pu) { deaths.push(u.m.name); killMember(state, u.m, log); }
     run.party = [];
   }
-  state.run.battle = null;
+  state.battle = null;
   if (!run.party.length) { wipeOut(state, deaths, log); return; }
   state.screen = 'dungeon';
   advanceTime(state, 2);
