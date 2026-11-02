@@ -104,7 +104,9 @@ export default function EventPanel({ state, r, onCamp, onCampSafe, onWaitClose, 
     );
   }
   if (r.type === 'combat' || r.type === 'elite') {
-    if (r.cleared) return <><h3>{r.type === 'elite' ? '精英怪物' : '怪物'}</h3><p className="desc">只剩下怪物的殘骸。屍體和素材沒辦法帶出迷宮。</p><div className="row">{camp}</div></>;
+    if (r.cleared) return r.sneaked
+      ? <><h3>{r.type === 'elite' ? '精英怪物' : '怪物'}</h3><p className="desc">牠們沒有察覺,你們悄悄繞了過去。</p><div className="row">{camp}</div></>
+      : <><h3>{r.type === 'elite' ? '精英怪物' : '怪物'}</h3><p className="desc">只剩下怪物的殘骸。屍體和素材沒辦法帶出迷宮。</p><div className="row">{camp}</div></>;
     const allPassive = (r.enemies || []).every(k => (MON_INFO[k].tags || {}).passive);
     return (
       <>

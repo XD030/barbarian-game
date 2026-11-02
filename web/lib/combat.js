@@ -468,7 +468,13 @@ export function resolveBattle(state, log) {
     deaths.push(victim.name); killMember(state, victim, log);
     pu.filter(u => u.m !== victim).forEach(u => { u.m.soul = u.soul; u.m.hp = Math.max(1, Math.round(u.maxhp * .2)); addStress(u.m, 15); });
     run.party = run.party.filter(id => { const m = state.members.find(x => x.id === id); return m && !m.dead; });
+    state.battle = null;
+    if (!run.party.length) { wipeOut(state, deaths, log); return; }
+    state.screen = 'dungeon';
+    advanceTime(state, 2);
+    run.loot.stone += loot.stone; run.loot.ess.push(...loot.ess); run.loot.items.push(...loot.items);
     log(state, `恐懼之主消失前,拖走了觸發這場戰鬥的${victim.name},其他人僥倖逃了回來。`);
+    return;
   } else {
     for (const u of pu) { deaths.push(u.m.name); killMember(state, u.m, log); }
     run.party = [];
