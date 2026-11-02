@@ -12,6 +12,7 @@ export function newState() {
     members: [], bag: [], items: [], tavern: [], shop: [], reqs: [], active: [], contrib: 0, fame: 0, examPassed: false,
     sel: [], log: [], screen: 'intro', draft: null, removals: 0, ship: 0, navigator: false, maxFloor: 1, startFloor: 1, kc: {}, run: null,
     known: [], riftsCleared: 0, reqGenAt: null, church: null, faith: {}, fallen: [], battle: null,
+    riftCD: {}, floorBoss: {}, dreadKills: 0,
   };
 }
 

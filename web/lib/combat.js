@@ -4,11 +4,11 @@
    (敵人、或開了自動的玩家角色)一次算完,直到遇到下一個需要玩家操作的回合,或戰鬥結束為止。
    沒有逐幀動畫/飄字特效,改成一條文字戰鬥紀錄(B.log)。
    戰鬥狀態放在 state.battle(不是 state.run.battle),因為公會考核(opt.exam)是在城市畫面打的,
-   沒有 state.run 可以掛。一般戰鬥房/伏擊/寶箱陷阱/採集被打擾都已經接上;
-   裂縫/層主/天空之塔/次元崩壞這些 opt 旗標還沒處理,因為那些系統本身也還沒搬過來
-   (需要 RIFTS/FLOORMASTER 資料跟對應的樓層/房型生成邏輯)。女妖的「怨恨之印」詛咒機制
-   也先不做(第 1 層的場域池沒有女妖,用不到)。 */
-import { WEAPON, GRADE } from './data';
+   沒有 state.run 可以掛。一般戰鬥房/伏擊/寶箱陷阱/採集被打擾/裂縫/層主都已經接上;
+   天空之塔(opt.tower)、次元崩壞(opt.collapse)這兩個 opt 旗標還沒處理,因為那兩個是
+   完全獨立的小遊戲系統,本身也還沒搬過來。女妖的「怨恨之印」詛咒機制也先不做
+   (目前能走到的場域池都還沒有女妖)。 */
+import { WEAPON, GRADE, ECON } from './data';
 import { stats, hasT, memberPas, numEff } from './stats';
 import { ESS, essInfo, makeEss, memberActs } from './essence';
 import { SK } from './skills';
@@ -18,6 +18,8 @@ import { killMember, addStress, gainXp } from './city';
 import { roomHasFoes, advanceTime, stayLimit } from './dungeon';
 import { processDays } from './city';
 import { refreshShop } from './guild';
+import { RIFTS, FLOORMASTER } from './rifts';
+import { randomNum } from './num';
 
 const PHYS = ['slash', 'pierce', 'blunt'];
 export const INTENT_LABEL = {
@@ -214,6 +216,13 @@ function fall(state, B, t, src) {
   }
   B.log.push(`${t.name} 倒下了`);
   if (B.opt.exam || t.noEss) return;
+  if (t.boss && (B.opt.rift || B.opt.fmaster)) {
+    if (Math.random() < .33) { const it = makeEss(t.key, true); B.loot.ess.push(it); B.log.push('守護者精髓!'); }
+    if (Math.random() < .33) { B.loot.items.push(randomNum()); B.log.push('編號物品!'); }
+    if (B.opt.rift) { if (Math.random() < .33) { B.loot.items.push({ type: 'riftstone', f: B.f }); B.log.push('裂縫石'); } }
+    else if (Math.random() < .33) { B.loot.stone += 400 * ECON; B.log.push('大量魔石!'); }
+    return;
+  }
   const pu = B.units.filter(u => u.side === 'p');
   const luck = pu.reduce((a, u) => a + (hasT(u.m, 'lucky') ? .01 : 0) + (hasT(u.m, 'bg_hunter') ? .01 : 0) + (u.pas.includes('greed') ? .02 : 0) + (u.num.luck || 0), 0);
   const drop = (t.boss ? .5 : .01) + luck;
@@ -353,7 +362,7 @@ export function startBattle(state, partyIds, enemyKeys, opt = {}) {
   const party = partyIds.map(id => state.members.find(m => m.id === id)).filter(m => m && !m.dead && (opt.exam || m.hp > 0));
   const units = party.map(heroUnit).concat(enemyKeys.map(k => monUnit(k)));
   units.forEach(u => { u.av = 10000 / effSpd(u) * (u.side === 'e' && opt.ambush ? .6 : 1); });
-  const B = { units, over: false, win: false, fled: false, opt, loot: { stone: 0, ess: [], items: [] }, kills: [], log: [], turn: 0, auto: false, actor: null, waiting: false, target: null };
+  const B = { units, over: false, win: false, fled: false, opt, f: state.run ? state.run.floor : 0, loot: { stone: 0, ess: [], items: [] }, kills: [], log: [], turn: 0, auto: false, actor: null, waiting: false, target: null };
   state.battle = B;
   state.screen = 'battle';
   labelDupes(B);
@@ -446,6 +455,20 @@ export function resolveBattle(state, log) {
     run.party = run.party.filter(id => { const m = state.members.find(x => x.id === id); return m && !m.dead; });
     run.loot.stone += loot.stone; run.loot.ess.push(...loot.ess); run.loot.items.push(...loot.items);
     if (run.map) { const room = run.map.rooms[run.map.cur]; if (room && roomHasFoes(room)) room.cleared = true; }
+    if (B.opt.rift) { state.riftCD[B.opt.riftKey] = state.month + 2; state.riftsCleared++; state.fame += 5; log(state, `打倒了裂縫「${RIFTS[B.opt.riftKey].n}」的守護者。`); }
+    if (B.opt.fmaster) {
+      state.floorBoss = state.floorBoss || {};
+      if (!state.floorBoss[B.opt.fmaster]) { state.floorBoss[B.opt.fmaster] = true; state.fame += 8; }
+      log(state, `打倒了第 ${B.opt.fmaster} 層的層主「${FLOORMASTER[B.opt.fmaster].n}」!`);
+      if (B.opt.fmaster === 1) { state.dreadKills = (state.dreadKills || 0) + 1; if (state.dreadKills >= 9) log(state, '接連打倒了九次「恐懼之主」,深處傳來了更深沉的氣息……'); }
+      if (B.opt.fmaster === 'abyss') state.dreadKills = 0;
+    }
+  } else if (B.opt.fmaster === 1) {
+    const victim = pick(pu).m;
+    deaths.push(victim.name); killMember(state, victim, log);
+    pu.filter(u => u.m !== victim).forEach(u => { u.m.soul = u.soul; u.m.hp = Math.max(1, Math.round(u.maxhp * .2)); addStress(u.m, 15); });
+    run.party = run.party.filter(id => { const m = state.members.find(x => x.id === id); return m && !m.dead; });
+    log(state, `恐懼之主消失前,拖走了觸發這場戰鬥的${victim.name},其他人僥倖逃了回來。`);
   } else {
     for (const u of pu) { deaths.push(u.m.name); killMember(state, u.m, log); }
     run.party = [];

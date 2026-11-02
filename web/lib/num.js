@@ -16,3 +16,11 @@ export const NUM = {
   n0911: { n: 'No.911 破魔戒指', r: '雙', d: '魔抗 +15', eff: { mres: 15 }, price: 800 * ECON },
   n0077: { n: 'No.77 英雄的護手', r: '三', d: '攻擊 +8、爆擊率 +8%', eff: { atk: 8, crit: .08 }, price: 2500 * ECON },
 };
+
+export function randomNum() {
+  const ids = Object.keys(NUM);
+  const w = ids.map(id => NUM[id].r === '三' ? 1 : NUM[id].r === '雙' ? 4 : 8);
+  let s = Math.random() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < ids.length; i++) { s -= w[i]; if (s <= 0) return { type: 'num', id: ids[i], ided: false }; }
+  return { type: 'num', id: ids[0], ided: false };
+}

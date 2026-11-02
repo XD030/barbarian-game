@@ -2,7 +2,8 @@
 import TopBar from './city/TopBar';
 import MapGrid from './dungeon/MapGrid';
 import EventPanel from './dungeon/EventPanel';
-import { FIELDS, stayLimit, fmtH, partyMembers, moveTo, camp, campSafe, waitClose, openChest, gather, drink, buyAtMerchant } from '../lib/dungeon';
+import { FIELDS, stayLimit, fmtH, partyMembers, moveTo, camp, campSafe, waitClose, openChest, gather, drink, buyAtMerchant, sneak, offerAltar, descend } from '../lib/dungeon';
+import { FLOORMASTER } from '../lib/rifts';
 import { startBattle } from '../lib/combat';
 import { stats } from '../lib/stats';
 import { WEAPON } from '../lib/data';
@@ -40,7 +41,15 @@ export default function DungeonScreen({ state, mutate }) {
   const onFight = () => mutate(s => {
     const r = s.run.map.rooms[s.run.map.cur];
     if (!r.enemies || !r.enemies.length) return;
-    startBattle(s, s.run.party, r.enemies, {});
+    startBattle(s, s.run.party, r.enemies, { rift: r.type === 'rift', riftKey: r.rift });
+  });
+  const onSneak = () => mutate(s => sneak(s));
+  const onOffer = () => mutate(s => offerAltar(s));
+  const onDescend = (field) => mutate(s => descend(s, field));
+  const onFmaster = (fmKey) => mutate(s => {
+    const fm = FLOORMASTER[fmKey];
+    if (!fm) return;
+    startBattle(s, s.run.party, [fm.key, ...fm.minions], { fmaster: fmKey });
   });
   const onUsePotion = () => mutate(s => {
     if (!s.potions) return;
@@ -63,7 +72,7 @@ export default function DungeonScreen({ state, mutate }) {
               <MapGrid map={map} prev={run.prev} onMove={onMove} />
             </section>
             <section className="panel event" style={{ marginTop: 16 }}>
-              <EventPanel state={state} r={cur} onCamp={onCamp} onCampSafe={onCampSafe} onWaitClose={onWaitClose} onOpenChest={onOpenChest} onGather={onGather} onDrink={onDrink} onBuy={onBuy} onMove={onMove} onFight={onFight} />
+              <EventPanel state={state} r={cur} onCamp={onCamp} onCampSafe={onCampSafe} onWaitClose={onWaitClose} onOpenChest={onOpenChest} onGather={onGather} onDrink={onDrink} onBuy={onBuy} onMove={onMove} onFight={onFight} onSneak={onSneak} onOffer={onOffer} onDescend={onDescend} onFmaster={onFmaster} />
             </section>
           </div>
           <aside className="side">
@@ -89,8 +98,8 @@ export default function DungeonScreen({ state, mutate }) {
             </section>
             <section className="panel">
               <h2>身上的戰利品</h2>
-              <div className="loot"><span>魔石(換算石幣)<b>{run.loot.stone}</b></span></div>
-              <p className="mute" style={{ fontSize: 12 }}>只能帶出魔石(精髓/物品系統還沒搬過來)。全滅會全部失去。</p>
+              <div className="loot"><span>魔石(換算石幣)<b>{run.loot.stone}</b></span><span>精髓<b>{run.loot.ess.length}</b></span><span>物品<b>{run.loot.items.length}</b></span></div>
+              <p className="mute" style={{ fontSize: 12 }}>精髓/物品的裝備介面還沒搬過來,先只記數量,帶回城會進背包。全滅會全部失去。</p>
             </section>
           </aside>
         </div>

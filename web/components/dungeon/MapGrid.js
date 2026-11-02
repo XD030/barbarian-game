@@ -37,8 +37,8 @@ export default function MapGrid({ map, prev, onMove }) {
     <div className="mapbox">
       <div className="map" style={{ gridTemplateColumns: cols }}>{cells}</div>
       <div className="legend">
-        <span><b>入</b>降落點</span><span><b>門</b>傳送門</span><span><b>戰</b>怪物</span>
-        <span><b>寶</b>寶箱</span><span><b>晶</b>魔石</span><span><b>碑</b>安全區</span>
+        <span><b>入</b>降落點</span><span><b>門</b>傳送門</span><span><b>戰</b>怪物</span><span><b>精</b>精英</span>
+        <span><b>壇</b>裂縫祭壇</span><span><b>裂</b>裂縫</span><span><b>寶</b>寶箱</span><span><b>晶</b>魔石</span><span><b>碑屋安錨</b>安全區</span>
       </div>
     </div>
   );
