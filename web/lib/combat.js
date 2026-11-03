@@ -4,10 +4,9 @@
    (敵人、或開了自動的玩家角色)一次算完,直到遇到下一個需要玩家操作的回合,或戰鬥結束為止。
    沒有逐幀動畫/飄字特效,改成一條文字戰鬥紀錄(B.log)。
    戰鬥狀態放在 state.battle(不是 state.run.battle),因為公會考核(opt.exam)是在城市畫面打的,
-   沒有 state.run 可以掛。一般戰鬥房/伏擊/寶箱陷阱/採集被打擾/裂縫/層主都已經接上;
-   天空之塔(opt.tower)、次元崩壞(opt.collapse)這兩個 opt 旗標還沒處理,因為那兩個是
-   完全獨立的小遊戲系統,本身也還沒搬過來。女妖的「怨恨之印」詛咒機制也先不做
-   (目前能走到的場域池都還沒有女妖)。 */
+   沒有 state.run 可以掛。一般戰鬥房/伏擊/寶箱陷阱/採集被打擾/裂縫/層主/天空之塔(opt.tower)
+   都已經接上;次元崩壞(opt.collapse)這個 opt 旗標還沒處理,因為是完全獨立的小遊戲系統,
+   本身也還沒搬過來。女妖的「怨恨之印」詛咒機制也先不做(目前能走到的場域池都還沒有女妖)。 */
 import { WEAPON, GRADE, ECON } from './data';
 import { stats, hasT, memberPas, numEff } from './stats';
 import { ESS, essInfo, makeEss, memberActs } from './essence';
@@ -15,7 +14,7 @@ import { SK } from './skills';
 import { MON_INFO, monName } from './monInfo';
 import { MON_COMBAT } from './monCombat';
 import { killMember, addStress, gainXp } from './city';
-import { roomHasFoes, advanceTime, stayLimit } from './dungeon';
+import { roomHasFoes, advanceTime, stayLimit, towerChoices } from './dungeon';
 import { processDays } from './city';
 import { refreshShop } from './guild';
 import { RIFTS, FLOORMASTER } from './rifts';
@@ -435,7 +434,7 @@ export function resolveBattle(state, log) {
       addStress(m, 12);
     }
     run.party = run.party.filter(id => { const m = state.members.find(x => x.id === id); return m && !m.dead; });
-    run.map.cur = run.prev;
+    if (run.map && !B.opt.ambush && !B.opt.tower) run.map.cur = run.prev;
     state.battle = null; state.screen = 'dungeon';
     if (!run.party.length) { wipeOut(state, lost, log); return; }
     log(state, lost.length ? `逃跑時 ${lost.join('、')} 沒能跟上……` : '你們狼狽地逃了出來。');
@@ -450,18 +449,25 @@ export function resolveBattle(state, log) {
       addStress(m, 3 + run.floor);
       let xp = 0; const fresh = [];
       for (const k of kills) { if (!m.kills.includes(k)) { m.kills.push(k); xp += GRADE[MON_INFO[k].g].xp; fresh.push(monName(k)); } }
-      if (xp) { const ups = gainXp(m, xp); xpLines.push(`${m.name}:${fresh.length ? `第一次打倒${fresh.join('、')},` : ''}經驗 +${xp}${ups.length ? `,升到 Lv${m.lv}!` : ''}`); }
+      if (B.opt.rift) xp += 3;
+      if (B.opt.fmaster) xp += 5;
+      if (xp) { const ups = gainXp(m, xp); xpLines.push(`${m.name}:${fresh.length ? `第一次打倒${fresh.join('、')}` : ''}${B.opt.rift ? `${fresh.length ? ',' : ''}打倒守護者 +3` : ''}${B.opt.fmaster ? `${fresh.length ? ',' : ''}打倒層主 +5` : ''},經驗 +${xp}${ups.length ? `,升到 Lv${m.lv}!` : ''}`); }
     }
     run.party = run.party.filter(id => { const m = state.members.find(x => x.id === id); return m && !m.dead; });
     run.loot.stone += loot.stone; run.loot.ess.push(...loot.ess); run.loot.items.push(...loot.items);
     if (run.map) { const room = run.map.rooms[run.map.cur]; if (room && roomHasFoes(room)) room.cleared = true; }
     if (B.opt.rift) { state.riftCD[B.opt.riftKey] = state.month + 2; state.riftsCleared++; state.fame += 5; log(state, `打倒了裂縫「${RIFTS[B.opt.riftKey].n}」的守護者。`); }
+    if (B.opt.tower && run.tower) {
+      if (B.opt.boss) { run.tower.guardDone = true; }
+      else { run.tower.stage = Math.min(100, run.tower.stage + (run.tower.pending || 0)); run.tower.choices = towerChoices(); }
+    }
     if (B.opt.fmaster) {
       state.floorBoss = state.floorBoss || {};
       if (!state.floorBoss[B.opt.fmaster]) { state.floorBoss[B.opt.fmaster] = true; state.fame += 8; }
       log(state, `打倒了第 ${B.opt.fmaster} 層的層主「${FLOORMASTER[B.opt.fmaster].n}」!`);
       if (B.opt.fmaster === 1) { state.dreadKills = (state.dreadKills || 0) + 1; if (state.dreadKills >= 9) log(state, '接連打倒了九次「恐懼之主」,深處傳來了更深沉的氣息……'); }
       if (B.opt.fmaster === 'abyss') state.dreadKills = 0;
+      if (B.opt.fmaster === 4 && pu.length === 1) { state.stone += 800 * ECON; log(state, `${pu[0].m.name} 獨自打倒了天空之主,守衛認可了這份孤高的實力,額外獲得 ${800 * ECON} 石幣。`); }
     }
   } else if (B.opt.fmaster === 1) {
     const victim = pick(pu).m;
@@ -489,4 +495,5 @@ export function resolveBattle(state, log) {
   xpLines.forEach(l => log(state, l));
   if (downed.length) log(state, `${downed.join('、')} 重傷撿回一命,壓力大增。`);
   if (deaths.length) log(state, `${deaths.join('、')} 傷得太重,沒能撐下去。`);
+  if (B.opt.tower && !B.opt.boss && run.tower) log(state, `天空之塔:第 ${run.tower.stage} 階`);
 }

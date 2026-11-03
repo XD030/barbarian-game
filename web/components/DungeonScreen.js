@@ -2,7 +2,8 @@
 import TopBar from './city/TopBar';
 import MapGrid from './dungeon/MapGrid';
 import EventPanel from './dungeon/EventPanel';
-import { FIELDS, stayLimit, fmtH, partyMembers, moveTo, camp, campSafe, waitClose, openChest, gather, drink, buyAtMerchant, sneak, offerAltar, descend } from '../lib/dungeon';
+import TowerPanel, { TowerMap } from './dungeon/TowerPanel';
+import { FIELDS, curField, stayLimit, fmtH, partyMembers, moveTo, camp, campSafe, waitClose, openChest, gather, drink, buyAtMerchant, sneak, offerAltar, descend, stair } from '../lib/dungeon';
 import { FLOORMASTER } from '../lib/rifts';
 import { startBattle } from '../lib/combat';
 import { stats } from '../lib/stats';
@@ -11,7 +12,7 @@ import { WEAPON } from '../lib/data';
 export default function DungeonScreen({ state, mutate }) {
   const run = state.run;
   const map = run.map;
-  const cur = map.rooms[map.cur];
+  const cur = map ? map.rooms[map.cur] : null;
   const left = stayLimit(run) - run.h;
   const party = partyMembers(state);
 
@@ -45,11 +46,24 @@ export default function DungeonScreen({ state, mutate }) {
   });
   const onSneak = () => mutate(s => sneak(s));
   const onOffer = () => mutate(s => offerAltar(s));
-  const onDescend = (field) => mutate(s => descend(s, field));
+  const onDescend = (field) => mutate(s => {
+    const r = descend(s, log, field);
+    if (Array.isArray(r)) startBattle(s, s.run.party, r, { tower: 1 });
+  });
   const onFmaster = (fmKey) => mutate(s => {
     const fm = FLOORMASTER[fmKey];
     if (!fm) return;
     startBattle(s, s.run.party, [fm.key, ...fm.minions], { fmaster: fmKey });
+  });
+  const onStair = (idx) => mutate(s => {
+    const r = stair(s, idx);
+    if (!r) return;
+    if (r.msg) log(s, r.msg);
+    if (r.enemies) startBattle(s, s.run.party, r.enemies, { tower: 1 });
+  });
+  const onTowerBoss = () => mutate(s => {
+    s.run.tower.pending = 0;
+    startBattle(s, s.run.party, ['sky_sentinel', 'tower_guardian', 'tower_guardian'], { tower: 1, boss: 1 });
   });
   const onUsePotion = () => mutate(s => {
     if (!s.potions) return;
@@ -66,13 +80,15 @@ export default function DungeonScreen({ state, mutate }) {
           <div className="dmain">
             <section className="panel">
               <div className="panel-h">
-                <h2>第 {run.floor} 層 · {FIELDS[cur.field]?.n}</h2>
+                <h2>第 {run.floor} 層 · {FIELDS[curField(run)]?.n}</h2>
                 <span className="mute" style={{ fontSize: 12.5 }}>關閉倒數 <span className="num" style={{ color: left < 24 ? 'var(--blood)' : 'var(--ink)' }}>{fmtH(Math.max(0, left))}</span></span>
               </div>
-              <MapGrid map={map} prev={run.prev} onMove={onMove} />
+              {run.tower ? <TowerMap state={state} /> : <MapGrid map={map} prev={run.prev} onMove={onMove} />}
             </section>
             <section className="panel event" style={{ marginTop: 16 }}>
-              <EventPanel state={state} r={cur} onCamp={onCamp} onCampSafe={onCampSafe} onWaitClose={onWaitClose} onOpenChest={onOpenChest} onGather={onGather} onDrink={onDrink} onBuy={onBuy} onMove={onMove} onFight={onFight} onSneak={onSneak} onOffer={onOffer} onDescend={onDescend} onFmaster={onFmaster} />
+              {run.tower
+                ? <TowerPanel state={state} onCamp={onCamp} onStair={onStair} onTowerBoss={onTowerBoss} onDescend={onDescend} onFmaster={onFmaster} />
+                : <EventPanel state={state} r={cur} onCamp={onCamp} onCampSafe={onCampSafe} onWaitClose={onWaitClose} onOpenChest={onOpenChest} onGather={onGather} onDrink={onDrink} onBuy={onBuy} onMove={onMove} onFight={onFight} onSneak={onSneak} onOffer={onOffer} onDescend={onDescend} onFmaster={onFmaster} />}
             </section>
           </div>
           <aside className="side">

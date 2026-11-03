@@ -4,7 +4,7 @@ import { MON_INFO } from '../../lib/monInfo';
 import { FLOORMASTER, RIFTS } from '../../lib/rifts';
 import { monName } from '../../lib/monInfo';
 
-function FloorMasterBlock({ fmKey, onFmaster }) {
+export function FloorMasterBlock({ fmKey, onFmaster }) {
   const fm = FLOORMASTER[fmKey];
   if (!fm) return null;
   return (
@@ -81,8 +81,8 @@ export default function EventPanel({ state, r, onCamp, onCampSafe, onWaitClose, 
     return (
       <>
         <h3>傳送門石碑・往天空之塔</h3>
-        <p className="desc">魔女森林中心的傳送門。第 4 層天空之塔是獨立的爬塔小遊戲,還沒搬過來——這座傳送門先進不去。</p>
-        <div className="row">{camp}</div>
+        <p className="desc">魔女森林中心的傳送門。第 4 層天空之塔是獨立的樓層,一進去就會遭遇成群的怪物。</p>
+        <div className="row"><button className="btn primary" onClick={() => onDescend()}>前往第 4 層</button>{camp}</div>
       </>
     );
   }

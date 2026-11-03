@@ -1,18 +1,20 @@
 import { ECON } from './data';
 import { stats } from './stats';
-import { processDays } from './city';
+import { processDays, addStress } from './city';
 import { FIELD_POOLS, FIELD_FLOOR, fieldFloor } from './fields';
 import { RIFTS } from './rifts';
+import { randomNum } from './num';
+import { makeEss, essInfo } from './essence';
 
 const ri = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-/* 樓層生成(搬自 index.html 的 genFloor)。第 4 層「天空之塔」是完全不同的小遊戲
-   (爬塔選階梯,不是房間地圖),跟次元崩壞、魔女之眼、火把/黑暗視野系統一樣還沒搬過來——
-   這三個留到下一輪再做,見 README。第 1/2/3/5/6 層的房間地圖、精英房、裂縫祭壇、
-   層主(在安全區挑戰)都已經接上。 */
+/* 樓層生成(搬自 index.html 的 genFloor)。第 4 層「天空之塔」改用 run.tower 狀態機
+   (爬塔選階梯,不是房間地圖,見下面 towerChoices/towerEnemies/towerChest/stair)。
+   次元崩壞、魔女之眼、火把/黑暗視野系統還沒搬過來,見 README。第 1/2/3/5/6 層的房間地圖、
+   精英房、裂縫祭壇、層主(在安全區挑戰)都已經接上。 */
 export const FLOORS = {
   1: { n: '水晶洞窟', stay: 7 },
   2: { n: '第 2 層', stay: 10 },
@@ -136,7 +138,7 @@ export function genFloor(state, f) {
 export const genFloor1 = state => genFloor(state, 1);
 
 export const stayLimit = run => FLOORS[run.floor].stay * 24;
-export const curField = run => run.map.rooms[run.map.cur].field;
+export const curField = run => run.tower ? 'tower' : run.map.rooms[run.map.cur].field;
 export const roomHasFoes = r => !r.cleared && (r.type === 'combat' || r.type === 'elite' || r.type === 'rift');
 export const reachable = (map, i) => map.rooms[i].visited || map.rooms[i].links.some(j => map.rooms[j].visited);
 export const visible = (map, i) => {
@@ -308,20 +310,87 @@ export function onEnter(party, r) {
   if (r.type === 'empty') { party.forEach(m => { m.stress = Math.min(100, m.stress + 2); }); r.cleared = true; }
 }
 
-// 第 2 層以後的樓層推進(往下一層的傳送門/樓梯觸發)。目前只接到第 1→2→3 層,
-// 跟第 5→6 層(要有船+航海士)。第 3→4 層需要天空之塔(還沒搬過來),先擋下來。
-export function descend(s, field) {
+// 第 2 層以後的樓層推進(往下一層的傳送門/樓梯觸發)。第 5→6 層要有船+航海士。
+// 第 3→4 層進天空之塔,第 4→5 層要先爬到頂、打倒必定出現的守衛(run.tower.guardDone)。
+// 回傳 false 代表沒推進;true 代表推進且沒有立即戰鬥;陣列代表推進且立即被怪物群包圍
+// (踏進天空之塔的瞬間),呼叫端要接著 startBattle(…, {tower:1})。
+export function descend(s, log, field) {
   const run = s.run;
   const nf = run.floor + 1;
   if (nf > 6) return false;
-  if (nf === 4) return false; // 天空之塔還沒搬過來
+  if (nf === 5 && !(run.tower && run.tower.guardDone)) return false;
   if (nf === 6 && !(s.ship >= 1 && s.navigator)) return false;
   if (nf === 2) run.field2 = field || pick(['beast', 'dead', 'desert', 'gforest']);
   run.floor = nf; run.prev = null;
-  run.map = genFloor(s, nf);
-  run.prev = run.map.start;
+  if (nf === 4) { run.tower = { stage: 0, choices: towerChoices() }; run.map = null; }
+  else { run.tower = null; run.map = genFloor(s, nf); run.prev = run.map.start; }
   s.maxFloor = Math.max(s.maxFloor, nf);
+  const msgs = portalXp(s, partyMembers(s), nf);
+  log(s, `隊伍來到第 ${nf} 層「${FLOORS[nf].n}」。`);
+  msgs.forEach(msg => log(s, msg));
+  if (nf === 4) { run.tower.pending = 0; return towerEnemies(run, 3); }
   return true;
+}
+
+/* --- 第 4 層:天空之塔(爬塔選階梯,不是房間地圖) --- */
+export const STAIRS = {
+  courage: { n: '勇氣之階', d: '遭遇隨機的怪物群,勝利後上 1 階。花 4 小時。' },
+  wisdom: { n: '智慧之階', d: '跳過 5 階的捷徑,有陷阱和少量怪物。花 3 小時。' },
+  patience: { n: '忍耐之階', d: '幻覺的試煉:全隊壓力 +15,上 1 階,中心的寶箱有特別獎勵。花 6 小時。' },
+  fate: { n: '命運之階', d: '很少出現,變數極大。' },
+};
+export function towerChoices() {
+  const c = ['courage', 'wisdom', 'patience'];
+  if (Math.random() < .08) c[ri(0, 2)] = 'fate';
+  return c;
+}
+function towerEnemies(run, n) {
+  const pool = FIELDS.tower.pool.filter(k => k !== 'tower_guardian');
+  const out = Array.from({ length: n }, () => pick(pool));
+  if (run.tower.stage > 40 && Math.random() < run.tower.stage / 150) out[0] = 'tower_guardian';
+  return out;
+}
+function towerChest(run, big) {
+  const L = run.loot;
+  if (Math.random() < (big ? .4 : .12)) { L.items.push(randomNum()); return '寶箱裡有一件編號物品!'; }
+  if (Math.random() < (big ? .3 : .08)) { const it = makeEss(pick(['orc_warrior', 'orc_archer', 'iron_falcon', 'owlbear', 'lizardman', 'homunculus'])); L.ess.push(it); return `寶箱裡有一顆${essInfo(it).n}!`; }
+  const v = ri(80 * ECON, 160 * ECON); L.stone += v; return `寶箱裡有 ${v} 石幣的魔石。`;
+}
+// 回傳 {msg, enemies}:enemies 非空時呼叫端要接著 startBattle(…, {tower:1})。null 代表選項不存在。
+export function stair(s, idx) {
+  const run = s.run, t = run.tower, c = t.choices[idx];
+  if (!c) return null;
+  if (c === 'courage') {
+    t.pending = 1;
+    if (advanceTime(s, 4)) return { msg: null, enemies: null };
+    return { msg: null, enemies: towerEnemies(run, ri(2, 4)) };
+  }
+  if (c === 'wisdom') {
+    if (advanceTime(s, 3)) return { msg: null, enemies: null };
+    let msg = null;
+    if (Math.random() < .35) { const v = pick(partyMembers(s)), d = Math.round(stats(v).maxhp * .2); v.hp = Math.max(1, v.hp - d); msg = `智慧之階的陷阱!${v.name} 受到 ${d} 點傷害`; }
+    t.pending = 5;
+    return { msg, enemies: towerEnemies(run, 2) };
+  }
+  if (c === 'patience') {
+    if (advanceTime(s, 6)) return { msg: null, enemies: null };
+    partyMembers(s).forEach(m => addStress(m, 15));
+    t.stage = Math.min(100, t.stage + 1);
+    const chestMsg = towerChest(run);
+    t.choices = towerChoices();
+    return { msg: '撐過了幻覺的試煉。' + chestMsg, enemies: null };
+  }
+  const r = Math.random();
+  if (r < .4) {
+    const chestMsg = towerChest(run, true);
+    t.stage = Math.min(100, t.stage + 1);
+    t.choices = towerChoices();
+    return { msg: '命運眷顧了你們。' + chestMsg, enemies: null };
+  }
+  if (r < .7) { t.pending = 1; return { msg: null, enemies: ['orc_hero', 'tower_guardian'] }; }
+  t.stage = Math.min(100, t.stage + 10);
+  t.choices = towerChoices();
+  return { msg: '命運之階把你們送上了 10 階!', enemies: null };
 }
 
 export { restParty, runHas };

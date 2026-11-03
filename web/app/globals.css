@@ -81,6 +81,13 @@ button{touch-action:manipulation}
 .meter{height:6px;background:var(--void);border-radius:3px;overflow:hidden}
 .meter i{display:block;height:100%;transition:width .25s}
 .hp i{background:var(--blood)} .st i{background:var(--mind)} .xp i{background:var(--gold)} .sl i{background:var(--soul)} .tg i{background:#e8e0cc}
+.stairs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.stair{font:inherit;text-align:left;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:10px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.stair b{font-family:var(--f-title);font-size:16px;color:var(--torch-hi)}
+.stair small{color:var(--mute);font-size:12px}
+.stair.fate{border-color:#8a5ac0}
+.stair.fate b{color:#d0a8ff}
+.stair:hover{border-color:var(--torch)}
 .mrow{display:grid;grid-template-columns:34px 1fr 64px;gap:8px;align-items:center;font-size:12.5px;color:var(--mute)}
 .mrow .num{text-align:right;color:var(--ink);font-size:11px}
 .roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
