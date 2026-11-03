@@ -173,7 +173,6 @@ export default function CityScreen({ state, mutate, onResetSave }) {
       {open ? <p className="notice">今天迷宮開啟。錯過要等下個月。</p> : <p className="mute">迷宮每月 1 日開啟,還有 <span className="num">{until}</span> 天。</p>}
       {state.debt > 0 && <p className="notice bad">你還欠 {state.debt} 石幣的稅。欠稅的人進不了次元廣場。</p>}
       <p>{party.length ? party.map(m => m.name).join('、') : <span className="mute">還沒選人</span>} <span className="mute">({party.length}/5)</span></p>
-      <p className="mute" style={{ fontSize: 12 }}>目前只搬了第 1 層水晶洞窟,其他樓層跟戰鬥(遇到怪物房)還沒搬過來。</p>
       <div className="row">
         <button className="btn primary" disabled={!(open && party.length && !state.debt)} onClick={onEnterLab}>進入迷宮</button>
         <button className="btn" onClick={onPassDay}>度過一天</button>

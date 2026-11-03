@@ -264,7 +264,7 @@ export function camp(s) {
   restParty(partyMembers(s), .25, 6);
   if (advanceTime(s, 8)) return null;
   const fieldK = curField(run), pool = FIELDS[fieldK]?.pool || [];
-  if (Math.random() < .2 && (pool.length || run.floor >= 2)) {
+  if (Math.random() < (run.curse ? .35 : .2) && (pool.length || run.floor >= 2)) {
     const bandit = run.floor >= 2 && (Math.random() < .4 || !pool.length);
     return bandit ? genEnemies(fieldK, 'bandit') : genEnemies(fieldK, 'combat');
   }
@@ -299,7 +299,7 @@ export function gather(s) {
   if (r.cleared) return null;
   const f = run.floor, v = Math.round(ri(20, 35) * f * ECON);
   run.loot.stone += v;
-  partyMembers(s).forEach(m => { m.stress = Math.min(100, m.stress + 5); });
+  partyMembers(s).forEach(m => addStress(m, 5));
   r.cleared = true;
   if (advanceTime(s, 4)) return { msg: `魔石 +${v}`, ambush: null };
   const pool = FIELDS[r.field]?.pool || [];

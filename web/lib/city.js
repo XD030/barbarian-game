@@ -107,7 +107,7 @@ export function processDays(state, n, log) {
     state.stone += earn;
     const cost = living(state).reduce((a, m) => a + livingCost(state, m), 0);
     if (state.stone >= cost) state.stone -= cost;
-    else { state.stone = 0; living(state).forEach(m => { m.stress = Math.min(100, m.stress + 10); m.hp = Math.max(1, m.hp - stats(m).maxhp * .1); }); log('付不出生活費,大家餓著肚子過了一天。'); }
+    else { state.stone = 0; living(state).forEach(m => { addStress(m, 10); m.hp = Math.max(1, m.hp - stats(m).maxhp * .1); }); log('付不出生活費,大家餓著肚子過了一天。'); }
     state.day++;
     if (state.day > DAYS_IN_MONTH) {
       state.day = 1; state.month++;
