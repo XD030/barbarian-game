@@ -149,6 +149,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     s.maxFloor = Math.max(s.maxFloor, 1);
     s.screen = 'dungeon';
     log(s, `${party.map(m => m.name).join('、')} 穿過次元廣場的傳送門,來到第 1 層${FLOORS[1].n}。`);
+    if (s.run.abyss) log(s, '水晶洞窟外圍的黑暗裡傳來不屬於這一層的氣息。深淵之主貝爾札克來了,外圍的怪物變成了 5 級的深淵變種。中心部附近還算安全。');
     const msgs = portalXp(s, party, 1);
     msgs.forEach(msg => log(s, msg));
   });

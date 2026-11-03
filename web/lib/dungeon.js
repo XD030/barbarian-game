@@ -55,6 +55,12 @@ function bfs(rooms, s) {
   return d;
 }
 
+// 深淵之主出現時,第 1 層外圍(x 或 y 跟中心差 2,也就是最外圈)的怪物/精英房換成深淵變種。
+function abyssEnemies() {
+  const e = ['abyss_goblin', 'abyss_ghoul', 'abyss_gnome', 'abyss_bladewolf'];
+  return [pick(e), 'abyss_watcher', 'abyss_watcher'];
+}
+
 export function genEnemies(field, kind) {
   const fd = FIELDS[field], pool = fd.pool.length ? fd.pool : ['goblin'];
   if (kind === 'elite') { const el = fd.elite || [pick(pool)]; const e = Math.random() < .75 ? el[0] : pick(el); return [e, pick(pool), pick(pool)]; }
@@ -102,6 +108,7 @@ export function genFloor(state, f) {
     const cand = rooms.map((_, i) => i).filter(i => i !== c && !tips[i]);
     start = pick(cand); rooms[start].type = 'entry';
     fillRooms(state, rooms, cand.filter(i => i !== start), 1);
+    if (state.run.abyss) rooms.forEach(r => { if ((r.type === 'combat' || r.type === 'elite') && (Math.abs(r.x - 2) === 2 || Math.abs(r.y - 2) === 2)) r.enemies = abyssEnemies(); });
   } else if (f === 2) {
     W = 4; H = 3; start = ri(0, W * H - 1); rooms = makeGrid(W, H, start);
     const field = state.run.field2 || 'dead';
