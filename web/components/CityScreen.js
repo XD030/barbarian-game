@@ -20,7 +20,7 @@ import { WEAPON, TATTOO_COST, TATTOO_PATH, BEASTPACT, SPIRIT, SPIRIT_STONE_COST,
 import { getM } from '../lib/getM';
 import { stats } from '../lib/stats';
 import { gearCost, shipCost, healAllCost, processDays } from '../lib/city';
-import { genFloor1, portalXp, FLOORS } from '../lib/dungeon';
+import { genFloor1, portalXp, FLOORS, autoTorch } from '../lib/dungeon';
 import { tickRequests, claimReq } from '../lib/guild';
 import { research } from '../lib/library';
 import { joinChurch, pray } from '../lib/temple';
@@ -140,11 +140,12 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     const party = s.sel.map(id => getM(s, id)).filter(m => m && !m.dead);
     if (!party.length || s.day !== 1 || s.debt) return;
     party.forEach(m => { m.soul = stats(m).soul; });
-    s.run = { party: party.map(m => m.id), floor: 1, h: 0, loot: { stone: 0, ess: [], items: [] }, prev: null };
+    s.run = { party: party.map(m => m.id), floor: 1, h: 0, loot: { stone: 0, ess: [], items: [] }, prev: null, torchH: 0, witchH: 0, curse: false };
     if ((s.dreadKills || 0) >= 9 || Math.random() < .01) s.run.abyss = true;
     if (Math.random() < .015) s.run.collapsePending = true;
     s.run.map = genFloor1(s);
     s.run.prev = s.run.map.start;
+    autoTorch(s);
     s.maxFloor = Math.max(s.maxFloor, 1);
     s.screen = 'dungeon';
     log(s, `${party.map(m => m.name).join('、')} 穿過次元廣場的傳送門,來到第 1 層${FLOORS[1].n}。`);

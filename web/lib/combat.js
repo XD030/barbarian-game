@@ -5,8 +5,11 @@
    沒有逐幀動畫/飄字特效,改成一條文字戰鬥紀錄(B.log)。
    戰鬥狀態放在 state.battle(不是 state.run.battle),因為公會考核(opt.exam)是在城市畫面打的,
    沒有 state.run 可以掛。一般戰鬥房/伏擊/寶箱陷阱/採集被打擾/裂縫/層主/天空之塔(opt.tower)/
-   次元崩壞(opt.collapse)都已經接上。女妖的「怨恨之印」詛咒機制也先不做(目前能走到的場域池
-   都還沒有女妖)。 */
+   次元崩壞(opt.collapse)都已經接上。場域特效(B.fx,跟著目前場域走)也接上了:魔女森林
+   witch 不影響戰鬥本身(影響的是移動時的壓力,在 dungeon.js 的 moveTo)、餘燼烙印 ember(技能
+   魂力消耗 ×1.5、玩家每回合開始灼燒 4% 最大生命)、嚴寒 frost(玩家速度 -15%,除非帶保溫石)、
+   地縛靈 specter(玩家受到傷害 +25%)。女妖的「怨恨之印」(run.curse)也接上了:主動攻擊有
+   curse 標籤的怪物(目前只有死者之地的女妖 banshee)會中咒,移動壓力多 +60%,直到離開迷宮。 */
 import { WEAPON, GRADE, ECON } from './data';
 import { stats, hasT, memberPas, numEff } from './stats';
 import { ESS, essInfo, makeEss, memberActs } from './essence';
@@ -14,7 +17,7 @@ import { SK } from './skills';
 import { MON_INFO, monName } from './monInfo';
 import { MON_COMBAT } from './monCombat';
 import { killMember, addStress, gainXp } from './city';
-import { roomHasFoes, advanceTime, stayLimit, towerChoices, returnToCity } from './dungeon';
+import { roomHasFoes, advanceTime, stayLimit, towerChoices, returnToCity, FIELDS, curField } from './dungeon';
 import { processDays } from './city';
 import { refreshShop } from './guild';
 import { RIFTS, FLOORMASTER } from './rifts';
@@ -87,7 +90,7 @@ function partyTarget(B) {
   return p[0];
 }
 
-export function skillCost(a, k) { return Math.round(SK[k].cost * (1 - Math.min(.5, buffSum(a, 'costdown')))); }
+export function skillCost(B, a, k) { let c = SK[k].cost * (1 - Math.min(.5, buffSum(a, 'costdown'))); if (B && B.fx === 'ember') c *= 1.5; return Math.round(c); }
 
 function addBuff(B, u, b, label) {
   u.buffs = u.buffs.filter(x => x.label !== label);
@@ -251,7 +254,7 @@ function enemyAct(a, B) {
 function autoChoose(state, B, a) {
   const foes = targetable(B, 'e', a), allies = B.units.filter(u => u.side === 'p' && aliveU(u));
   const silenced = hasBuff(a, 'silence');
-  const can = k => !silenced && a.soul >= skillCost(a, k);
+  const can = k => !silenced && a.soul >= skillCost(B, a, k);
   const low = allies.filter(u => u.hp / u.maxhp < .5).length;
   for (const k of a.skills) {
     const s = SK[k]; if (!can(k)) continue;
@@ -260,7 +263,7 @@ function autoChoose(state, B, a) {
     if (s.kind === 'team' && !a.buffs.some(b => b.label === s.label) && Math.random() < .5) return { type: 'sk', k };
   }
   const t = foes.find(f => isKnown(state, f.key) && f.weak.includes(a.dt) && !f.broken) || foes.reduce((x, y) => y.hp < x.hp ? y : x, foes[0]);
-  for (const k of a.skills) { const s = SK[k]; if (can(k) && ['single', 'multi', 'debuff'].includes(s.kind) && a.soul >= skillCost(a, k) + 10) return { type: 'sk', k, t }; }
+  for (const k of a.skills) { const s = SK[k]; if (can(k) && ['single', 'multi', 'debuff'].includes(s.kind) && a.soul >= skillCost(B, a, k) + 10) return { type: 'sk', k, t }; }
   if (a.hp / a.maxhp < .3 && state.potions && Math.random() < .5) return { type: 'pot' };
   return { type: 'atk', t };
 }
@@ -292,7 +295,7 @@ function perform(state, B, a, act) {
     case 'pot': { if (!state.potions) return; state.potions--; const al = allyOf(a); const t = al.reduce((x, y) => y.hp / y.maxhp < x.hp / x.maxhp ? y : x, al[0]); const h = healU(t, t.maxhp * .4); B.log.push(h ? `${t.name} 喝下藥水 +${h}` : `${t.name} 已經滿血了`); break; }
     case 'flee': { if (Math.random() < .7) { B.log.push('逃跑成功!'); B.fled = true; B.over = true; } else B.log.push('逃跑失敗!'); break; }
     case 'sk': {
-      const s = SK[act.k]; a.soul -= skillCost(a, act.k); B.log.push(`${a.name} 使用「${s.n}」`);
+      const s = SK[act.k]; a.soul -= skillCost(B, a, act.k); B.log.push(`${a.name} 使用「${s.n}」`);
       const dt = s.dt || a.dt, mult = (s.mult || 0) * (a.pas.includes('corrupted') ? 1.5 : 1);
       const st = act.t && aliveU(act.t) ? act.t : curTarget(state, B, a);
       if (s.kind === 'single') { if (st) hit(state, B, a, st, mult, dt, s.brk, { ignore: s.ignore, drain: s.drain, status: s.status, delay: s.delay }); }
@@ -335,6 +338,7 @@ function takeTurn(state, B, a, autoAct) {
     return;
   }
   a.defend = false;
+  if (B.fx === 'ember') { const d = Math.round(a.maxhp * .04); a.hp -= d; B.log.push(`${a.name} 灼燒 -${d}`); if (a.hp <= 0) { fall(state, B, a, null); return; } }
   if (a.regen) healU(a, a.maxhp * a.regen);
   a.soul = Math.min(a.soulMax, a.soul + a.soulMax * .08);
   if (a.m.stress >= 100 && Math.random() < .2) { B.log.push(`${a.name} 發抖,無法行動`); tickBuffs(a); return; }
@@ -358,14 +362,24 @@ function runLoop(state, B) {
 }
 
 export function startBattle(state, partyIds, enemyKeys, opt = {}) {
+  const run = state.run;
   const party = partyIds.map(id => state.members.find(m => m.id === id)).filter(m => m && !m.dead && (opt.exam || m.hp > 0));
   const units = party.map(heroUnit).concat(enemyKeys.map(k => monUnit(k)));
+  const fx = run && !opt.exam ? FIELDS[curField(run)]?.fx : null;
+  units.forEach(u => {
+    if (u.side !== 'p') return;
+    if (fx === 'frost' && !u.num.warm) u.buffs.push({ label: '嚴寒', spd: -.15, t: 99 });
+    if (fx === 'specter') u.buffs.push({ label: '地縛靈', vuln: .25, t: 99 });
+  });
+  let newCurse = false;
+  if (run && !opt.ambush && !opt.exam && !run.curse && enemyKeys.some(k => (MON_INFO[k].tags || {}).curse)) { run.curse = true; newCurse = true; }
   units.forEach(u => { u.av = 10000 / effSpd(u) * (u.side === 'e' && opt.ambush ? .6 : 1); });
-  const B = { units, over: false, win: false, fled: false, opt, f: state.run ? state.run.floor : 0, loot: { stone: 0, ess: [], items: [] }, kills: [], log: [], turn: 0, auto: false, actor: null, waiting: false, target: null };
+  const B = { units, over: false, win: false, fled: false, opt, f: state.run ? state.run.floor : 0, loot: { stone: 0, ess: [], items: [] }, kills: [], log: [], turn: 0, auto: false, actor: null, waiting: false, target: null, fx };
   state.battle = B;
   state.screen = 'battle';
   labelDupes(B);
   B.log.push(opt.exam ? '晉級考試開始!' : opt.ambush ? '遭到偷襲!' : '戰鬥開始!');
+  if (newCurse) B.log.push('你們先對女妖出手,被下了「怨恨之印」。詛咒會跟著你們直到離開迷宮。');
   runLoop(state, B);
 }
 export function setTarget(state, idx) {
@@ -382,7 +396,7 @@ export function buildPlayerAct(state, kind, skillKey) {
   if (kind === 'pot') return state.potions && !B.opt.exam ? { type: 'pot' } : null;
   if (kind === 'flee') return B.opt.exam ? null : { type: 'flee' };
   if (kind === 'sk') {
-    if (hasBuff(a, 'silence') || a.soul < skillCost(a, skillKey)) return null;
+    if (hasBuff(a, 'silence') || a.soul < skillCost(B, a, skillKey)) return null;
     return { type: 'sk', k: skillKey, t: curTarget(state, B, a) };
   }
   return null;

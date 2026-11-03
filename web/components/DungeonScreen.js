@@ -4,7 +4,7 @@ import MapGrid from './dungeon/MapGrid';
 import EventPanel from './dungeon/EventPanel';
 import TowerPanel, { TowerMap } from './dungeon/TowerPanel';
 import CollapsePanel, { CollapseMap } from './dungeon/CollapsePanel';
-import { FIELDS, curField, stayLimit, fmtH, partyMembers, moveTo, camp, campSafe, waitClose, openChest, gather, drink, buyAtMerchant, sneak, offerAltar, descend, stair, collapseFight, collapseRest } from '../lib/dungeon';
+import { FIELDS, curField, stayLimit, fmtH, fieldNotes, partyMembers, moveTo, camp, campSafe, waitClose, openChest, gather, drink, buyAtMerchant, sneak, offerAltar, descend, stair, collapseFight, collapseRest, lightTorch } from '../lib/dungeon';
 import { FLOORMASTER } from '../lib/rifts';
 import { startBattle } from '../lib/combat';
 import { stats } from '../lib/stats';
@@ -68,6 +68,7 @@ export default function DungeonScreen({ state, mutate }) {
   });
   const onCollapseFight = () => mutate(s => startBattle(s, s.run.party, collapseFight(s), { collapse: 1 }));
   const onCollapseRest = () => mutate(s => { if (collapseRest(s)) log(s, '稍微喘了口氣'); });
+  const onLightTorch = () => mutate(s => lightTorch(s));
   const onUsePotion = () => mutate(s => {
     if (!s.potions) return;
     const p = partyMembers(s); if (!p.length) return;
@@ -86,7 +87,8 @@ export default function DungeonScreen({ state, mutate }) {
                 <h2>第 {run.floor} 層 · {FIELDS[curField(run)]?.n}</h2>
                 <span className="mute" style={{ fontSize: 12.5 }}>關閉倒數 <span className="num" style={{ color: left < 24 ? 'var(--blood)' : 'var(--ink)' }}>{fmtH(Math.max(0, left))}</span></span>
               </div>
-              {run.collapse ? <CollapseMap /> : run.tower ? <TowerMap state={state} /> : <MapGrid map={map} prev={run.prev} onMove={onMove} />}
+              {fieldNotes(run).map((n, i) => <p className={`notice ${n.bad ? 'bad' : ''}`} key={i}>{n.text}</p>)}
+              {run.collapse ? <CollapseMap /> : run.tower ? <TowerMap state={state} /> : <MapGrid state={state} map={map} prev={run.prev} onMove={onMove} />}
             </section>
             <section className="panel event" style={{ marginTop: 16 }}>
               {run.collapse
@@ -115,7 +117,12 @@ export default function DungeonScreen({ state, mutate }) {
                   );
                 })}
               </div>
-              <div className="row"><button className="btn sm" disabled={!state.potions} onClick={onUsePotion}>用藥水({state.potions})</button></div>
+              <div className="row">
+                <button className="btn sm" disabled={!state.potions} onClick={onUsePotion}>用藥水({state.potions})</button>
+                {run.torchH > 0
+                  ? <span className="mute" style={{ fontSize: 12 }}>火把剩 {Math.ceil(run.torchH)} 小時</span>
+                  : <button className="btn sm" disabled={!state.torches} onClick={onLightTorch}>點火把({state.torches})</button>}
+              </div>
             </section>
             <section className="panel">
               <h2>身上的戰利品</h2>

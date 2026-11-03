@@ -74,7 +74,7 @@ export default function BattleScreen({ state, mutate }) {
             <div className="cmdg">
               <button className="cmdb" onClick={() => onAct('atk')}><b>普通攻擊</b><small>{DT[a.dt]}擊,魂力 +12</small></button>
               {a.skills.map(k => {
-                const s = SK[k], c = skillCost(a, k), silenced = a.buffs.some(b => b.silence);
+                const s = SK[k], c = skillCost(B, a, k), silenced = a.buffs.some(b => b.silence);
                 return <button className="cmdb sk" key={k} disabled={silenced || a.soul < c} onClick={() => onAct('sk', k)}><b>{s.n}</b><span className="c">魂力 {c}</span><small>{s.d}</small></button>;
               })}
               <button className="cmdb" onClick={() => onAct('def')}><b>防禦</b><small>受到的傷害減半,魂力 +15</small></button>

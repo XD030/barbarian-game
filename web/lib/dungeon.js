@@ -15,8 +15,10 @@ const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { cons
    (爬塔選階梯,不是房間地圖,見下面 towerChoices/towerEnemies/towerChest/stair)。
    次元崩壞(run.collapse,見下面 collapseFight/collapseRest)也接上了:進迷宮時 1.5% 機率
    設 run.collapsePending,過 24 小時後下一次移動觸發,原地撐過固定波次才能回城。
-   魔女之眼、火把/黑暗視野系統還沒搬過來,見 README。第 1/2/3/5/6 層的房間地圖、
-   精英房、裂縫祭壇、層主(在安全區挑戰)都已經接上。 */
+   火把/黑暗視野(fieldDark/autoTorch/lightTorch/visible)、魔女之眼卡納巴洛遭遇(onEnter 裡
+   witchH>=48 的分支)、女妖的「怨恨之印」詛咒(run.curse,觸發/效果在 lib/combat.js 的
+   startBattle/moveTo)都接上了。第 1/2/3/5/6 層的房間地圖、精英房、裂縫祭壇、層主(在安全區
+   挑戰)也都已經接上。 */
 export const FLOORS = {
   1: { n: '水晶洞窟', stay: 7 },
   2: { n: '第 2 層', stay: 10 },
@@ -143,12 +145,30 @@ export const stayLimit = run => FLOORS[run.floor].stay * 24;
 export const curField = run => run.tower ? 'tower' : run.map.rooms[run.map.cur].field;
 export const roomHasFoes = r => !r.cleared && (r.type === 'combat' || r.type === 'elite' || r.type === 'rift');
 export const reachable = (map, i) => map.rooms[i].visited || map.rooms[i].links.some(j => map.rooms[j].visited);
-export const visible = (map, i) => {
+export const fieldDark = field => !!FIELDS[field]?.dark;
+export const visible = (s, map, i) => {
   const r = map.rooms[i];
   if (r.visited || r.seen) return true;
-  return r.links.some(j => map.rooms[j].visited);
+  const run = s.run, lit = !fieldDark(r.field) || run.torchH > 0;
+  const adj = r.links.some(j => map.rooms[j].visited);
+  if (adj && lit) return true;
+  if (runHas(s, 'sight') && r.links.some(j => map.rooms[j].links.some(k => map.rooms[k].visited)) && lit) return true;
+  return false;
 };
 export function fmtH(h) { const d = Math.floor(h / 24), hh = Math.floor(h % 24); return d ? `${d} 天 ${hh} 小時` : `${hh} 小時`; }
+
+// 目前場域的異常狀態提示(回傳 {text,bad} 陣列,全部照原作文案;只有「沒火把看不到路」不算 bad)。
+export function fieldNotes(run) {
+  const out = [], fx = FIELDS[curField(run)]?.fx;
+  if (run.abyss && run.floor === 1) out.push({ text: '深淵之主出現中:外圍是 5 級的深淵變種。', bad: 1 });
+  if (run.curse) out.push({ text: '怨恨之印:女妖的詛咒跟著你們,每走一步壓力多增加。', bad: 1 });
+  if (fx === 'witch') out.push({ text: '魔女森林:方向感錯亂、幻聽、痛覺加劇。每走一步壓力 +50%。待太久「魔女之眼」會引來卡納巴洛。', bad: 1 });
+  if (fx === 'ember') out.push({ text: '餘燼烙印:技能魂力消耗 1.5 倍,戰鬥中每回合受到灼燒。', bad: 1 });
+  if (fx === 'frost') out.push({ text: '嚴寒:隊員速度 -15%(保溫石可免疫)。', bad: 1 });
+  if (fx === 'specter') out.push({ text: '地縛靈:物理與暗屬性抗性大減,受到的傷害 +25%。', bad: 1 });
+  if (!run.tower && fieldDark(curField(run)) && run.torchH <= 0) out.push({ text: '這裡吞噬光線,沒有火把只看得到走過的地方。', bad: 0 });
+  return out;
+}
 
 export function portalXp(s, party, f) {
   const out = [];
@@ -174,9 +194,23 @@ function restParty(party, pct, stress) {
 export function advanceTime(s, h) {
   const run = s.run;
   run.h += h;
+  if (run.torchH > 0) run.torchH = Math.max(0, run.torchH - h);
   partyMembers(s).forEach(m => { const st = stats(m); m.soul = Math.min(st.soul, m.soul + st.soul * .03 * h); });
+  if (!run.tower && FIELDS[curField(run)]?.fx === 'witch') run.witchH = (run.witchH || 0) + h;
   if (run.h >= stayLimit(run)) { eject(s); return true; }
   return false;
+}
+
+// 黑暗場域沒有火把只看得到走過的地方;身上有火把且還沒點的話,踏進黑暗場域會自動點起來。
+export function autoTorch(s) {
+  const run = s.run;
+  if (!run || run.tower) return;
+  if (fieldDark(curField(run)) && run.torchH <= 0 && s.torches > 0) { s.torches--; run.torchH = 72; }
+}
+export function lightTorch(s) {
+  const run = s.run;
+  if (!s.torches || run.torchH > 0) return;
+  s.torches--; run.torchH = 72;
 }
 
 export function partyMembers(s) { return s.run.party.map(id => s.members.find(m => m.id === id)).filter(m => m && !m.dead); }
@@ -204,10 +238,12 @@ export function moveTo(s, log, i) {
   if (!cur.links.includes(i)) return;
   if (roomHasFoes(cur) && i !== run.prev) return;
   run.prev = map.cur; map.cur = i;
-  partyMembers(s).forEach(m => { m.stress = Math.min(100, m.stress + 2.5); });
+  const fx = FIELDS[map.rooms[i].field]?.fx, k = (fx === 'witch' ? 1.5 : 1) + (run.curse ? .6 : 0);
+  partyMembers(s).forEach(m => addStress(m, 2.5 * k));
   if (advanceTime(s, 5)) return;
+  autoTorch(s);
   const r = map.rooms[i];
-  if (!r.visited) { r.visited = true; onEnter(partyMembers(s), r); }
+  if (!r.visited) { r.visited = true; const msg = onEnter(s, r); if (msg) log(s, msg); }
   if (run.collapsePending && run.h >= 24) {
     run.collapsePending = false;
     run.collapse = { wave: 0, total: 3 + run.floor };
@@ -303,19 +339,25 @@ export function offerAltar(s) {
   return true;
 }
 
-export function onEnter(party, r) {
+export function onEnter(s, r) {
+  const party = partyMembers(s), run = s.run;
   if (r.type === 'trap') {
     const spotter = party.find(m => ['elf', 'beast'].includes(m.race) && Math.random() < .6);
     if (spotter) r.note = `${spotter.name} 發現了地上的機關,大家繞了過去。`;
     else {
       const v = pick(party), d = Math.round(stats(v).maxhp * .2);
       v.hp = Math.max(1, v.hp - d);
-      v.stress = Math.min(100, v.stress + 8);
+      addStress(v, 8);
       r.note = `陷阱啟動了,${v.name} 受到 ${d} 點傷害。`;
     }
     r.cleared = true;
   }
-  if (r.type === 'empty') { party.forEach(m => { m.stress = Math.min(100, m.stress + 2); }); r.cleared = true; }
+  if (r.type === 'empty') { party.forEach(m => addStress(m, 2)); r.cleared = true; }
+  if (r.type === 'combat' && FIELDS[r.field]?.fx === 'witch' && (run.witchH || 0) >= 48 && !r.enemies.includes('carnivaro') && Math.random() < .5) {
+    r.enemies = ['carnivaro', ...r.enemies].slice(0, 4);
+    return '魔女之眼注視著你們……卡納巴洛出現了!';
+  }
+  return null;
 }
 
 // 第 2 層以後的樓層推進(往下一層的傳送門/樓梯觸發)。第 5→6 層要有船+航海士。
@@ -334,6 +376,7 @@ export function descend(s, log, field) {
   if (nf === 4) { run.tower = { stage: 0, choices: towerChoices() }; run.map = null; }
   else { run.tower = null; run.map = genFloor(s, nf); run.prev = run.map.start; }
   s.maxFloor = Math.max(s.maxFloor, nf);
+  autoTorch(s);
   const msgs = portalXp(s, partyMembers(s), nf);
   log(s, `隊伍來到第 ${nf} 層「${FLOORS[nf].n}」。`);
   msgs.forEach(msg => log(s, msg));
