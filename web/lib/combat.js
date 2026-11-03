@@ -4,9 +4,9 @@
    (敵人、或開了自動的玩家角色)一次算完,直到遇到下一個需要玩家操作的回合,或戰鬥結束為止。
    沒有逐幀動畫/飄字特效,改成一條文字戰鬥紀錄(B.log)。
    戰鬥狀態放在 state.battle(不是 state.run.battle),因為公會考核(opt.exam)是在城市畫面打的,
-   沒有 state.run 可以掛。一般戰鬥房/伏擊/寶箱陷阱/採集被打擾/裂縫/層主/天空之塔(opt.tower)
-   都已經接上;次元崩壞(opt.collapse)這個 opt 旗標還沒處理,因為是完全獨立的小遊戲系統,
-   本身也還沒搬過來。女妖的「怨恨之印」詛咒機制也先不做(目前能走到的場域池都還沒有女妖)。 */
+   沒有 state.run 可以掛。一般戰鬥房/伏擊/寶箱陷阱/採集被打擾/裂縫/層主/天空之塔(opt.tower)/
+   次元崩壞(opt.collapse)都已經接上。女妖的「怨恨之印」詛咒機制也先不做(目前能走到的場域池
+   都還沒有女妖)。 */
 import { WEAPON, GRADE, ECON } from './data';
 import { stats, hasT, memberPas, numEff } from './stats';
 import { ESS, essInfo, makeEss, memberActs } from './essence';
@@ -14,7 +14,7 @@ import { SK } from './skills';
 import { MON_INFO, monName } from './monInfo';
 import { MON_COMBAT } from './monCombat';
 import { killMember, addStress, gainXp } from './city';
-import { roomHasFoes, advanceTime, stayLimit, towerChoices } from './dungeon';
+import { roomHasFoes, advanceTime, stayLimit, towerChoices, returnToCity } from './dungeon';
 import { processDays } from './city';
 import { refreshShop } from './guild';
 import { RIFTS, FLOORMASTER } from './rifts';
@@ -455,12 +455,13 @@ export function resolveBattle(state, log) {
     }
     run.party = run.party.filter(id => { const m = state.members.find(x => x.id === id); return m && !m.dead; });
     run.loot.stone += loot.stone; run.loot.ess.push(...loot.ess); run.loot.items.push(...loot.items);
-    if (run.map) { const room = run.map.rooms[run.map.cur]; if (room && roomHasFoes(room)) room.cleared = true; }
+    if (run.map && !B.opt.tower && !B.opt.collapse) { const room = run.map.rooms[run.map.cur]; if (room && roomHasFoes(room)) room.cleared = true; }
     if (B.opt.rift) { state.riftCD[B.opt.riftKey] = state.month + 2; state.riftsCleared++; state.fame += 5; log(state, `打倒了裂縫「${RIFTS[B.opt.riftKey].n}」的守護者。`); }
     if (B.opt.tower && run.tower) {
       if (B.opt.boss) { run.tower.guardDone = true; }
       else { run.tower.stage = Math.min(100, run.tower.stage + (run.tower.pending || 0)); run.tower.choices = towerChoices(); }
     }
+    if (B.opt.collapse && run.collapse) { run.collapse.wave++; }
     if (B.opt.fmaster) {
       state.floorBoss = state.floorBoss || {};
       if (!state.floorBoss[B.opt.fmaster]) { state.floorBoss[B.opt.fmaster] = true; state.fame += 8; }
@@ -488,6 +489,10 @@ export function resolveBattle(state, log) {
   state.battle = null;
   if (!run.party.length) { wipeOut(state, deaths, log); return; }
   state.screen = 'dungeon';
+  if (B.opt.collapse && run.collapse && run.collapse.wave >= run.collapse.total) {
+    returnToCity(state, log, '撐過了次元崩壞', '最後一波結束,扭曲的空間把你們吐回了次元廣場。混亂中撿到的東西都還在身上。', true);
+    return;
+  }
   advanceTime(state, 2);
   const parts = [`魔石 +${loot.stone}`];
   if (loot.ess.length) parts.push(`取得:${loot.ess.map(it => essInfo(it).n).join('、')}`);

@@ -4,7 +4,7 @@ import { processDays, addStress } from './city';
 import { FIELD_POOLS, FIELD_FLOOR, fieldFloor } from './fields';
 import { RIFTS } from './rifts';
 import { randomNum } from './num';
-import { makeEss, essInfo } from './essence';
+import { makeEss, essInfo, ESS } from './essence';
 
 const ri = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -13,7 +13,9 @@ const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { cons
 
 /* 樓層生成(搬自 index.html 的 genFloor)。第 4 層「天空之塔」改用 run.tower 狀態機
    (爬塔選階梯,不是房間地圖,見下面 towerChoices/towerEnemies/towerChest/stair)。
-   次元崩壞、魔女之眼、火把/黑暗視野系統還沒搬過來,見 README。第 1/2/3/5/6 層的房間地圖、
+   次元崩壞(run.collapse,見下面 collapseFight/collapseRest)也接上了:進迷宮時 1.5% 機率
+   設 run.collapsePending,過 24 小時後下一次移動觸發,原地撐過固定波次才能回城。
+   魔女之眼、火把/黑暗視野系統還沒搬過來,見 README。第 1/2/3/5/6 層的房間地圖、
    精英房、裂縫祭壇、層主(在安全區挑戰)都已經接上。 */
 export const FLOORS = {
   1: { n: '水晶洞窟', stay: 7 },
@@ -181,8 +183,9 @@ export function partyMembers(s) { return s.run.party.map(id => s.members.find(m 
 
 function runHas(s, key) { return partyMembers(s).some(m => m.num && m.num.eff && m.num.eff[key]); }
 
-export function returnToCity(s, log, title, lead) {
+export function returnToCity(s, log, title, lead, bonus) {
   const run = s.run, L = run.loot;
+  if (bonus) { L.stone = Math.round(L.stone * 1.5); L.ess.push(makeEss(pick(Object.keys(ESS).filter(k => ESS[k].g === 8 && !ESS[k].guard)))); }
   s.stone += L.stone; s.bag.push(...L.ess); s.items.push(...L.items);
   const days = Math.floor(run.h / 24) + 1;
   const names = partyMembers(s).map(m => m.name).join('、');
@@ -205,6 +208,11 @@ export function moveTo(s, log, i) {
   if (advanceTime(s, 5)) return;
   const r = map.rooms[i];
   if (!r.visited) { r.visited = true; onEnter(partyMembers(s), r); }
+  if (run.collapsePending && run.h >= 24) {
+    run.collapsePending = false;
+    run.collapse = { wave: 0, total: 3 + run.floor };
+    log(s, '次元崩壞發生了!沒有任何預兆,迷宮在關閉日之前封閉了,回城的傳送失敗。地板一片片變成隨機的傳送門。撐過所有波次才能回去。聽說運氣好的話,能在這裡得到別處拿不到的東西。');
+  }
 }
 
 // 回傳值:null = 平安無事,否則是伏擊怪物的 key 陣列(交給呼叫端去 startBattle)。
@@ -316,6 +324,7 @@ export function onEnter(party, r) {
 // (踏進天空之塔的瞬間),呼叫端要接著 startBattle(…, {tower:1})。
 export function descend(s, log, field) {
   const run = s.run;
+  if (run.collapse) return false;
   const nf = run.floor + 1;
   if (nf > 6) return false;
   if (nf === 5 && !(run.tower && run.tower.guardDone)) return false;
@@ -391,6 +400,22 @@ export function stair(s, idx) {
   t.stage = Math.min(100, t.stage + 10);
   t.choices = towerChoices();
   return { msg: '命運之階把你們送上了 10 階!', enemies: null };
+}
+
+/* --- 次元崩壞:迷宮提前封閉,原地撐過固定波次的怪物才能回城 --- */
+// 回傳敵人 key 陣列,呼叫端接著 startBattle(…, {collapse:1})。
+export function collapseFight(s) {
+  const run = s.run, f = run.floor;
+  const pools = Object.keys(FIELDS).filter(k => { const fl = fieldFloor(k); return fl && fl <= Math.min(6, f + 1) && FIELDS[k].pool.length; });
+  return genEnemies(pick(pools), 'combat').concat(Math.random() < .4 ? [pick(FIELDS[pick(pools)].pool)] : []).slice(0, 5);
+}
+// 回傳 true 代表真的喘到了(每波只能喘一次);false 代表這波已經喘過了。
+export function collapseRest(s) {
+  const run = s.run;
+  if (run.collapse.rested === run.collapse.wave) return false;
+  run.collapse.rested = run.collapse.wave;
+  partyMembers(s).forEach(m => { const st = stats(m); m.hp = Math.min(st.maxhp, m.hp + st.maxhp * .15); });
+  return true;
 }
 
 export { restParty, runHas };

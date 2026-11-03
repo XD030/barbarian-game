@@ -142,6 +142,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     party.forEach(m => { m.soul = stats(m).soul; });
     s.run = { party: party.map(m => m.id), floor: 1, h: 0, loot: { stone: 0, ess: [], items: [] }, prev: null };
     if ((s.dreadKills || 0) >= 9 || Math.random() < .01) s.run.abyss = true;
+    if (Math.random() < .015) s.run.collapsePending = true;
     s.run.map = genFloor1(s);
     s.run.prev = s.run.map.start;
     s.maxFloor = Math.max(s.maxFloor, 1);

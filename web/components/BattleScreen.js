@@ -1,6 +1,7 @@
 'use client';
 import { DT } from '../lib/data';
 import { SK } from '../lib/skills';
+import { RIFTS, FLOORMASTER } from '../lib/rifts';
 import { startBattle, setTarget, buildPlayerAct, submitAction, toggleAuto, skillCost, resolveBattle, isKnown, INTENT_LABEL } from '../lib/combat';
 
 const meter = (v, max, cls) => <div className={`meter ${cls}`}><i style={{ width: `${Math.max(0, Math.min(100, v / max * 100))}%` }} /></div>;
@@ -10,6 +11,16 @@ export default function BattleScreen({ state, mutate }) {
   if (!B) return null;
   const a = B.actor;
   const canAct = B.waiting && a && a.side === 'p' && !B.over;
+  const run = state.run;
+  const noFlee = B.opt.exam || B.opt.rift || B.opt.fmaster || B.opt.collapse || B.opt.boss;
+  const title = B.opt.exam ? '公會晉級考試'
+    : B.opt.rift ? `裂縫・${RIFTS[B.opt.riftKey]?.n || ''}`
+    : B.opt.fmaster ? `層主・${FLOORMASTER[B.opt.fmaster].n}`
+    : B.opt.collapse ? `次元崩壞・第 ${(run?.collapse?.wave ?? 0) + 1} 波`
+    : B.opt.ambush ? '遭到偷襲!'
+    : B.opt.tower && B.opt.boss ? '天空之塔・第 100 階'
+    : B.opt.tower ? '天空之塔'
+    : `戰鬥 · 第 ${run?.floor ?? ''} 層`;
 
   const log = (s, msg) => { s.log.unshift({ d: `${s.month}/${s.day}`, m: msg }); s.log.length = Math.min(s.log.length, 60); };
   const onTarget = (idx) => mutate(s => setTarget(s, idx));
@@ -25,7 +36,7 @@ export default function BattleScreen({ state, mutate }) {
     <div className="wrap">
       <section className="bt">
         <div className="bt-top">
-          <h2>{B.opt.exam ? '公會晉級考試' : B.opt.ambush ? '遭到偷襲!' : '戰鬥'}</h2>
+          <h2>{title}</h2>
           <button className="btn sm" onClick={onAuto}>自動:{B.auto ? '開' : '關'}</button>
         </div>
 
@@ -68,7 +79,7 @@ export default function BattleScreen({ state, mutate }) {
               })}
               <button className="cmdb" onClick={() => onAct('def')}><b>防禦</b><small>受到的傷害減半,魂力 +15</small></button>
               <button className="cmdb" disabled={!state.potions || B.opt.exam} onClick={() => onAct('pot')}><b>藥水({state.potions})</b><small>生命最低的隊友回復 40%</small></button>
-              {!B.opt.exam && <button className="cmdb" onClick={() => onAct('flee')}><b>逃跑</b><small>70% 機率成功,退回上一個房間</small></button>}
+              {!noFlee && <button className="cmdb" onClick={() => onAct('flee')}><b>逃跑</b><small>70% 機率成功,退回上一個房間</small></button>}
             </div>
           ) : <div className="wait">……</div>}
         </div>

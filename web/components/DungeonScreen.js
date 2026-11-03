@@ -3,7 +3,8 @@ import TopBar from './city/TopBar';
 import MapGrid from './dungeon/MapGrid';
 import EventPanel from './dungeon/EventPanel';
 import TowerPanel, { TowerMap } from './dungeon/TowerPanel';
-import { FIELDS, curField, stayLimit, fmtH, partyMembers, moveTo, camp, campSafe, waitClose, openChest, gather, drink, buyAtMerchant, sneak, offerAltar, descend, stair } from '../lib/dungeon';
+import CollapsePanel, { CollapseMap } from './dungeon/CollapsePanel';
+import { FIELDS, curField, stayLimit, fmtH, partyMembers, moveTo, camp, campSafe, waitClose, openChest, gather, drink, buyAtMerchant, sneak, offerAltar, descend, stair, collapseFight, collapseRest } from '../lib/dungeon';
 import { FLOORMASTER } from '../lib/rifts';
 import { startBattle } from '../lib/combat';
 import { stats } from '../lib/stats';
@@ -65,6 +66,8 @@ export default function DungeonScreen({ state, mutate }) {
     s.run.tower.pending = 0;
     startBattle(s, s.run.party, ['sky_sentinel', 'tower_guardian', 'tower_guardian'], { tower: 1, boss: 1 });
   });
+  const onCollapseFight = () => mutate(s => startBattle(s, s.run.party, collapseFight(s), { collapse: 1 }));
+  const onCollapseRest = () => mutate(s => { if (collapseRest(s)) log(s, '稍微喘了口氣'); });
   const onUsePotion = () => mutate(s => {
     if (!s.potions) return;
     const p = partyMembers(s); if (!p.length) return;
@@ -83,12 +86,14 @@ export default function DungeonScreen({ state, mutate }) {
                 <h2>第 {run.floor} 層 · {FIELDS[curField(run)]?.n}</h2>
                 <span className="mute" style={{ fontSize: 12.5 }}>關閉倒數 <span className="num" style={{ color: left < 24 ? 'var(--blood)' : 'var(--ink)' }}>{fmtH(Math.max(0, left))}</span></span>
               </div>
-              {run.tower ? <TowerMap state={state} /> : <MapGrid map={map} prev={run.prev} onMove={onMove} />}
+              {run.collapse ? <CollapseMap /> : run.tower ? <TowerMap state={state} /> : <MapGrid map={map} prev={run.prev} onMove={onMove} />}
             </section>
             <section className="panel event" style={{ marginTop: 16 }}>
-              {run.tower
-                ? <TowerPanel state={state} onCamp={onCamp} onStair={onStair} onTowerBoss={onTowerBoss} onDescend={onDescend} onFmaster={onFmaster} />
-                : <EventPanel state={state} r={cur} onCamp={onCamp} onCampSafe={onCampSafe} onWaitClose={onWaitClose} onOpenChest={onOpenChest} onGather={onGather} onDrink={onDrink} onBuy={onBuy} onMove={onMove} onFight={onFight} onSneak={onSneak} onOffer={onOffer} onDescend={onDescend} onFmaster={onFmaster} />}
+              {run.collapse
+                ? <CollapsePanel state={state} onCollapseFight={onCollapseFight} onCollapseRest={onCollapseRest} />
+                : run.tower
+                  ? <TowerPanel state={state} onCamp={onCamp} onStair={onStair} onTowerBoss={onTowerBoss} onDescend={onDescend} onFmaster={onFmaster} />
+                  : <EventPanel state={state} r={cur} onCamp={onCamp} onCampSafe={onCampSafe} onWaitClose={onWaitClose} onOpenChest={onOpenChest} onGather={onGather} onDrink={onDrink} onBuy={onBuy} onMove={onMove} onFight={onFight} onSneak={onSneak} onOffer={onOffer} onDescend={onDescend} onFmaster={onFmaster} />}
             </section>
           </div>
           <aside className="side">
