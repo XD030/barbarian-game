@@ -1,6 +1,7 @@
 import { RACE, WEAPON, ECON, TATTOO_PATH, TATTOO_COST, BEASTPACT, SPIRIT, SPIRIT_STONE_COST, SPIRIT_STONE_RATE, LV_XP, MAXLV } from './data';
 import { hasT, stats } from './stats';
 import { makeMember } from './state';
+import { refreshShop } from './guild';
 
 function stressMult(m) { let k = 1; if (hasT(m, 'brave')) k *= .7; if (hasT(m, 'coward')) k *= 1.4; if (hasT(m, 'bg_drifter')) k *= .7; if (m.race === 'barb') k *= .85; return k; }
 export function addStress(m, v) { m.stress = Math.max(0, Math.min(100, m.stress + (v > 0 ? v * stressMult(m) : v))); }
@@ -114,6 +115,7 @@ export function processDays(state, n, log) {
       const tax = living(state).reduce((a, m) => a + taxOf(m), 0) + state.debt;
       if (state.stone >= tax) { state.stone -= tax; state.debt = 0; if (tax) log(`第 ${state.month} 月開始,繳了 ${tax} 石幣的稅。`); }
       else { state.debt = tax - state.stone; state.stone = 0; log(`稅金不夠繳,還欠 ${state.debt} 石幣。欠稅的人進不了次元廣場。`); }
+      refreshShop(state);
     }
     if (state.day === 1 || state.day === 15) refreshTavern(state);
     if (!state.carnon && state.fame >= 150) { state.carnon = true; log('名聲傳到了拉夫多尼亞第 1 區,卡隆的守衛不再攔你——身為受認可的探險者,每天的生活開銷降了一些。'); }

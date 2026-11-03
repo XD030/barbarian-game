@@ -15,17 +15,18 @@ import StoreTab from './city/tabs/StoreTab';
 import TempleTab from './city/tabs/TempleTab';
 import GuildTab from './city/tabs/GuildTab';
 import LibraryTab from './city/tabs/LibraryTab';
-import PlaceholderTab from './city/tabs/PlaceholderTab';
+import ExchangeTab from './city/tabs/ExchangeTab';
 import { WEAPON, TATTOO_COST, TATTOO_PATH, BEASTPACT, SPIRIT, SPIRIT_STONE_COST, SPIRIT_STONE_RATE, ECON } from '../lib/data';
 import { getM } from '../lib/getM';
 import { stats } from '../lib/stats';
 import { gearCost, shipCost, healAllCost, processDays } from '../lib/city';
 import { genFloor, portalXp, FLOORS, autoTorch, towerChoices } from '../lib/dungeon';
-import { tickRequests, claimReq } from '../lib/guild';
-import { research } from '../lib/library';
-import { joinChurch, pray } from '../lib/temple';
+import { tickRequests, claimReq, buyGuildEss } from '../lib/guild';
+import { research, buyLibEss } from '../lib/library';
+import { joinChurch, pray, removeEssence } from '../lib/temple';
 import { donateFaith } from '../lib/faith';
 import { startBattle } from '../lib/combat';
+import { sellEss, absorbEss, sellItem, appraiseItem, equipItem, unequipItem } from '../lib/bag';
 import { useIsMobile } from '../lib/useIsMobile';
 
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -136,6 +137,14 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     startBattle(s, s.sel, ['examiner'], { exam: 1 });
   });
   const onResearch = (k) => mutate(s => research(s, k, (msg) => log(s, msg)));
+  const onBuyLibEss = (k) => mutate(s => buyLibEss(s, k, (msg) => log(s, msg)));
+  const onBuyGuildEss = (i) => mutate(s => buyGuildEss(s, i, (msg) => log(s, msg)));
+  const onSellEss = (i) => mutate(s => sellEss(s, i, (msg) => log(s, msg)));
+  const onAbsorb = (src, i, memberId) => mutate(s => absorbEss(s, src, i, memberId, (msg) => log(s, msg)));
+  const onSellItem = (i) => mutate(s => sellItem(s, i, (msg) => log(s, msg)));
+  const onAppraise = (i) => mutate(s => appraiseItem(s, i, (msg) => log(s, msg)));
+  const onEquip = (i, memberId) => mutate(s => equipItem(s, i, memberId, (msg) => log(s, msg)));
+  const onRemoveEss = (memberId, j) => mutate(s => removeEssence(s, memberId, j, (msg) => log(s, msg)));
 
   const onSetFloor = (f) => mutate(s => { s.startFloor = f; });
 
@@ -167,15 +176,22 @@ export default function CityScreen({ state, mutate, onResetSave }) {
   const tabBody = {
     home: <HomeTab state={state} onDorm={onDorm} />,
     tavern: <TavernTab state={state} onRecruit={onRecruit} />,
-    guild: <GuildTab state={state} onClaimReq={onClaimReq} onExam={onExam} />,
-    library: <LibraryTab state={state} onResearch={onResearch} />,
-    exchange: <PlaceholderTab title="中央交易所" desc="賣精髓、裂縫石和編號物品的地方。" />,
-    temple: <TempleTab state={state} onJoinChurch={onJoinChurch} onTempleHeal={onTempleHeal} onPray={onPray} onDonateFaith={onDonateFaith} />,
+    guild: <GuildTab state={state} onClaimReq={onClaimReq} onExam={onExam} onBuyGuildEss={onBuyGuildEss} />,
+    library: <LibraryTab state={state} onResearch={onResearch} onBuyLibEss={onBuyLibEss} />,
+    exchange: (
+      <>
+        <p className="mute" style={{ fontSize: 12.5 }}>卡梅爾比區的阿爾米納斯中央交易所。精髓、裂縫石和編號物品都能在這裡換成石幣,精髓也能直接在這裡吸收。</p>
+        <ExchangeTab state={state} onAbsorb={onAbsorb} onSellEss={onSellEss} onEquip={onEquip} onAppraise={onAppraise} onSellItem={onSellItem} />
+      </>
+    ),
+    temple: <TempleTab state={state} onJoinChurch={onJoinChurch} onTempleHeal={onTempleHeal} onPray={onPray} onDonateFaith={onDonateFaith} onRemoveEss={onRemoveEss} />,
     smith: <SmithTab state={state} onGear={onGear} onSwapWeapon={onSwapWeapon} onHireNav={onHireNav} onBuyShip={onBuyShip} />,
     store: <StoreTab state={state} onBuyPotion={onBuyPotion} onBuyTorch={onBuyTorch} />,
   }[tab];
 
-  const handlers = { onToggleSel, onDispatch, onTattooUp, onTattooPath, onSetPact, onSpiritStone };
+  const onUnequip = (memberId) => mutate(s => unequipItem(s, memberId));
+
+  const handlers = { onToggleSel, onDispatch, onTattooUp, onTattooPath, onSetPact, onSpiritStone, onUnequip };
 
   const portalPanel = (
     <section className="panel">
@@ -200,7 +216,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     const body = mobileView === 'team'
       ? <TeamScreen state={state} handlers={handlers} onDone={() => setMobileView('map')} onGoTavern={() => { setTab('tavern'); setMobileView('bldg'); }} />
       : mobileView === 'bag'
-      ? <BagScreen state={state} />
+      ? <BagScreen state={state} onAbsorb={onAbsorb} onSellEss={onSellEss} onEquip={onEquip} onAppraise={onAppraise} onSellItem={onSellItem} />
       : mobileView === 'bldg'
       ? (
         <>

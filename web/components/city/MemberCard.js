@@ -1,6 +1,21 @@
 import { RACE, WEAPON, TRAIT, DT, LV_XP, MAXLV } from '../../lib/data';
 import { stats } from '../../lib/stats';
 import { DISPATCH_MISSIONS, dispatchSlots, activeDispatches, TATTOO_PATH, TATTOO_COST, BEASTPACT, SPIRIT, SPIRIT_STONE_COST, SPIRIT_STONE_RATE } from '../../lib/city';
+import { essInfo, essDesc, essSlots, essGrade } from '../../lib/essence';
+import { NUM } from '../../lib/num';
+import { rankCap } from '../../lib/guild';
+
+function EssChips({ m }) {
+  const slots = Array.from({ length: essSlots(m) }, (_, i) => m.ess[i]);
+  return (
+    <>
+      {slots.map((it, i) => it
+        ? <span key={i} className={`chip ess ${it.gd ? 'rb' : ''}`} style={{ '--c': essInfo(it).color }} title={essDesc(it)}>{essInfo(it).n}</span>
+        : <span key={i} className="chip empty">空精髓槽</span>)}
+      {m.num && <span className="chip item" title={NUM[m.num.id].d}>{NUM[m.num.id].n}</span>}
+    </>
+  );
+}
 
 function Meter({ v, max, cls }) {
   const pct = Math.max(0, Math.min(100, (v / max) * 100));
@@ -103,7 +118,7 @@ function FairyPanel({ state, m, onSpiritStone }) {
   );
 }
 
-export default function MemberCard({ state, m, selected, mini, onToggleSel, onDispatch, onTattooUp, onTattooPath, onSetPact, onSpiritStone }) {
+export default function MemberCard({ state, m, selected, mini, onToggleSel, onDispatch, onTattooUp, onTattooPath, onSetPact, onSpiritStone, onUnequip }) {
   if (m.dead) {
     return (
       <article className="mcard dead">
@@ -143,8 +158,11 @@ export default function MemberCard({ state, m, selected, mini, onToggleSel, onDi
       {m.race === 'fairy' && <FairyPanel state={state} m={m} onSpiritStone={onSpiritStone} />}
       <div className="chips">
         {m.hero && <span className="chip hero" title="你自己。死亡後要用「蘇生之石」復活">主角</span>}
+        <span className="chip grade" title="精髓總價值決定,上限受公會認證影響">{Math.max(essGrade(m), rankCap(state))}級</span>
         {m.traits.map(t => <span key={t} className={`chip ${TRAIT[t].good ? 'good' : 'bad'}`} title={TRAIT[t].d}>{TRAIT[t].n}</span>)}
+        <EssChips m={m} />
       </div>
+      {m.num && <div className="row" style={{ marginTop: 6 }}><button className="btn sm" onClick={() => onUnequip(m.id)}>卸下編號物品</button></div>}
     </article>
   );
 }

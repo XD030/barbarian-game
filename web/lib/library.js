@@ -1,5 +1,6 @@
-import { ECON, DT } from './data';
+import { ECON, DT, GRADE } from './data';
 import { MON_INFO, monName } from './monInfo';
+import { ESS, makeEss, essInfo } from './essence';
 
 /* 把數字無條件捨去到只剩兩位有效數字,取一個「漂亮」的整數(例如 1,749,000 → 1,700,000)。 */
 function niceDown(n) {
@@ -40,4 +41,15 @@ export function research(state, k, log) {
   state.stone -= RESEARCH_COST;
   state.known.push(k);
   log(`花錢請圖書館的拉格納查到了${monName(k)}的資料。`);
+}
+
+/* 圖書館常備販售的 9 級精髓(顏色隨機),照原作 LIB_ESS 清單。 */
+export const LIB_ESS = ['goblin', 'ghoul', 'gnome', 'bladewolf', 'kobold', 'kobold_shield', 'goblin_archer', 'goblin_sword', 'skel_archer', 'skel_warrior', 'banshee', 'wall_mole'];
+
+export function buyLibEss(state, k, log) {
+  if (state.stone < GRADE[9].price || !ESS[k]) return;
+  state.stone -= GRADE[9].price;
+  const it = makeEss(k);
+  state.bag.push(it);
+  log(`在圖書館買下${essInfo(it).n}。`);
 }

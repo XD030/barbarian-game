@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { loadSave, writeSave, newState, makeMember, SAVE_KEY } from '../lib/state';
 import { ECON } from '../lib/data';
 import { refreshTavern } from '../lib/city';
-import { tickRequests } from '../lib/guild';
+import { tickRequests, refreshShop } from '../lib/guild';
 import IntroScreen from '../components/IntroScreen';
 import CreateScreen from '../components/CreateScreen';
 import CityScreen from '../components/CityScreen';
@@ -53,6 +53,7 @@ export default function Page() {
     fresh.sel = [h.id];
     fresh.screen = 'base';
     refreshTavern(fresh);
+    refreshShop(fresh);
     fresh.reqGenAt = Date.now();
     fresh.log.unshift({ d: `${fresh.month}/${fresh.day}`, m: `${h.name} 在拉維吉恩區租了一間舊倉庫當住處,一個人開始冒險。` });
     writeSave(fresh);

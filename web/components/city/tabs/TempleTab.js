@@ -1,6 +1,7 @@
-import { healAllCost } from '../../../lib/city';
+import { healAllCost, removeCost, living } from '../../../lib/city';
 import { CHURCHES } from '../../../lib/temple';
 import { FAITH_BUFFS, faithCost } from '../../../lib/faith';
+import { essInfo } from '../../../lib/essence';
 
 function ChurchPicker({ onJoinChurch }) {
   return (
@@ -19,9 +20,11 @@ function ChurchPicker({ onJoinChurch }) {
   );
 }
 
-export default function TempleTab({ state, onJoinChurch, onTempleHeal, onPray, onDonateFaith }) {
+export default function TempleTab({ state, onJoinChurch, onTempleHeal, onPray, onDonateFaith, onRemoveEss }) {
   if (!state.church) return <ChurchPicker onJoinChurch={onJoinChurch} />;
   const hc = healAllCost(state);
+  const rc = removeCost(state);
+  const haveEss = living(state).filter(m => m.ess.length);
   return (
     <>
       <div className="templeActions">
@@ -52,7 +55,22 @@ export default function TempleTab({ state, onJoinChurch, onTempleHeal, onPray, o
           })}
         </div>
       )}
-      <div className="sub">移除精髓</div>
+      <div className="sub">移除精髓(本次 {rc} 石幣,每次翻倍)</div>
+      {haveEss.length ? (
+        <div className="list">
+          {haveEss.map(m => (
+            <div className="item" key={m.id}>
+              <span><b>{m.name}</b></span>
+              <span />
+              <small className="row">
+                {m.ess.map((it, j) => (
+                  <button key={j} className="btn sm danger" disabled={state.stone < rc} onClick={() => onRemoveEss(m.id, j)}>移除 {essInfo(it).short}</button>
+                ))}
+              </small>
+            </div>
+          ))}
+        </div>
+      ) : <p className="mute">沒有人吸收過精髓。</p>}
     </>
   );
 }

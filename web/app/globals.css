@@ -101,7 +101,21 @@ button{touch-action:manipulation}
 .chip.good{color:#b9d9a0;border-color:#3d5230}
 .chip.bad{color:#e3a99c;border-color:#5a2f27}
 .chip.hero{color:var(--torch-ink);background:var(--torch);border-color:var(--torch)}
+.chip.ess{color:var(--ink)}
+.chip.ess::before{content:"";display:inline-block;width:7px;height:7px;border-radius:2px;background:var(--c,#888);margin-right:5px;vertical-align:1px}
+.chip.rb::before{background:linear-gradient(90deg,#f55,#fb4,#5d5,#5bf,#b6f)}
+.chip.empty{border-style:dashed;color:var(--dim);cursor:default}
+.chip.grade{color:var(--gold);border-color:#5a4a28}
+.chip.item{color:#a8d0f0;border-color:#2a4a62}
 .chips{display:flex;flex-wrap:wrap;gap:4px}
+.essList{display:flex;flex-direction:column;gap:7px}
+.essCard{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--c,var(--line));border-radius:6px;padding:8px 10px}
+.essCard b{font-family:var(--f-title);color:var(--torch-hi);font-size:14px}
+.essCard.empty{border-left-style:dashed;opacity:.6}
+.modal{position:fixed;inset:0;background:rgba(8,6,4,.74);display:grid;place-items:center;z-index:30;padding:16px}
+.box{max-width:540px;width:100%;max-height:85vh;overflow:auto;background:var(--panel);border:1px solid var(--torch);border-radius:8px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.box h2{font-size:21px}
+.box .acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
 .list{display:flex;flex-direction:column}
 .item{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .item:last-child{border-bottom:0}

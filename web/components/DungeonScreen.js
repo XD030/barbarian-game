@@ -1,16 +1,21 @@
 'use client';
+import { useState } from 'react';
 import TopBar from './city/TopBar';
 import MapGrid from './dungeon/MapGrid';
 import EventPanel from './dungeon/EventPanel';
 import TowerPanel, { TowerMap } from './dungeon/TowerPanel';
 import CollapsePanel, { CollapseMap } from './dungeon/CollapsePanel';
+import AbsorbModal from './AbsorbModal';
 import { FIELDS, curField, stayLimit, fmtH, fieldNotes, partyMembers, moveTo, camp, campSafe, waitClose, openChest, gather, drink, buyAtMerchant, sneak, offerAltar, descend, stair, collapseFight, collapseRest, lightTorch } from '../lib/dungeon';
 import { FLOORMASTER } from '../lib/rifts';
 import { startBattle } from '../lib/combat';
+import { absorbEss } from '../lib/bag';
+import { essInfo } from '../lib/essence';
 import { stats } from '../lib/stats';
 import { WEAPON } from '../lib/data';
 
 export default function DungeonScreen({ state, mutate }) {
+  const [absorbIdx, setAbsorbIdx] = useState(null);
   const run = state.run;
   const map = run.map;
   const cur = map ? map.rooms[map.cur] : null;
@@ -62,6 +67,7 @@ export default function DungeonScreen({ state, mutate }) {
     if (r.msg) log(s, r.msg);
     if (r.enemies) startBattle(s, s.run.party, r.enemies, { tower: 1 });
   });
+  const onAbsorb = (i, memberId) => mutate(s => absorbEss(s, 'run', i, memberId, (msg) => log(s, msg)));
   const onTowerBoss = () => mutate(s => {
     s.run.tower.pending = 0;
     startBattle(s, s.run.party, ['sky_sentinel', 'tower_guardian', 'tower_guardian'], { tower: 1, boss: 1 });
@@ -127,11 +133,29 @@ export default function DungeonScreen({ state, mutate }) {
             <section className="panel">
               <h2>身上的戰利品</h2>
               <div className="loot"><span>魔石(換算石幣)<b>{run.loot.stone}</b></span><span>精髓<b>{run.loot.ess.length}</b></span><span>物品<b>{run.loot.items.length}</b></span></div>
-              <p className="mute" style={{ fontSize: 12 }}>精髓/物品的裝備介面還沒搬過來,先只記數量,帶回城會進背包。全滅會全部失去。</p>
+              {run.loot.ess.length > 0 && (
+                <div className="list">
+                  {run.loot.ess.map((it, i) => (
+                    <div className="item" key={i}>
+                      <span className="chip ess" style={{ '--c': essInfo(it).color }}>{essInfo(it).n}</span>
+                      <button className="btn sm" onClick={() => setAbsorbIdx(i)}>吸收</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="mute" style={{ fontSize: 12 }}>物品的裝備要回城到中央交易所處理。帶回城會進背包。全滅會全部失去。</p>
             </section>
           </aside>
         </div>
       </div>
+      {absorbIdx != null && run.loot.ess[absorbIdx] && (
+        <AbsorbModal
+          who={party}
+          it={run.loot.ess[absorbIdx]}
+          onAbsorb={(memberId) => onAbsorb(absorbIdx, memberId)}
+          onClose={() => setAbsorbIdx(null)}
+        />
+      )}
     </>
   );
 }

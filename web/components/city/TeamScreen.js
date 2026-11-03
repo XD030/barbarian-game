@@ -1,6 +1,27 @@
 'use client';
 import { useState } from 'react';
 import MemberCard from './MemberCard';
+import { essInfo, essDesc, essSkillDesc, essSlots } from '../../lib/essence';
+
+function EssSlots({ m }) {
+  const n = essSlots(m);
+  return (
+    <div className="essList">
+      {Array.from({ length: n }, (_, i) => {
+        const it = m.ess[i];
+        if (!it) return <div className="essCard empty" key={i}><b>精髓槽 {i + 1}</b><p className="mute">空精髓槽</p></div>;
+        const e = essInfo(it);
+        return (
+          <div className="essCard" style={{ '--c': e.color }} key={i}>
+            <b>{e.n}</b>
+            <p className="mute" style={{ margin: '4px 0' }}>{essDesc(it)}</p>
+            <p style={{ fontSize: 12.5 }} dangerouslySetInnerHTML={{ __html: essSkillDesc(it) }} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function TeamScreen({ state, handlers, onDone, onGoTavern }) {
   const [focus, setFocus] = useState(state.sel[0] || (state.members[0] && state.members[0].id) || null);
@@ -36,7 +57,7 @@ export default function TeamScreen({ state, handlers, onDone, onGoTavern }) {
           {!fm ? (
             <p className="mute">還沒有任何人</p>
           ) : sub === 'ess' ? (
-            <p className="mute" style={{ fontSize: 12.5 }}>精髓系統還沒搬過來(戰鬥階段一起處理)。</p>
+            <EssSlots m={fm} />
           ) : (
             <MemberCard state={state} m={fm} selected={state.sel.includes(fm.id)} mini {...handlers} />
           )}

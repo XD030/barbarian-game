@@ -146,3 +146,4 @@ export function absorbCheck(m, it) {
 
 export const essPrice = it => Math.round(GRADE[ESS[it.k].g].price * (it.gd ? 2 : 1) * .5);
 export const essValue = m => m.ess.reduce((a, it) => a + GRADE[ESS[it.k].g].ev * (it.gd ? 1.5 : 1), 0);
+export const essGrade = m => { const v = essValue(m); return v < 4 ? 9 : v < 12 ? 8 : v < 35 ? 7 : v < 90 ? 6 : v < 220 ? 5 : 4; };
