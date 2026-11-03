@@ -326,6 +326,7 @@ export function buyAtMerchant(s, key) {
   if (key === 'calm') partyMembers(s).forEach(m => { m.stress = Math.max(0, m.stress - 20); });
   if (key === 'soul') partyMembers(s).forEach(m => { m.soul = stats(m).soul; });
   run.loot.stone -= price;
+  autoTorch(s);
 }
 
 // 不打你也打不過的被動怪物(目前只有食屍鬼)可以悄悄繞過去,不算開戰。
