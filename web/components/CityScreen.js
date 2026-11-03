@@ -20,13 +20,15 @@ import { WEAPON, TATTOO_COST, TATTOO_PATH, BEASTPACT, SPIRIT, SPIRIT_STONE_COST,
 import { getM } from '../lib/getM';
 import { stats } from '../lib/stats';
 import { gearCost, shipCost, healAllCost, processDays } from '../lib/city';
-import { genFloor1, portalXp, FLOORS, autoTorch } from '../lib/dungeon';
+import { genFloor, portalXp, FLOORS, autoTorch, towerChoices } from '../lib/dungeon';
 import { tickRequests, claimReq } from '../lib/guild';
 import { research } from '../lib/library';
 import { joinChurch, pray } from '../lib/temple';
 import { donateFaith } from '../lib/faith';
 import { startBattle } from '../lib/combat';
 import { useIsMobile } from '../lib/useIsMobile';
+
+const pick = a => a[Math.floor(Math.random() * a.length)];
 
 export default function CityScreen({ state, mutate, onResetSave }) {
   const [tab, setTab] = useState('home');
@@ -135,22 +137,30 @@ export default function CityScreen({ state, mutate, onResetSave }) {
   });
   const onResearch = (k) => mutate(s => research(s, k, (msg) => log(s, msg)));
 
+  const onSetFloor = (f) => mutate(s => { s.startFloor = f; });
+
   const onEnterLab = () => mutate(s => {
     if (s.debt && s.stone >= s.debt) { s.stone -= s.debt; s.debt = 0; }
     const party = s.sel.map(id => getM(s, id)).filter(m => m && !m.dead);
     if (!party.length || s.day !== 1 || s.debt) return;
+    const f = Math.max(1, Math.min(s.startFloor || 1, s.maxFloor));
     party.forEach(m => { m.soul = stats(m).soul; });
-    s.run = { party: party.map(m => m.id), floor: 1, h: 0, loot: { stone: 0, ess: [], items: [] }, prev: null, torchH: 0, witchH: 0, curse: false };
-    if ((s.dreadKills || 0) >= 9 || Math.random() < .01) s.run.abyss = true;
+    s.run = { party: party.map(m => m.id), floor: f, h: 0, loot: { stone: 0, ess: [], items: [] }, prev: null, torchH: 0, witchH: 0, curse: false };
+    if (f === 1 && ((s.dreadKills || 0) >= 9 || Math.random() < .01)) s.run.abyss = true;
     if (Math.random() < .015) s.run.collapsePending = true;
-    s.run.map = genFloor1(s);
-    s.run.prev = s.run.map.start;
+    if (f === 4) { s.run.tower = { stage: 0, choices: towerChoices() }; s.run.map = null; }
+    else {
+      const field = f === 2 ? pick(['beast', 'dead', 'desert', 'gforest']) : null;
+      if (field) s.run.field2 = field;
+      s.run.map = genFloor(s, f);
+      s.run.prev = s.run.map.start;
+    }
     autoTorch(s);
-    s.maxFloor = Math.max(s.maxFloor, 1);
+    s.maxFloor = Math.max(s.maxFloor, f);
     s.screen = 'dungeon';
-    log(s, `${party.map(m => m.name).join('、')} 穿過次元廣場的傳送門,來到第 1 層${FLOORS[1].n}。`);
+    log(s, `${party.map(m => m.name).join('、')} 穿過次元廣場的傳送門,來到第 ${f} 層${FLOORS[f].n}。`);
     if (s.run.abyss) log(s, '水晶洞窟外圍的黑暗裡傳來不屬於這一層的氣息。深淵之主貝爾札克來了,外圍的怪物變成了 5 級的深淵變種。中心部附近還算安全。');
-    const msgs = portalXp(s, party, 1);
+    const msgs = portalXp(s, party, f);
     msgs.forEach(msg => log(s, msg));
   });
 
@@ -173,6 +183,12 @@ export default function CityScreen({ state, mutate, onResetSave }) {
       {open ? <p className="notice">今天迷宮開啟。錯過要等下個月。</p> : <p className="mute">迷宮每月 1 日開啟,還有 <span className="num">{until}</span> 天。</p>}
       {state.debt > 0 && <p className="notice bad">你還欠 {state.debt} 石幣的稅。欠稅的人進不了次元廣場。</p>}
       <p>{party.length ? party.map(m => m.name).join('、') : <span className="mute">還沒選人</span>} <span className="mute">({party.length}/5)</span></p>
+      <div className="row">
+        <label className="mute" htmlFor="startFloor">傳送到</label>
+        <select id="startFloor" value={Math.min(state.startFloor || 1, state.maxFloor)} onChange={e => onSetFloor(+e.target.value)}>
+          {Array.from({ length: state.maxFloor }, (_, i) => i + 1).map(f => <option key={f} value={f}>第 {f} 層 {FLOORS[f].n}</option>)}
+        </select>
+      </div>
       <div className="row">
         <button className="btn primary" disabled={!(open && party.length && !state.debt)} onClick={onEnterLab}>進入迷宮</button>
         <button className="btn" onClick={onPassDay}>度過一天</button>
