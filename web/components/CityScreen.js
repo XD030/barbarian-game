@@ -176,12 +176,12 @@ export default function CityScreen({ state, mutate, onResetSave }) {
   const tabBody = {
     home: <HomeTab state={state} onDorm={onDorm} />,
     tavern: <TavernTab state={state} onRecruit={onRecruit} />,
-    guild: <GuildTab state={state} onClaimReq={onClaimReq} onExam={onExam} onBuyGuildEss={onBuyGuildEss} />,
-    library: <LibraryTab state={state} onResearch={onResearch} onBuyLibEss={onBuyLibEss} />,
+    guild: <GuildTab state={state} onClaimReq={onClaimReq} onExam={onExam} />,
+    library: <LibraryTab state={state} onResearch={onResearch} />,
     exchange: (
       <>
-        <p className="mute" style={{ fontSize: 12.5 }}>卡梅爾比區的阿爾米納斯中央交易所。精髓、裂縫石和編號物品都能在這裡換成石幣,精髓也能直接在這裡吸收。</p>
-        <ExchangeTab state={state} onAbsorb={onAbsorb} onSellEss={onSellEss} onEquip={onEquip} onAppraise={onAppraise} onSellItem={onSellItem} />
+        <p className="mute" style={{ fontSize: 12.5 }}>卡梅爾比區的阿爾米納斯中央交易所。圖書館、公會的精髓買賣這次統一搬到這裡,精髓、裂縫石和編號物品都能在這裡換成石幣,精髓也能直接在這裡吸收。</p>
+        <ExchangeTab state={state} onAbsorb={onAbsorb} onSellEss={onSellEss} onEquip={onEquip} onAppraise={onAppraise} onSellItem={onSellItem} onBuyLibEss={onBuyLibEss} onBuyGuildEss={onBuyGuildEss} />
       </>
     ),
     temple: <TempleTab state={state} onJoinChurch={onJoinChurch} onTempleHeal={onTempleHeal} onPray={onPray} onDonateFaith={onDonateFaith} onRemoveEss={onRemoveEss} />,
@@ -216,7 +216,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     const body = mobileView === 'team'
       ? <TeamScreen state={state} handlers={handlers} onDone={() => setMobileView('map')} onGoTavern={() => { setTab('tavern'); setMobileView('bldg'); }} />
       : mobileView === 'bag'
-      ? <BagScreen state={state} onAbsorb={onAbsorb} onSellEss={onSellEss} onEquip={onEquip} onAppraise={onAppraise} onSellItem={onSellItem} />
+      ? <BagScreen state={state} onAbsorb={onAbsorb} onSellEss={onSellEss} onEquip={onEquip} onAppraise={onAppraise} onSellItem={onSellItem} onBuyLibEss={onBuyLibEss} onBuyGuildEss={onBuyGuildEss} />
       : mobileView === 'bldg'
       ? (
         <>

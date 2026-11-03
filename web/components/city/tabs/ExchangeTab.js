@@ -1,8 +1,12 @@
 import { useState } from 'react';
-import { essInfo, essSkillDesc, essPrice } from '../../../lib/essence';
+import { essInfo, essDesc, essSkillDesc, essPrice, ESS } from '../../../lib/essence';
 import { NUM } from '../../../lib/num';
-import { ECON } from '../../../lib/data';
+import { ECON, GRADE } from '../../../lib/data';
 import { living } from '../../../lib/city';
+import { LIB_ESS } from '../../../lib/library';
+import { SK } from '../../../lib/skills';
+import { PS } from '../../../lib/passives';
+import { monName } from '../../../lib/monInfo';
 import Modal from '../../Modal';
 import AbsorbModal from '../../AbsorbModal';
 
@@ -69,12 +73,37 @@ function itemRow(it, i, onEquipOpen, onAppraise, onSellItem, state) {
   );
 }
 
-export default function ExchangeTab({ state, onAbsorb, onSellEss, onEquip, onAppraise, onSellItem }) {
+export default function ExchangeTab({ state, onAbsorb, onSellEss, onEquip, onAppraise, onSellItem, onBuyLibEss, onBuyGuildEss }) {
   const [absorbTarget, setAbsorbTarget] = useState(null); // {src:'bag', i}
   const [equipTarget, setEquipTarget] = useState(null); // i into state.items
 
   return (
     <>
+      <div className="sub">圖書館精髓(9 級,顏色隨機)</div>
+      <div className="list">
+        {LIB_ESS.map(k => (
+          <div className="item" key={k}>
+            <span>{monName(k)}精髓</span>
+            <button className="btn sm" disabled={state.stone < GRADE[9].price} onClick={() => onBuyLibEss(k)}>{GRADE[9].price}</button>
+            <small>{ESS[k].acts.map(a => `「${SK[a].n}」`).join('或')}{ESS[k].pas ? `;被動「${PS[ESS[k].pas].n}」` : ''}</small>
+          </div>
+        ))}
+      </div>
+      <div className="sub">公會精髓(8 級以上,公會認證越高能買越高級,每月 1 日更新)</div>
+      {state.shop.length ? (
+        <div className="list">
+          {state.shop.map((it, i) => {
+            const p = GRADE[essInfo(it).g].price;
+            return (
+              <div className="item" key={i}>
+                <span className="chip ess" style={{ '--c': essInfo(it).color }}>{essInfo(it).n}</span>
+                <button className="btn sm" disabled={state.stone < p} onClick={() => onBuyGuildEss(i)}>{p}</button>
+                <small>{essDesc(it)}</small>
+              </div>
+            );
+          })}
+        </div>
+      ) : <p className="mute">這個月的精髓賣完了。</p>}
       <div className="sub">精髓背包</div>
       {state.bag.length ? (
         <div className="list">

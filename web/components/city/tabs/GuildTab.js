@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { REQ_CAP, REQ_DESC, reqProgress, reqDone, nextReqInMs, rankCap } from '../../../lib/guild';
-import { essInfo, essDesc } from '../../../lib/essence';
-import { GRADE } from '../../../lib/data';
 
-const BOOKS = [['req', '委託'], ['shop', '精髓'], ['bounty', '懸賞'], ['exam', '考核']];
+const BOOKS = [['req', '委託'], ['bounty', '懸賞'], ['exam', '考核']];
 
 function fmtCountdown(ms) {
   const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
@@ -27,7 +25,7 @@ function ReqCard({ state, r, onClaim }) {
   );
 }
 
-export default function GuildTab({ state, onClaimReq, onExam, onBuyGuildEss }) {
+export default function GuildTab({ state, onClaimReq, onExam }) {
   const [book, setBook] = useState('req');
   const nextIn = nextReqInMs(state);
   const cap = rankCap(state);
@@ -53,26 +51,6 @@ export default function GuildTab({ state, onClaimReq, onExam, onBuyGuildEss }) {
             {state.reqs.map(r => <ReqCard key={r.id} state={state} r={r} onClaim={onClaimReq} />)}
           </div>
         ) : <p className="mute">目前沒有委託。</p>
-      )}
-
-      {book === 'shop' && (
-        <>
-          <p className="mute" style={{ fontSize: 12.5 }}>精髓交易(8 級以上,公會認證越高能買越高級,每月 1 日更新)</p>
-          {state.shop.length ? (
-            <div className="list">
-              {state.shop.map((it, i) => {
-                const p = GRADE[essInfo(it).g].price;
-                return (
-                  <div className="item" key={i}>
-                    <span className="chip ess" style={{ '--c': essInfo(it).color }}>{essInfo(it).n}</span>
-                    <button className="btn sm" disabled={state.stone < p} onClick={() => onBuyGuildEss(i)}>{p}</button>
-                    <small>{essDesc(it)}</small>
-                  </div>
-                );
-              })}
-            </div>
-          ) : <p className="mute">這個月的精髓賣完了。</p>}
-        </>
       )}
 
       {book === 'bounty' && <p className="mute">懸賞還沒開放。</p>}

@@ -1,11 +1,7 @@
 import { useState } from 'react';
-import { DT, GRADE } from '../../../lib/data';
+import { DT } from '../../../lib/data';
 import { MON_INFO } from '../../../lib/monInfo';
-import { RESEARCH_COST, monNote, LIB_ESS } from '../../../lib/library';
-import { ESS } from '../../../lib/essence';
-import { SK } from '../../../lib/skills';
-import { PS } from '../../../lib/passives';
-import { monName } from '../../../lib/monInfo';
+import { RESEARCH_COST, monNote } from '../../../lib/library';
 
 const ALL_MON = Object.keys(MON_INFO).sort((a, b) => MON_INFO[b].g - MON_INFO[a].g);
 const GRADES = [...new Set(ALL_MON.map(k => MON_INFO[k].g))].sort((a, b) => b - a);
@@ -37,7 +33,7 @@ function MonRow({ k, known, canAfford, onResearch }) {
   );
 }
 
-export default function LibraryTab({ state, onResearch, onBuyLibEss }) {
+export default function LibraryTab({ state, onResearch }) {
   const [grade, setGrade] = useState('all');
   const known = new Set(state.known || []);
   const shown = grade === 'all' ? ALL_MON : ALL_MON.filter(k => MON_INFO[k].g === grade);
@@ -54,16 +50,6 @@ export default function LibraryTab({ state, onResearch, onBuyLibEss }) {
       <div className="list">
         {shown.map(k => (
           <MonRow key={k} k={k} known={known.has(k)} canAfford={state.stone >= RESEARCH_COST} onResearch={onResearch} />
-        ))}
-      </div>
-      <div className="sub">9 級精髓(顏色隨機)</div>
-      <div className="list">
-        {LIB_ESS.map(k => (
-          <div className="item" key={k}>
-            <span>{monName(k)}精髓</span>
-            <button className="btn sm" disabled={state.stone < GRADE[9].price} onClick={() => onBuyLibEss(k)}>{GRADE[9].price}</button>
-            <small>{ESS[k].acts.map(a => `「${SK[a].n}」`).join('或')}{ESS[k].pas ? `;被動「${PS[ESS[k].pas].n}」` : ''}</small>
-          </div>
         ))}
       </div>
     </>
