@@ -2,17 +2,39 @@ import { ECON, DT, GRADE } from './data';
 import { MON_INFO, monName } from './monInfo';
 import { ESS, makeEss, essInfo } from './essence';
 
-/* 把數字無條件捨去到只剩兩位有效數字,取一個「漂亮」的整數(例如 1,749,000 → 1,700,000)。 */
-function niceDown(n) {
-  const mag = Math.pow(10, Math.floor(Math.log10(n)) - 1);
-  return Math.floor(n / mag) * mag;
+/* 中央圖書館的怪物圖鑑這次改成「自己記錄」:不是花錢解鎖,而是遇到(戰鬥裡碰過,
+   見 lib/combat.js 的 learn() 寫進 state.encountered)之後,自己猜這隻怪物的弱點/
+   抗性屬性,猜對才正式記進 state.known(戰鬥裡能不能自動打弱點也看這個)。這整套猜測
+   機制原作沒有提到,是使用者自己的設計,不是原作考據——猜錯一天(全館共用額度,不分
+   隻怪物)只有第一次免費重試,之後每次收費翻倍(GUESS_BASE_COST 起跳)。 */
+export const GUESS_BASE_COST = 300 * ECON;
+
+const sameSet = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+
+/* 今天第幾次猜測決定要不要收費:第 1 次(全館共用,不分隻)免費,第 2 次起收費翻倍。 */
+export function nextGuessCost(state) {
+  const n = state.guessCount || 0;
+  return n === 0 ? 0 : GUESS_BASE_COST * Math.pow(2, n - 1);
 }
 
-/* 中央圖書館=付費解鎖的怪物圖鑑。原作裡圖書館唯一的館員拉格納用「書籍探測魔法」
-   幫忙找資料,2 年後開始收費,一次 3000 石幣——這裡直接照原作數字(乘上 ECON 經濟
-   倍率、取整數)當每隻怪物的解鎖費,不分強弱。原作沒有提到圖書館賣精髓或查弱點這種
-   機制,這部分是把「花錢查資料」具象化成遊戲裡的圖鑑解鎖。 */
-export const RESEARCH_COST = niceDown(3000 * ECON);
+export function guessMonster(state, k, weak, resist, log) {
+  if (!(state.encountered || []).includes(k) || (state.known || []).includes(k)) return;
+  const cost = nextGuessCost(state);
+  if (cost > 0) {
+    if (state.stone < cost) return;
+    state.stone -= cost;
+  }
+  state.guessCount = (state.guessCount || 0) + 1;
+  const d = MON_INFO[k];
+  const correct = sameSet(weak, d.weak || []) && sameSet(resist, d.resist || []);
+  if (correct) {
+    state.known = state.known || [];
+    state.known.push(k);
+    log(`猜對了!記錄下${monName(k)}的弱點跟抗性。`);
+  } else {
+    log(cost > 0 ? `猜錯了${monName(k)}的弱點/抗性,花了 ${cost} 石幣。` : `猜錯了${monName(k)}的弱點/抗性,今天還有免費重試機會。`);
+  }
+}
 
 export function monNote(k) {
   const d = MON_INFO[k], t = d.tags || {}, n = [];
@@ -32,15 +54,6 @@ export function monNote(k) {
   if (t.noheal) n.push('傷口難以癒合');
   if (d.atkdt) n.push(`${DT[d.atkdt]}屬性攻擊`);
   return n.join('、') || '沒有特別的能力';
-}
-
-export function research(state, k, log) {
-  if (state.stone < RESEARCH_COST || !MON_INFO[k]) return;
-  state.known = state.known || [];
-  if (state.known.includes(k)) return;
-  state.stone -= RESEARCH_COST;
-  state.known.push(k);
-  log(`花錢請圖書館的拉格納查到了${monName(k)}的資料。`);
 }
 
 /* 圖書館常備販售的 9 級精髓(顏色隨機),照原作 LIB_ESS 清單。 */

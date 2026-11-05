@@ -88,6 +88,7 @@ export function processDays(state, n, log) {
   for (let d = 0; d < n; d++) {
     let earn = 0;
     state.prayedToday = false;
+    state.guessCount = 0;
     for (const m of living(state)) {
       const st = stats(m);
       if (m.dispatch) {

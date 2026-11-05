@@ -39,7 +39,7 @@ const healU = (u, amt) => { if (hasBuff(u, 'noheal')) return 0; const b = u.hp; 
 const effSpd = u => u.spd * Math.max(.3, 1 + buffSum(u, 'spd') + (u.momentum || 0) * .05);
 
 export const isKnown = (state, k) => state.known.includes(k);
-const learn = (state, k) => { if (k && MON_INFO[k] && !state.known.includes(k)) state.known.push(k); };
+const learn = (state, k) => { if (!k || !MON_INFO[k]) return; state.encountered = state.encountered || []; if (!state.encountered.includes(k)) state.encountered.push(k); };
 
 function heroUnit(m) {
   const st = stats(m), w = WEAPON[m.weapon], pas = memberPas(m);

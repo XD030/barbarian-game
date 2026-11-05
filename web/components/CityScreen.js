@@ -22,7 +22,7 @@ import { stats } from '../lib/stats';
 import { gearCost, shipCost, healAllCost, processDays } from '../lib/city';
 import { genFloor, portalXp, FLOORS, autoTorch, towerChoices } from '../lib/dungeon';
 import { tickRequests, claimReq, buyGuildEss } from '../lib/guild';
-import { research, buyLibEss } from '../lib/library';
+import { guessMonster, buyLibEss } from '../lib/library';
 import { joinChurch, pray, removeEssence } from '../lib/temple';
 import { donateFaith } from '../lib/faith';
 import { startBattle } from '../lib/combat';
@@ -136,7 +136,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     if (!s.sel.length || s.examPassed || s.contrib < 80) return;
     startBattle(s, s.sel, ['examiner'], { exam: 1 });
   });
-  const onResearch = (k) => mutate(s => research(s, k, (msg) => log(s, msg)));
+  const onGuess = (k, weak, resist) => mutate(s => guessMonster(s, k, weak, resist, (msg) => log(s, msg)));
   const onBuyLibEss = (k) => mutate(s => buyLibEss(s, k, (msg) => log(s, msg)));
   const onBuyGuildEss = (i) => mutate(s => buyGuildEss(s, i, (msg) => log(s, msg)));
   const onSellEss = (i) => mutate(s => sellEss(s, i, (msg) => log(s, msg)));
@@ -177,7 +177,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
     home: <HomeTab state={state} onDorm={onDorm} />,
     tavern: <TavernTab state={state} onRecruit={onRecruit} />,
     guild: <GuildTab state={state} onClaimReq={onClaimReq} onExam={onExam} />,
-    library: <LibraryTab state={state} onResearch={onResearch} />,
+    library: <LibraryTab state={state} onGuess={onGuess} />,
     exchange: (
       <>
         <p className="mute" style={{ fontSize: 12.5 }}>卡梅爾比區的阿爾米納斯中央交易所。圖書館、公會的精髓買賣這次統一搬到這裡,精髓、裂縫石和編號物品都能在這裡換成石幣,精髓也能直接在這裡吸收。</p>
