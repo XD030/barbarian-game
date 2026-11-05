@@ -44,7 +44,10 @@ export const LIVING = 2 * ECON, TAX = 20 * ECON, POTION = 30 * ECON, TORCH = 60 
 export const capacity = state => 3 + state.dorm * 2;
 export const living = state => state.members.filter(m => !m.dead);
 export const taxOf = m => Math.round(TAX * (RACE[m.race].tax ?? 1));
-export const livingCost = (state, m) => Math.round(LIVING * (RACE[m.race].live || 1) * (hasT(m, 'glutton') ? 2 : 1) * (state.carnon ? .85 : 1));
+export const livingCost = (state, m) => {
+  const heindelLv = state.church === 'heindel' ? (state.faith?.heindel_moon?.lv || 0) : 0;
+  return Math.round(LIVING * (RACE[m.race].live || 1) * (hasT(m, 'glutton') ? 2 : 1) * (state.carnon ? .85 : 1) * (1 - heindelLv * .03));
+};
 
 export const DISPATCH_MISSIONS = {
   short: { n: '短程派遣', days: 1, rate: 15 * ECON },

@@ -25,6 +25,7 @@ export default function TempleTab({ state, onJoinChurch, onTempleHeal, onPray, o
   const hc = healAllCost(state);
   const rc = removeCost(state);
   const haveEss = living(state).filter(m => m.ess.length);
+  const churchBuffs = FAITH_BUFFS.filter(b => b.church === state.church);
   return (
     <>
       <div className="templeActions">
@@ -33,11 +34,11 @@ export default function TempleTab({ state, onJoinChurch, onTempleHeal, onPray, o
         <button className="btn" disabled={state.stone < hc || hc <= 0} onClick={onTempleHeal}>治療</button>
       </div>
       <div className="sub">信仰</div>
-      {FAITH_BUFFS.length === 0 ? (
-        <p className="mute" style={{ fontSize: 12 }}>信仰增益清單之後再依教團個別設計,這裡先空著。</p>
+      {churchBuffs.length === 0 ? (
+        <p className="mute" style={{ fontSize: 12 }}>這個教團的信仰增益還沒有內容。</p>
       ) : (
         <div className="faithlist">
-          {FAITH_BUFFS.map(b => {
+          {churchBuffs.map(b => {
             const f = state.faith[b.key] || { lv: 0, prog: 0 };
             const cost = faithCost(b, f.lv);
             const maxed = f.lv >= b.maxLv;

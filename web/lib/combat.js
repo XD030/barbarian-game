@@ -226,7 +226,8 @@ function fall(state, B, t, src) {
     return;
   }
   const pu = B.units.filter(u => u.side === 'p');
-  const luck = pu.reduce((a, u) => a + (hasT(u.m, 'lucky') ? .01 : 0) + (hasT(u.m, 'bg_hunter') ? .01 : 0) + (u.pas.includes('greed') ? .02 : 0) + (u.num.luck || 0), 0);
+  const reatlasLv = state.church === 'reatlas' ? (state.faith?.reatlas_star?.lv || 0) : 0;
+  const luck = pu.reduce((a, u) => a + (hasT(u.m, 'lucky') ? .01 : 0) + (hasT(u.m, 'bg_hunter') ? .01 : 0) + (u.pas.includes('greed') ? .02 : 0) + (u.num.luck || 0), 0) + reatlasLv * .01;
   const drop = (t.boss ? .5 : .01) + luck;
   if (ESS[t.key] && Math.random() < drop) { const it = makeEss(t.key); B.loot.ess.push(it); B.log.push('掉落了精髓!'); }
   if (src && src.side === 'p' && hasT(src.m, 'bloodlust') && aliveU(src)) healU(src, src.maxhp * .1);
@@ -366,10 +367,12 @@ export function startBattle(state, partyIds, enemyKeys, opt = {}) {
   const party = partyIds.map(id => state.members.find(m => m.id === id)).filter(m => m && !m.dead && (opt.exam || m.hp > 0));
   const units = party.map(heroUnit).concat(enemyKeys.map(k => monUnit(k)));
   const fx = run && !opt.exam ? FIELDS[curField(run)]?.fx : null;
+  const toberaLv = state.church === 'tobera' ? (state.faith?.tobera_sun?.lv || 0) : 0;
   units.forEach(u => {
     if (u.side !== 'p') return;
     if (fx === 'frost' && !u.num.warm) u.buffs.push({ label: '嚴寒', spd: -.15, t: 99 });
     if (fx === 'specter') u.buffs.push({ label: '地縛靈', vuln: .25, t: 99 });
+    if (toberaLv) u.regen = (u.regen || 0) + toberaLv * .01;
   });
   let newCurse = false;
   if (run && !opt.ambush && !opt.exam && !run.curse && enemyKeys.some(k => (MON_INFO[k].tags || {}).curse)) { run.curse = true; newCurse = true; }
