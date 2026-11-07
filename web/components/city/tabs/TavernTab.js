@@ -1,5 +1,6 @@
 import { RACE, WEAPON, TRAIT } from '../../../lib/data';
 import { capacity, living, tavernUnlocked, TAVERN_TIERS, recruitCost } from '../../../lib/city';
+import { essInfo } from '../../../lib/essence';
 
 export default function TavernTab({ state, onRecruit }) {
   const full = living(state).length >= capacity(state);
@@ -23,6 +24,7 @@ export default function TavernTab({ state, onRecruit }) {
                 <span>{RACE[m.race].n} · {WEAPON[m.weapon].n}</span>
                 <div className="chips" style={{ marginTop: 3 }}>
                   {m.traits.map(t => <span key={t} className={`chip ${TRAIT[t].good ? 'good' : 'bad'}`} title={TRAIT[t].d}>{TRAIT[t].n}</span>)}
+                  {m.ess.map((it, i) => <span key={i} className={`chip ess ${it.gd ? 'rb' : ''}`} style={{ '--c': essInfo(it).color }} title={essInfo(it).n}>{essInfo(it).n}</span>)}
                 </div>
               </div>
               <button className="btn sm" disabled={full || state.stone < c} title={full ? '住處住不下了' : ''} onClick={() => onRecruit(m.id)}>{c}</button>

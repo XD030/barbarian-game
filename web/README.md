@@ -78,6 +78,8 @@ npm run build   # 產生 out/,basePath 會是 /barbarian-game(對應 GitHub Page
   - **雷阿特拉斯・星路指引**:呼應她「主掌探險與緣份」的設定,每級精髓掉落機率額外 +1%(`lib/combat.js` 的 `fall()`,併進原本精靈/特質的 `luck` 加總)。
   - **海因德爾・月光庇護**:原作沒設定,「月神默默照看旅人」是自己掰的風味,挑一個跟前兩個不重複的經濟向效果——每級隊伍每日生活開銷降低 3%(`lib/city.js` 的 `livingCost`)。
   - 用 Playwright 測過:神殿只顯示已加入教團的那條、捐款升級正常;托貝拉 3 級在真的戰鬥裡 regen 確實是 0.03;海因德爾 5 級的每日開銷確實打了 85 折;雷阿特拉斯 5 級的戰鬥(含掉落判定)正常跑完沒有壞,全程沒有 console 錯誤。
+- **酒館候選人補上精髓(2026-11)**:階段 2 筆記裡寫的「等迷宮/戰鬥階段再補」這次補上了——照原作 `refreshTavern()` 的公式,等級越高的候選人,出場時帶一顆隨機 9 級精髓(`goblin`/`ghoul`/`gnome`/`bladewolf`/`kobold`/`goblin_archer` 任選一個)的機率就越高(`.2 + tier.lv*.05`),`recruitCost` 本來就有算這筆「含精髓加價」(`m.ess.length*120*ECON`)但精髓一直是空的,所以等於一直沒真的加過價。`TavernTab.js` 也補上精髓 chip 顯示(原作 `essChip(it)`),玩家才能看到自己多付的錢換到了什麼。用 Playwright 連續跳日測到一個帶精髓的候選人,確認招募後精髓真的轉移到隊員身上,沒有壞掉。
+- 已經沒有任何地方引用的 `PlaceholderTab.js` 這次刪掉了(中央交易所換成 `ExchangeTab` 之後就是死檔案)。
 
 ## 還沒做的事
 

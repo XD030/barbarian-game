@@ -2,6 +2,7 @@ import { RACE, WEAPON, ECON, TATTOO_PATH, TATTOO_COST, BEASTPACT, SPIRIT, SPIRIT
 import { hasT, stats } from './stats';
 import { makeMember } from './state';
 import { refreshShop } from './guild';
+import { makeEss } from './essence';
 
 function stressMult(m) { let k = 1; if (hasT(m, 'brave')) k *= .7; if (hasT(m, 'coward')) k *= 1.4; if (hasT(m, 'bg_drifter')) k *= .7; if (m.race === 'barb') k *= .85; return k; }
 export function addStress(m, v) { m.stress = Math.max(0, Math.min(100, m.stress + (v > 0 ? v * stressMult(m) : v))); }
@@ -69,14 +70,16 @@ export const TAVERN_TIERS = [
 export const tavernUnlocked = state => TAVERN_TIERS.filter(t => t.cond(state));
 export const recruitCost = m => (150 + m.lv * 80 + m.ess.length * 120) * ECON;
 
-// 酒館候選人暫時不帶精髓(精髓系統還沒搬過來,等迷宮/戰鬥階段再補)。
+const TAVERN_ESS_POOL = ['goblin', 'ghoul', 'gnome', 'bladewolf', 'kobold', 'goblin_archer'];
+
 export function refreshTavern(state) {
   const unlocked = tavernUnlocked(state);
   state.tavern = Array.from({ length: 4 }, () => {
     const totalW = unlocked.reduce((a, t) => a + t.w, 0);
     let r = Math.random() * totalW, tier = unlocked[unlocked.length - 1];
     for (const t of unlocked) { if (r < t.w) { tier = t; break; } r -= t.w; }
-    return makeMember(state, { lv: tier.lv });
+    const ess = Math.random() < .2 + tier.lv * .05 ? [makeEss(pick(TAVERN_ESS_POOL))] : [];
+    return makeMember(state, { lv: tier.lv, ess });
   });
 }
 
