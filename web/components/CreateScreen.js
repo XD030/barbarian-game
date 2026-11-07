@@ -33,12 +33,12 @@ export default function CreateScreen({ onConfirm }) {
             <span>{RACE[draft.race].n} · {w.n} · {TRAIT[draft.bg].n}</span>
           </div>
           <div className="statline" style={{ justifyContent: 'center' }}>
-            <span>生命<b>{previewStats.maxhp}</b></span>
-            <span>攻擊<b>{previewStats.atk}</b></span>
-            <span>防禦<b>{previewStats.def}</b></span>
-            <span>速度<b>{previewStats.spd}</b></span>
-            <span>魂力<b>{previewStats.soul}</b></span>
-            <span>魔抗<b>{previewStats.mres}</b></span>
+            <span><img className="sic" src="/ui/icons/stat/hp.png" alt="" />生命<b>{previewStats.maxhp}</b></span>
+            <span><img className="sic" src="/ui/icons/stat/patk.png" alt="" />攻擊<b>{previewStats.atk}</b></span>
+            <span><img className="sic" src="/ui/icons/stat/pdef.png" alt="" />防禦<b>{previewStats.def}</b></span>
+            <span><img className="sic" src="/ui/icons/stat/dex.png" alt="" />速度<b>{previewStats.spd}</b></span>
+            <span><img className="sic" src="/ui/icons/stat/mp.png" alt="" />魂力<b>{previewStats.soul}</b></span>
+            <span><img className="sic" src="/ui/icons/stat/mdef.png" alt="" />魔抗<b>{previewStats.mres}</b></span>
           </div>
           <p className="mute" style={{ fontSize: 12.5 }}>攻擊類型:{DT[w.dt]}。{w.pass}</p>
         </div>

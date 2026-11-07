@@ -63,7 +63,7 @@ function itemRow(it, i, onEquipOpen, onAppraise, onSellItem, state) {
   const d = NUM[it.id];
   return (
     <div className="item" key={i}>
-      <span>{d.n} <span className="mute">({d.r})</span></span>
+      <span><img className="numicon" src={d.icon} alt="" />{d.n} <span className="mute">({d.r})</span></span>
       <span className="row">
         <button className="btn sm" onClick={() => onEquipOpen(i)}>裝備</button>
         <button className="btn sm" onClick={() => onSellItem(i)}>賣 {d.price}</button>

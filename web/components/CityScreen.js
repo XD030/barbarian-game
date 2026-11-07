@@ -255,7 +255,7 @@ export default function CityScreen({ state, mutate, onResetSave }) {
             <section className="panel">
               <div className="tabs" role="tablist">
                 {Object.entries(BUILDINGS).map(([k, b]) => (
-                  <button key={k} className="tab" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}><span className="ic">{b.ic}</span><span className="tl">{b.n}</span></button>
+                  <button key={k} className="tab" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}><span className="ic"><img src={b.img} alt="" /></span><span className="tl">{b.n}</span></button>
                 ))}
               </div>
               <BuildingHeader k={tab} />

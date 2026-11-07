@@ -1,12 +1,12 @@
 /* 城市地圖上 8 棟建築物的共用資訊(名字/圖示/地點/風味文字),給 CityMap、BuildingHeader、
    桌面版分頁通用,避免每個地方各寫一份。 */
 export const BUILDINGS = {
-  home: { n: '住處', ic: '住', place: '拉維吉恩區的舊倉庫', flavor: '你租下的舊倉庫,隊友都住在這裡。擴建後能多住人,休息時壓力也降得更多。' },
-  tavern: { n: '酒館', ic: '酒', place: '拉維吉恩區', flavor: '拉維吉恩區的酒館,角落貼著找隊伍的公告。願意跟陌生人出征的好手不多,等級越高的人開價越高,也越挑隊伍的名聲。' },
-  guild: { n: '公會', ic: '會', place: '拉維吉恩區' },
-  library: { n: '中央圖書館', ic: '書', place: '拉維吉恩南部', flavor: '規模像國會大廈一樣大,卻幾乎沒什麼人來。館內唯一的館員拉格納會用書籍探測魔法幫你查資料,但要收費。' },
-  exchange: { n: '中央交易所', ic: '易', place: '卡梅爾比區', flavor: '卡梅爾比區的阿爾米納斯中央交易所。精髓、裂縫石和編號物品都能在這裡換成石幣。' },
-  temple: { n: '神殿', ic: '殿', place: '卡梅爾比區', flavor: '三神教底下三個教團各自的神殿。能治療傷勢、祈禱,也是唯一能移除精髓的地方。' },
-  smith: { n: '鐵匠鋪', ic: '匠', place: '拉維吉恩區', flavor: '強化裝備最多到 +5。也可以換一把不同類型的武器,或準備好航向大海需要的船隻。' },
-  store: { n: '雜貨店', ic: '店', place: '拉維吉恩區', flavor: '補給藥水跟火把的地方,出發前先備好。' },
+  home: { n: '住處', ic: '住', img: '/ui/icons/nav/village.png', place: '拉維吉恩區的舊倉庫', flavor: '你租下的舊倉庫,隊友都住在這裡。擴建後能多住人,休息時壓力也降得更多。' },
+  tavern: { n: '酒館', ic: '酒', img: '/ui/icons/nav/dialogue.png', place: '拉維吉恩區', flavor: '拉維吉恩區的酒館,角落貼著找隊伍的公告。願意跟陌生人出征的好手不多,等級越高的人開價越高,也越挑隊伍的名聲。' },
+  guild: { n: '公會', ic: '會', img: '/ui/icons/nav/quest.png', place: '拉維吉恩區' },
+  library: { n: '中央圖書館', ic: '書', img: '/ui/icons/nav/runes.png', place: '拉維吉恩南部', flavor: '規模像國會大廈一樣大,卻幾乎沒什麼人來。館內唯一的館員拉格納會用書籍探測魔法幫你查資料,但要收費。' },
+  exchange: { n: '中央交易所', ic: '易', img: '/ui/icons/nav/trade.png', place: '卡梅爾比區', flavor: '卡梅爾比區的阿爾米納斯中央交易所。精髓、裂縫石和編號物品都能在這裡換成石幣。' },
+  temple: { n: '神殿', ic: '殿', img: '/ui/icons/nav/temple.png', place: '卡梅爾比區', flavor: '三神教底下三個教團各自的神殿。能治療傷勢、祈禱,也是唯一能移除精髓的地方。' },
+  smith: { n: '鐵匠鋪', ic: '匠', img: '/ui/icons/nav/weapons.png', place: '拉維吉恩區', flavor: '強化裝備最多到 +5。也可以換一把不同類型的武器,或準備好航向大海需要的船隻。' },
+  store: { n: '雜貨店', ic: '店', img: '/ui/icons/nav/consumables.png', place: '拉維吉恩區', flavor: '補給藥水跟火把的地方,出發前先備好。' },
 };

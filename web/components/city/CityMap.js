@@ -8,7 +8,7 @@ export default function CityMap({ onEnterBld }) {
       <div className="citymap">
         {Object.entries(BUILDINGS).map(([k, b]) => (
           <button key={k} className={`bld ${k}`} onClick={() => onEnterBld(k)}>
-            <span className="ico">{b.ic}</span><span className="tl">{b.n}</span>
+            <span className="ico"><img src={b.img} alt="" /></span><span className="tl">{b.n}</span>
           </button>
         ))}
       </div>

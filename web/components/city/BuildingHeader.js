@@ -6,7 +6,7 @@ export default function BuildingHeader({ k }) {
   return (
     <>
       <div className="bldhead">
-        <span className={`bldicon ${k}`}>{b.ic}</span>
+        <span className={`bldicon ${k}`}><img src={b.img} alt="" /></span>
         <div>
           <h2>{b.n}</h2>
           <p className="mute" style={{ fontSize: 12.5 }}>{b.place}</p>

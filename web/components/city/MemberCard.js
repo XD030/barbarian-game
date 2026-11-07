@@ -12,7 +12,7 @@ function EssChips({ m }) {
       {slots.map((it, i) => it
         ? <span key={i} className={`chip ess ${it.gd ? 'rb' : ''}`} style={{ '--c': essInfo(it).color }} title={essDesc(it)}>{essInfo(it).n}</span>
         : <span key={i} className="chip empty">空精髓槽</span>)}
-      {m.num && <span className="chip item" title={NUM[m.num.id].d}>{NUM[m.num.id].n}</span>}
+      {m.num && <span className="chip item" title={NUM[m.num.id].d}><img className="numicon" src={NUM[m.num.id].icon} alt="" />{NUM[m.num.id].n}</span>}
     </>
   );
 }
@@ -149,8 +149,12 @@ export default function MemberCard({ state, m, selected, mini, onToggleSel, onDi
         <MRow label="經驗" v={m.xp - prev} max={Math.max(1, next - prev)} cls="xp" />
       </div>
       <div className="statline">
-        <span>攻擊<b>{st.atk}</b></span><span>防禦<b>{st.def}</b></span><span>速度<b>{st.spd}</b></span>
-        <span>魂力<b>{st.soul}</b></span><span>魔抗<b>{st.mres}</b></span><span>{DT[WEAPON[m.weapon].dt]}擊</span>
+        <span><img className="sic" src="/ui/icons/stat/patk.png" alt="" />攻擊<b>{st.atk}</b></span>
+        <span><img className="sic" src="/ui/icons/stat/pdef.png" alt="" />防禦<b>{st.def}</b></span>
+        <span><img className="sic" src="/ui/icons/stat/dex.png" alt="" />速度<b>{st.spd}</b></span>
+        <span><img className="sic" src="/ui/icons/stat/mp.png" alt="" />魂力<b>{st.soul}</b></span>
+        <span><img className="sic" src="/ui/icons/stat/mdef.png" alt="" />魔抗<b>{st.mres}</b></span>
+        <span>{DT[WEAPON[m.weapon].dt]}擊</span>
       </div>
       <DispatchPanel state={state} m={m} onDispatch={onDispatch} />
       {m.race === 'beast' && <BeastPactPanel m={m} onSetPact={onSetPact} />}
